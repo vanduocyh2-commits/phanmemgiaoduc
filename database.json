@@ -1,0 +1,59 @@
+{
+  "classes": [
+    {"id": 1, "name": "12A1", "password": "", "students": []}
+  ],
+  "exams": [
+    {
+      "id": 1,
+      "subject": "Môn Toán",
+      "grade": "Khối 12",
+      "targetClass": "ALL",
+      "category": "Kiểm tra",
+      "title": "Đề kiểm tra giữa kỳ 1 - Môn Toán Lớp 12",
+      "duration": 45,
+      "solutionFileUrl": "",
+      "solutionFileType": "pdf",
+      "structure": {
+        "mcq": 12,
+        "trueFalse": 4,
+        "shortAnswer": 4,
+        "essay": 2
+      },
+      "codes": {
+        "101": {
+          "fileUrl": "",
+          "fileType": "pdf",
+          "mcq": ["D","C","C","A","B","D","C","A","A","D","A","B"],
+          "trueFalse": ["ĐĐSS", "SĐSĐ", "ĐĐSS", "ĐSĐĐ"],
+          "shortAnswer": ["0.25", "5", "333", "1200"],
+          "essay": ["Câu 1...", "Câu 2..."]
+        },
+        "102": {
+          "fileUrl": "",
+          "fileType": "pdf",
+          "mcq": ["A","B","C","D","A","B","C","D","A","B","C","D"],
+          "trueFalse": ["ĐĐSS", "SĐSĐ", "ĐĐSS", "ĐSĐĐ"],
+          "shortAnswer": ["0.25", "5", "333", "1200"],
+          "essay": ["Câu 1...", "Câu 2..."]
+        },
+        "103": {
+          "fileUrl": "",
+          "fileType": "pdf",
+          "mcq": ["B","C","D","A","B","C","D","A","B","C","D","A"],
+          "trueFalse": ["ĐĐSS", "SĐSĐ", "ĐĐSS", "ĐSĐĐ"],
+          "shortAnswer": ["0.25", "5", "333", "1200"],
+          "essay": ["Câu 1...", "Câu 2..."]
+        },
+        "104": {
+          "fileUrl": "",
+          "fileType": "pdf",
+          "mcq": ["C","D","A","B","C","D","A","B","C","D","A","B"],
+          "trueFalse": ["ĐĐSS", "SĐSĐ", "ĐĐSS", "ĐSĐĐ"],
+          "shortAnswer": ["0.25", "5", "333", "1200"],
+          "essay": ["Câu 1...", "Câu 2..."]
+        }
+      }
+    }
+  ],
+  "grades": []
+}
