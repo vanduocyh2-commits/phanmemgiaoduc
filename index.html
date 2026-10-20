@@ -2808,110 +2808,105 @@ function drawBBTContent(ctx, w, h, info) {
                 }
             });
         }
-
 async function uploadAndCreateMultiCodeExam() {
-            const btn = document.getElementById('btn-save-new-exam');
-            btn.disabled = true;
-            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-1.5"></i>Đang đẩy file lên kho GitHub...`;
+        const btn = document.getElementById('btn-save-new-exam');
+        btn.disabled = true;
+        btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-1.5"></i>Đang đẩy file lên GitHub...`;
 
-            try {
-                const subject = document.getElementById('input-exam-subject').value.trim();
-                const grade = document.getElementById('input-exam-grade').value.trim();
-                const targetClass = document.getElementById('input-exam-target-class').value;
-                const title = document.getElementById('input-exam-title').value.trim() || 'Đề kiểm tra trực tuyến';
-                const duration = parseInt(document.getElementById('input-exam-duration').value) || 45;
+        try {
+            const subject = document.getElementById('input-exam-subject').value.trim();
+            const grade = document.getElementById('input-exam-grade').value.trim();
+            const targetClass = document.getElementById('input-exam-target-class').value;
+            const title = document.getElementById('input-exam-title').value.trim() || 'Đề kiểm tra trực tuyến';
+            const duration = parseInt(document.getElementById('input-exam-duration').value) || 45;
 
-                const mcq = parseInt(document.getElementById('input-num-mcq').value) || 0;
-                const tf = parseInt(document.getElementById('input-num-tf').value) || 0;
-                const short = parseInt(document.getElementById('input-num-short').value) || 0;
-                const essay = parseInt(document.getElementById('input-num-essay').value) || 0;
+            const mcq = parseInt(document.getElementById('input-num-mcq').value) || 0;
+            const tf = parseInt(document.getElementById('input-num-tf').value) || 0;
+            const short = parseInt(document.getElementById('input-num-short').value) || 0;
+            const essay = parseInt(document.getElementById('input-num-essay').value) || 0;
 
-                const ptsMcq = parseFloat(document.getElementById('input-pts-mcq').value) || 0;
-                const ptsTf = parseFloat(document.getElementById('input-pts-tf').value) || 0;
-                const ptsShort = parseFloat(document.getElementById('input-pts-short').value) || 0;
-                const ptsEssay = parseFloat(document.getElementById('input-pts-essay').value) || 0;
+            const ptsMcq = parseFloat(document.getElementById('input-pts-mcq').value) || 0;
+            const ptsTf = parseFloat(document.getElementById('input-pts-tf').value) || 0;
+            const ptsShort = parseFloat(document.getElementById('input-pts-short').value) || 0;
+            const ptsEssay = parseFloat(document.getElementById('input-pts-essay').value) || 0;
 
-                let codesMap = {};
-                const fileRows = document.querySelectorAll('.code-file-row');
-                const ansRows = document.querySelectorAll('.ans-row');
+            let codesMap = {};
+            const fileRows = document.querySelectorAll('.code-file-row');
+            const ansRows = document.querySelectorAll('.ans-row');
 
-                for (let idx = 0; idx < fileRows.length; idx++) {
-                    const r = fileRows[idx];
-                    const codeInput = r.querySelector('.exam-code-input-field').value.trim();
-                    const fileInput = r.querySelector('.exam-file-input');
-                    const urlInput = r.querySelector('.exam-url-input')?.value.trim();
+            for (let idx = 0; idx < fileRows.length; idx++) {
+                const r = fileRows[idx];
+                const codeInput = r.querySelector('.exam-code-input-field').value.trim();
+                const fileInput = r.querySelector('.exam-file-input');
 
-                    let fileUrl = 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf';
-                    let fileType = 'pdf';
+                let fileUrl = 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf';
+                let fileType = 'pdf';
 
-                    if (urlInput) {
-                        fileUrl = urlInput;
-                        fileType = urlInput.match(/\.(jpeg|jpg|png|webp)$/i) ? 'image' : 'pdf';
-                    } else if (fileInput && fileInput.files && fileInput.files[0]) {
-                        const file = fileInput.files[0];
-                        const ext = file.name.split('.').pop().toLowerCase();
-                        fileType = ['png', 'jpg', 'jpeg', 'webp'].includes(ext) ? 'image' : 'pdf';
+                if (fileInput && fileInput.files && fileInput.files[0]) {
+                    const file = fileInput.files[0];
+                    const ext = file.name.split('.').pop().toLowerCase();
+                    fileType = ['png', 'jpg', 'jpeg', 'webp'].includes(ext) ? 'image' : 'pdf';
 
-                        // ĐẨY FILE TỪ MÁY TÍNH THẲNG LÊN GITHUB QUA BACKEND PYTHON (app.py)
-                        const formData = new FormData();
-                        formData.append('file', file);
-                        formData.append('code', codeInput);
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    formData.append('code', codeInput);
 
-                        const uploadRes = await fetch('/api/upload-exam-file', {
-                            method: 'POST',
-                            body: formData
-                        });
-                        const uploadResult = await uploadRes.json();
-                        if (uploadResult.success) {
-                            fileUrl = uploadResult.fileUrl; // Lấy Link Raw từ GitHub
-                        } else {
-                            showNotification("Lỗi đẩy file lên GitHub: " + uploadResult.message, "error");
-                            btn.disabled = false;
-                            btn.innerHTML = `<i class="fa-solid fa-cloud-arrow-up mr-1.5"></i>Lưu & Phát Đề Lên Mạng`;
-                            return;
-                        }
-                    }
-
-                    if (codeInput) {
-                        let mcqKeys = ['D','C','C','A','B','D','C','A','A','D','A','B'];
-                        let tfKeys = ['ĐĐSS','SĐSĐ','ĐĐSS','ĐSĐĐ'];
-                        let shortKeys = ['0.25', '5', '333', '1200'];
-                        const matchingAnsRow = Array.from(ansRows).find(ar => ar.querySelector('.ans-code').value.trim() === codeInput) || ansRows[idx];
-                        if (matchingAnsRow) {
-                            mcqKeys = matchingAnsRow.querySelector('.ans-mcq').value.trim().split(',').map(k => k.trim().toUpperCase()).filter(Boolean);
-                            tfKeys = matchingAnsRow.querySelector('.ans-tf').value.trim().split(',').map(k => k.trim().toUpperCase()).filter(Boolean);
-                            shortKeys = matchingAnsRow.querySelector('.ans-short').value.trim().split(';').map(k => k.trim()).filter(Boolean);
-                        }
-                        codesMap[codeInput] = { fileUrl, fileType, mcq: mcqKeys, tf: tfKeys, short: shortKeys };
+                    const uploadRes = await fetch('/api/upload-exam-file', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const uploadResult = await uploadRes.json();
+                    
+                    if (uploadResult.success) {
+                        fileUrl = uploadResult.fileUrl;
+                    } else {
+                        showNotification("Lỗi đẩy file lên GitHub: " + uploadResult.message, "error");
+                        btn.disabled = false;
+                        btn.innerHTML = `<i class="fa-solid fa-cloud-arrow-up mr-1.5"></i>Lưu & Phát Đề Lên Mạng`;
+                        return;
                     }
                 }
 
-                const examId = 'exam_' + Date.now();
-                const roomCode = 'THI' + String(Math.floor(100 + Math.random() * 900));
-                const newExam = {
-                    id: examId,
-                    roomCode,
-                    subject,
-                    grade,
-                    targetClass,
-                    title,
-                    duration,
-                    structure: { mcq, trueFalse: tf, shortAnswer: short, essay, ptsMcq, ptsTf, ptsShort, ptsEssay },
-                    codes: codesMap
-                };
-
-                state.exams.unshift(newExam);
-                await syncExamToCloud(newExam);
-                closeModal('modal-upload-exam');
-                renderTeacherExams();
-                showNotification(`Đã tạo kỳ thi "${title}" và đẩy file lên GitHub thành công!`, "success");
-                shareExamLink(examId);
-            } finally {
-                btn.disabled = false;
-                btn.innerHTML = `<i class="fa-solid fa-cloud-arrow-up mr-1.5"></i>Lưu & Phát Đề Lên Mạng`;
+                if (codeInput) {
+                    let mcqKeys = ['D','C','C','A','B','D','C','A','A','D','A','B'];
+                    let tfKeys = ['ĐĐSS','SĐSĐ','ĐĐSS','ĐSĐĐ'];
+                    let shortKeys = ['0.25', '5', '333', '1200'];
+                    const matchingAnsRow = Array.from(ansRows).find(ar => ar.querySelector('.ans-code').value.trim() === codeInput) || ansRows[idx];
+                    if (matchingAnsRow) {
+                        mcqKeys = matchingAnsRow.querySelector('.ans-mcq').value.trim().split(',').map(k => k.trim().toUpperCase()).filter(Boolean);
+                        tfKeys = matchingAnsRow.querySelector('.ans-tf').value.trim().split(',').map(k => k.trim().toUpperCase()).filter(Boolean);
+                        shortKeys = matchingAnsRow.querySelector('.ans-short').value.trim().split(';').map(k => k.trim()).filter(Boolean);
+                    }
+                    codesMap[codeInput] = { fileUrl, fileType, mcq: mcqKeys, tf: tfKeys, short: shortKeys };
+                }
             }
+
+            const examId = 'exam_' + Date.now();
+            const roomCode = 'THI' + String(Math.floor(100 + Math.random() * 900));
+            const newExam = {
+                id: examId,
+                roomCode,
+                subject,
+                grade,
+                targetClass,
+                title,
+                duration,
+                structure: { mcq, trueFalse: tf, shortAnswer: short, essay, ptsMcq, ptsTf, ptsShort, ptsEssay },
+                codes: codesMap
+            };
+
+            state.exams.unshift(newExam);
+            await syncExamToCloud(newExam);
+            closeModal('modal-upload-exam');
+            renderTeacherExams();
+            showNotification(`Đã tải file từ máy tính lên GitHub và tạo kỳ thi thành công!`, "success");
+            shareExamLink(examId);
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = `<i class="fa-solid fa-cloud-arrow-up mr-1.5"></i>Lưu & Phát Đề Lên Mạng`;
         }
-        function parseAnswerFile(input) {
+    }
+            function parseAnswerFile(input) {
             if (input.files && input.files[0]) {
                 const reader = new FileReader();
                 reader.onload = function(e) {
