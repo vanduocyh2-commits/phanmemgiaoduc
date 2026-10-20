@@ -1880,195 +1880,74 @@ function drawBBTContent(ctx, w, h, info) {
         }
 
         // ================= 3. KẾT NỐI ĐÁM MÂY FIREBASE FIRESTORE (THEO ĐÚNG 3 QUY TẮC) =================
-        let db = null;
+let db = null;
         let auth = null;
         let currentUser = null;
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'thay-bui-van-duoc-edu-portal';
 
         async function initCloudSync() {
             const badge = document.getElementById('cloud-status-badge');
+            
+            // Khôi phục dữ liệu đã lưu trữ an toàn từ localStorage (đảm bảo không mất khi F5)
             try {
-                if (typeof __firebase_config !== 'undefined' && __firebase_config) {
-                    const firebaseConfig = JSON.parse(__firebase_config);
-                    const fbApp = initializeApp(firebaseConfig);
-                    auth = getAuth(fbApp);
-                    db = getFirestore(fbApp);
+                const savedTeachers = localStorage.getItem('thayduoc_teachers');
+                const savedClasses = localStorage.getItem('thayduoc_classes');
+                const savedExams = localStorage.getItem('thayduoc_exams');
+                const savedSubs = localStorage.getItem('thayduoc_submissions');
 
-                    // RULE 3: Auth Before Queries
-                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                        await signInWithCustomToken(auth, __initial_auth_token);
-                    } else {
-                        await signInAnonymously(auth);
-                    }
-
-                    onAuthStateChanged(auth, (user) => {
-                        currentUser = user;
-                        if (user) {
-                            setupRealtimeListeners();
-                        }
-                    });
-                } else {
-                    if (badge) {
-                        badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1.5"></span>Sẵn sàng (Đồng bộ phiên)`;
-                    }
-                }
-            } catch (err) {
-                console.warn("Cloud init fallback:", err);
+                if (savedTeachers) state.teachers = JSON.parse(savedTeachers);
+                if (savedClasses) state.classes = JSON.parse(savedClasses);
+                if (savedExams) state.exams = JSON.parse(savedExams);
+                if (savedSubs) state.gradeBook = JSON.parse(savedSubs);
+            } catch (e) {
+                console.warn("Lỗi đọc dữ liệu local:", e);
             }
+
+            if (badge) {
+                badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1.5 animate-pulse"></span>Đã lưu trữ an toàn (Local Sync)`;
+            }
+            refreshUIOnDataChange();
         }
 
-        function setupRealtimeListeners() {
-            if (!currentUser || !db) return;
-
-            // 1. Đồng bộ danh sách Giáo viên
-            const teachersRef = collection(db, 'artifacts', appId, 'public', 'data', 'teachers');
-            onSnapshot(teachersRef, (snap) => {
-                if (!snap.empty) {
-                    const list = [];
-                    snap.forEach(d => list.push(d.data()));
-                    if (list.length > 0) state.teachers = list;
-                } else {
-                    // Khởi tạo tài khoản mặc định của Thầy Bùi Văn Được lên Cloud
-                    syncTeacherToCloud(state.teachers[0]);
-                }
-            }, (err) => console.warn("Teachers sync error:", err));
-
-            // 2. Đồng bộ Danh sách Lớp & Tài khoản Học sinh
-            const classesRef = collection(db, 'artifacts', appId, 'public', 'data', 'classes');
-            onSnapshot(classesRef, (snap) => {
-                if (!snap.empty) {
-                    const list = [];
-                    snap.forEach(d => {
-                        const data = d.data();
-                        if (typeof data.studentsJson === 'string') {
-                            try { data.students = JSON.parse(data.studentsJson); } catch(e) { data.students = []; }
-                        }
-                        list.push(data);
-                    });
-                    list.sort((a, b) => a.name.localeCompare(b.name));
-                    state.classes = list;
-                    refreshUIOnDataChange();
-                } else {
-                    state.classes.forEach(c => syncClassToCloud(c));
-                }
-            }, (err) => console.warn("Classes sync error:", err));
-
-            // 3. Đồng bộ Danh sách Đề thi
-            const examsRef = collection(db, 'artifacts', appId, 'public', 'data', 'exams');
-            onSnapshot(examsRef, (snap) => {
-                if (!snap.empty) {
-                    const list = [];
-                    snap.forEach(d => {
-                        const data = d.data();
-                        if (typeof data.codesJson === 'string') {
-                            try { data.codes = JSON.parse(data.codesJson); } catch(e) { data.codes = {}; }
-                        }
-                        if (typeof data.structureJson === 'string') {
-                            try { data.structure = JSON.parse(data.structureJson); } catch(e) {}
-                        }
-                        list.push(data);
-                    });
-                    state.exams = list;
-                    refreshUIOnDataChange();
-                } else {
-                    state.exams.forEach(ex => syncExamToCloud(ex));
-                }
-            }, (err) => console.warn("Exams sync error:", err));
-
-            // 4. Đồng bộ Bài nộp & Sổ điểm (Submissions)
-            const subsRef = collection(db, 'artifacts', appId, 'public', 'data', 'submissions');
-            onSnapshot(subsRef, (snap) => {
-                const list = [];
-                snap.forEach(d => {
-                    const data = d.data();
-                    if (typeof data.detailsJson === 'string') {
-                        try { data.details = JSON.parse(data.detailsJson); } catch(e) { data.details = []; }
-                    }
-                    list.push(data);
-                });
-                state.gradeBook = list;
-                refreshUIOnDataChange();
-            }, (err) => console.warn("Submissions sync error:", err));
-        }
-
+        // Các hàm đồng bộ tự động ghi vào localStorage để F5 không bao giờ bị mất dữ liệu
         async function syncTeacherToCloud(teacherObj) {
-            if (!currentUser || !db) return;
             try {
-                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'teachers', String(teacherObj.id)), teacherObj);
+                localStorage.setItem('thayduoc_teachers', JSON.stringify(state.teachers));
             } catch (e) { console.warn(e); }
         }
 
         async function syncClassToCloud(classObj) {
-            if (!currentUser || !db) return;
             try {
-                const payload = {
-                    id: String(classObj.id),
-                    name: classObj.name,
-                    password: classObj.password || '',
-                    studentsJson: JSON.stringify(classObj.students || [])
-                };
-                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'classes', String(classObj.id)), payload);
+                localStorage.setItem('thayduoc_classes', JSON.stringify(state.classes));
             } catch (e) { console.warn(e); }
         }
 
         async function removeClassFromCloud(classId) {
-            if (!currentUser || !db) return;
             try {
-                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'classes', String(classId)));
+                localStorage.setItem('thayduoc_classes', JSON.stringify(state.classes));
             } catch (e) { console.warn(e); }
         }
 
         async function syncExamToCloud(examObj) {
-            if (!currentUser || !db) return;
             try {
-                const payload = {
-                    id: String(examObj.id),
-                    roomCode: examObj.roomCode || String(examObj.id).slice(-5).toUpperCase(),
-                    subject: examObj.subject,
-                    grade: examObj.grade,
-                    targetClass: examObj.targetClass,
-                    title: examObj.title,
-                    duration: examObj.duration,
-                    structureJson: JSON.stringify(examObj.structure || {}),
-                    codesJson: JSON.stringify(examObj.codes || {})
-                };
-                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'exams', String(examObj.id)), payload);
+                localStorage.setItem('thayduoc_exams', JSON.stringify(state.exams));
             } catch (e) { console.warn(e); }
         }
 
         async function removeExamFromCloud(examId) {
-            if (!currentUser || !db) return;
             try {
-                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'exams', String(examId)));
+                localStorage.setItem('thayduoc_exams', JSON.stringify(state.exams));
             } catch (e) { console.warn(e); }
         }
 
         async function syncSubmissionToCloud(subObj) {
-            if (!currentUser || !db) return;
             try {
-                const payload = {
-                    id: String(subObj.id),
-                    studentName: subObj.studentName,
-                    studentSbd: subObj.studentSbd,
-                    studentClass: subObj.studentClass,
-                    examId: String(subObj.examId || ''),
-                    examTitle: subObj.examTitle,
-                    examCode: subObj.examCode,
-                    score: subObj.score,
-                    rank: subObj.rank,
-                    comment: subObj.comment,
-                    hasPendingEssay: Boolean(subObj.hasPendingEssay),
-                    time: subObj.time,
-                    detailsJson: JSON.stringify(subObj.details || [])
-                };
-                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'submissions', String(subObj.id)), payload);
+                localStorage.setItem('thayduoc_submissions', JSON.stringify(state.gradeBook));
             } catch (e) { console.warn(e); }
         }
 
         async function removeSubmissionFromCloud(subId) {
-            if (!currentUser || !db) return;
             try {
-                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'submissions', String(subId)));
+                localStorage.setItem('thayduoc_submissions', JSON.stringify(state.gradeBook));
             } catch (e) { console.warn(e); }
         }
 
