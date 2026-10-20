@@ -1754,7 +1754,12 @@ function drawBBTContent(ctx, w, h, info) {
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, deleteDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // ================= 1. KHỞI TẠO TRẠNG THÁI MẶC ĐỊNH =================
+  // ================= 1. KHỞI TẠO TRẠNG THÁI VỚI BỘ NHỚ BỀN VỮNG (KHÔNG MẤT KHI F5) =================
+        const savedTeachers = localStorage.getItem('thayduoc_teachers');
+        const savedClasses = localStorage.getItem('thayduoc_classes');
+        const savedExams = localStorage.getItem('thayduoc_exams');
+        const savedSubs = localStorage.getItem('thayduoc_submissions');
+
         const state = {
             sessionRole: null, // 'teacher' | 'student' | null (Độc lập hoàn toàn)
             currentTeacher: null, // { id, username, fullName }
@@ -1769,10 +1774,10 @@ function drawBBTContent(ctx, w, h, info) {
             gradingRecordId: null,
             timerInterval: null,
 
-            teachers: [
+            teachers: savedTeachers ? JSON.parse(savedTeachers) : [
                 { id: 'tc_default', username: 'giaovien', password: '123456', fullName: 'Thầy Bùi Văn Được' }
             ],
-            classes: [
+            classes: savedClasses ? JSON.parse(savedClasses) : [
                 { id: 'cls_12a1', name: '12A1', password: '', students: [
                     { sbd: '1201', name: 'Nguyễn Văn An', password: '123456' },
                     { sbd: '1202', name: 'Trần Thị Bình', password: '123456' },
@@ -1785,7 +1790,7 @@ function drawBBTContent(ctx, w, h, info) {
                 { id: 'cls_7a1', name: '7A1', password: '', students: [] },
                 { id: 'cls_6a1', name: '6A1', password: '', students: [] }
             ],
-            exams: [
+            exams: savedExams ? JSON.parse(savedExams) : [
                 {
                     id: 'exam_demo_101',
                     roomCode: 'TOAN12',
@@ -1809,7 +1814,7 @@ function drawBBTContent(ctx, w, h, info) {
                     }
                 }
             ],
-            gradeBook: []
+            gradeBook: savedSubs ? JSON.parse(savedSubs) : []
         };
 
         // ================= 2. HỆ THỐNG THÔNG BÁO & HỘP THOẠI (THAY THẾ ALERT/CONFIRM/PROMPT) =================
@@ -1879,15 +1884,13 @@ function drawBBTContent(ctx, w, h, info) {
             modal.classList.add('flex');
         }
 
-        // ================= 3. KẾT NỐI ĐÁM MÂY FIREBASE FIRESTORE (THEO ĐÚNG 3 QUY TẮC) =================
-let db = null;
+        // ================= 3. KẾT NỐI LƯU TRỮ CỤC BỘ BỀN VỮNG (KHÔNG MẤT KHI F5) =================
+        let db = null;
         let auth = null;
         let currentUser = null;
 
         async function initCloudSync() {
             const badge = document.getElementById('cloud-status-badge');
-            
-            // Khôi phục dữ liệu đã lưu trữ an toàn từ localStorage (đảm bảo không mất khi F5)
             try {
                 const savedTeachers = localStorage.getItem('thayduoc_teachers');
                 const savedClasses = localStorage.getItem('thayduoc_classes');
@@ -1908,7 +1911,6 @@ let db = null;
             refreshUIOnDataChange();
         }
 
-        // Các hàm đồng bộ tự động ghi vào localStorage để F5 không bao giờ bị mất dữ liệu
         async function syncTeacherToCloud(teacherObj) {
             try {
                 localStorage.setItem('thayduoc_teachers', JSON.stringify(state.teachers));
@@ -1950,21 +1952,6 @@ let db = null;
                 localStorage.setItem('thayduoc_submissions', JSON.stringify(state.gradeBook));
             } catch (e) { console.warn(e); }
         }
-
-        function refreshUIOnDataChange() {
-            renderClassSelectors();
-            updateExamTargetClassOptions();
-            updatePendingEssayBadge();
-            if (state.sessionRole === 'teacher') {
-                renderTeacherExams();
-                renderClassGradeBook();
-                renderManageClassesTable();
-            } else if (state.sessionRole === 'student') {
-                renderStudentExams();
-                renderStudentProgress();
-            }
-        }
-
         // ================= 4. QUẢN LÝ ĐĂNG NHẬP & PHÂN QUYỀN TÁCH BIỆT =================
         function switchGatewayTab(tab) {
             const tabSt = document.getElementById('gw-tab-student');
