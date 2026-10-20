@@ -2417,7 +2417,7 @@ function drawBBTContent(ctx, w, h, info) {
             openModal('modal-student-account');
         }
 
-        function saveStudentAccountModal() {
+function saveStudentAccountModal() {
             const cIdx = parseInt(document.getElementById('st-acc-class-idx').value);
             const editSbd = document.getElementById('st-acc-edit-sbd').value;
             const sbd = document.getElementById('st-acc-sbd').value.trim();
@@ -2447,13 +2447,14 @@ function drawBBTContent(ctx, w, h, info) {
                 cls.students.push({ sbd, name, password });
             }
 
+            // GHI LẠI VÀO BỘ NHỚ LƯU TRỮ NGAY LẬP TỨC
             syncClassToCloud(cls);
             closeModal('modal-student-account');
             renderManageClassesTable();
-            showNotification(`Đã lưu tài khoản học sinh ${name} (SBD: ${sbd})!`, "success");
+            showNotification(`Đã lưu tài khoản học sinh ${name} (SBD: ${sbd}) và cập nhật bộ nhớ!`, "success");
         }
 
-        function deleteStudentFromClass(cIdx, sbd) {
+function deleteStudentFromClass(cIdx, sbd) {
             const cls = state.classes[cIdx];
             const st = cls?.students.find(s => s.sbd === sbd);
             if (!st) return;
@@ -2464,9 +2465,10 @@ function drawBBTContent(ctx, w, h, info) {
                 confirmText: "Xóa Tài Khoản",
                 onConfirm: () => {
                     cls.students = cls.students.filter(s => s.sbd !== sbd);
+                    // GHI LẠI VÀO BỘ NHỚ LƯU TRỮ NGAY LẬP TỨC
                     syncClassToCloud(cls);
                     renderManageClassesTable();
-                    showNotification(`Đã xóa tài khoản học sinh ${st.name}`, "info");
+                    showNotification(`Đã xóa tài khoản học sinh ${st.name} và cập nhật bộ nhớ!`, "info");
                 }
             });
         }
@@ -2500,7 +2502,7 @@ function drawBBTContent(ctx, w, h, info) {
             XLSX.writeFile(wb, "File_Mau_Tai_Khoan_Hoc_Sinh.xlsx");
         }
 
-        function uploadStudentListForClass(classIdx, input) {
+function uploadStudentListForClass(classIdx, input) {
             if (input.files && input.files[0]) {
                 const reader = new FileReader();
                 reader.onload = function(e) {
@@ -2523,9 +2525,10 @@ function drawBBTContent(ctx, w, h, info) {
                         }
                         if (newStudents.length > 0) {
                             state.classes[classIdx].students = newStudents;
+                            // GHI LẠI VÀO BỘ NHỚ LƯU TRỮ NGAY LẬP TỨC
                             syncClassToCloud(state.classes[classIdx]);
                             renderManageClassesTable();
-                            showNotification(`Đã tải lên ${newStudents.length} tài khoản học sinh cho lớp ${state.classes[classIdx].name}!`, "success");
+                            showNotification(`Đã tải lên và lưu vĩnh viễn ${newStudents.length} tài khoản cho lớp ${state.classes[classIdx].name}!`, "success");
                         } else {
                             showNotification("Không tìm thấy dữ liệu hợp lệ trong file Excel!", "warning");
                         }
@@ -2537,7 +2540,6 @@ function drawBBTContent(ctx, w, h, info) {
             }
             input.value = "";
         }
-
         function exportClassStudentsExcel(cIdx) {
             const cls = state.classes[cIdx];
             const allExams = state.exams.filter(ex => ex.targetClass === 'ALL' || ex.targetClass.toLowerCase() === cls.name.toLowerCase());
