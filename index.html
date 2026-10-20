@@ -2809,10 +2809,10 @@ function drawBBTContent(ctx, w, h, info) {
             });
         }
 
-        async function uploadAndCreateMultiCodeExam() {
+async function uploadAndCreateMultiCodeExam() {
             const btn = document.getElementById('btn-save-new-exam');
             btn.disabled = true;
-            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-1.5"></i>Đang tải đề lên mạng...`;
+            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-1.5"></i>Đang đẩy file lên kho GitHub...`;
 
             try {
                 const subject = document.getElementById('input-exam-subject').value.trim();
@@ -2848,10 +2848,27 @@ function drawBBTContent(ctx, w, h, info) {
                         fileUrl = urlInput;
                         fileType = urlInput.match(/\.(jpeg|jpg|png|webp)$/i) ? 'image' : 'pdf';
                     } else if (fileInput && fileInput.files && fileInput.files[0]) {
-                        const converted = await fileToDataUrl(fileInput.files[0]);
-                        if (converted) {
-                            fileUrl = converted.dataUrl;
-                            fileType = converted.fileType;
+                        const file = fileInput.files[0];
+                        const ext = file.name.split('.').pop().toLowerCase();
+                        fileType = ['png', 'jpg', 'jpeg', 'webp'].includes(ext) ? 'image' : 'pdf';
+
+                        // ĐẨY FILE TỪ MÁY TÍNH THẲNG LÊN GITHUB QUA BACKEND PYTHON (app.py)
+                        const formData = new FormData();
+                        formData.append('file', file);
+                        formData.append('code', codeInput);
+
+                        const uploadRes = await fetch('/api/upload-exam-file', {
+                            method: 'POST',
+                            body: formData
+                        });
+                        const uploadResult = await uploadRes.json();
+                        if (uploadResult.success) {
+                            fileUrl = uploadResult.fileUrl; // Lấy Link Raw từ GitHub
+                        } else {
+                            showNotification("Lỗi đẩy file lên GitHub: " + uploadResult.message, "error");
+                            btn.disabled = false;
+                            btn.innerHTML = `<i class="fa-solid fa-cloud-arrow-up mr-1.5"></i>Lưu & Phát Đề Lên Mạng`;
+                            return;
                         }
                     }
 
@@ -2887,14 +2904,13 @@ function drawBBTContent(ctx, w, h, info) {
                 await syncExamToCloud(newExam);
                 closeModal('modal-upload-exam');
                 renderTeacherExams();
-                showNotification(`Đã tạo kỳ thi "${title}" (Mã phòng: ${roomCode}) thành công!`, "success");
+                showNotification(`Đã tạo kỳ thi "${title}" và đẩy file lên GitHub thành công!`, "success");
                 shareExamLink(examId);
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = `<i class="fa-solid fa-cloud-arrow-up mr-1.5"></i>Lưu & Phát Đề Lên Mạng`;
             }
         }
-
         function parseAnswerFile(input) {
             if (input.files && input.files[0]) {
                 const reader = new FileReader();
