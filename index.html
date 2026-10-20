@@ -2525,10 +2525,17 @@ function uploadStudentListForClass(classIdx, input) {
                         }
                         if (newStudents.length > 0) {
                             state.classes[classIdx].students = newStudents;
-                            // GHI LẠI VÀO BỘ NHỚ LƯU TRỮ NGAY LẬP TỨC
-                            syncClassToCloud(state.classes[classIdx]);
+                            
+                            // === BỔ SUNG LỆNH LƯU NÀY ĐỂ GHI NHỚ VĨNH VIỄN KHÔNG MẤT KHI F5 ===
+                            if (typeof syncClassToCloud === 'function') {
+                                syncClassToCloud(state.classes[classIdx]);
+                            } else {
+                                localStorage.setItem('thayduoc_classes', JSON.stringify(state.classes));
+                            }
+                            // ==============================================================
+
                             renderManageClassesTable();
-                            showNotification(`Đã tải lên và lưu vĩnh viễn ${newStudents.length} tài khoản cho lớp ${state.classes[classIdx].name}!`, "success");
+                            showNotification(`Đã tải lên và lưu vĩnh viễn ${newStudents.length} tài khoản học sinh cho lớp ${state.classes[classIdx].name}!`, "success");
                         } else {
                             showNotification("Không tìm thấy dữ liệu hợp lệ trong file Excel!", "warning");
                         }
