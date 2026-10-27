@@ -18,4 +18,6 @@ jobs:
         with:
           node-version: '22'
       - run: node --check server.mjs
+      - run: node --check portal-server.mjs
+      - run: node --check supabase-store.mjs
       - run: npm test

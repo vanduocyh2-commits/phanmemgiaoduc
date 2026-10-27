@@ -1,54 +1,47 @@
-# Cổng thông tin giáo dục — mã nguồn và kho file GitHub
-
-## Đã tích hợp
-
-- Tách đề, đáp án và tài liệu bài giảng khỏi localStorage; file dùng IndexedDB khi chưa có máy chủ.
-- Tự chuyển file cũ trong dữ liệu cổng và bản nháp sang IndexedDB trước khi mở phần mềm. Chỉ thay dữ liệu sau khi lưu file thành công; dữ liệu cũ không bị xóa trước.
-- Kho GitHub PRIVATE qua API Node.js. GitHub token chỉ có ở máy chủ, không đưa vào HTML.
-- Giữ đáp án ngoài snapshot/gói giao bài. API đáp án yêu cầu phiên đăng nhập kho dành cho giáo viên.
-- Gói giao bài và bản sao lưu xuất ra sẽ chứa file trên thiết bị để có thể mang sang máy khác. File GitHub dùng mã tham chiếu.
-
-## Chạy bằng máy chủ
-
-1. Cài Node.js 22.9 trở lên, hoặc dùng Docker.
-2. Tạo repository **private** dành riêng cho dữ liệu file, khởi tạo nhánh `main` (ví dụ thêm README). Mã nguồn ứng dụng có thể ở repository khác. Không đưa dữ liệu học sinh vào kho public.
-3. Tạo fine-grained GitHub token chỉ cấp cho kho dữ liệu, quyền Contents: Read and write. Không gửi token trong hội thoại; đặt trên máy chủ.
-4. Sao chép `.env.example` thành `.env`. Điền chủ kho, tên kho, nhánh, token, PUBLIC_ORIGIN. Đặt mật khẩu kho ít nhất 12 ký tự, SESSION_SECRET ngẫu nhiên ít nhất 32 ký tự (ví dụ `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`).
-5. Chạy `npm start`. Khi thử trên máy, dùng `PUBLIC_ORIGIN=http://localhost:3000`.
-6. Phát hành bằng một máy chủ hỗ trợ Node/Docker và HTTPS, cấu hình các biến môi trường tương ứng. GitHub Pages không chạy được API Node trong gói này.
-7. Mở phần mềm → Quản lí giáo viên hoặc Tải đề → **Kho file GitHub / thiết bị**. Nhập URL máy chủ và mật khẩu kho. File tải mới sẽ được đưa vào repo private. Mỗi phiên giáo viên cần đăng nhập kho; không chia sẻ mật khẩu kho cho học sinh.
-
-Không có repo/token được cài sẵn. Gói này chưa được triển khai vào tài khoản GitHub hoặc máy chủ của bạn.
-
-## Dữ liệu và giới hạn thực tế
-
-- Kho file này giải quyết file đề, đáp án, tài liệu bài giảng; danh sách, điểm, giao bài vẫn dùng cơ chế dữ liệu chung/Firebase đã có trong ứng dụng. Chưa kết nối dữ liệu chung thì các máy không tự có cùng danh sách.
-- Bài tự luận đính kèm vẫn dùng kho bài nộp cũ/gói JSON, chưa đẩy qua API kho GitHub này.
-- File IndexedDB chỉ tồn tại trong trình duyệt/thiết bị đã lưu. File cũ không tự tải lên GitHub: sau khi kết nối kho, mở đề rồi chọn lại file để đưa lên kho.
-- API dùng mật khẩu kho riêng cho nhân sự; nó không thay thế hệ thống xác thực/phân quyền người dùng của cổng. Đăng nhập và phân quyền cổng hiện vẫn là logic ở trình duyệt; cần triển khai xác thực máy chủ và kiểm soát truy cập dữ liệu trước khi mở dịch vụ công khai cho dữ liệu thật.
-- Link đọc đề/bài giảng là mã truy cập chia sẻ: ai giữ link có thể đọc file. Đáp án không cấp link chia sẻ, chỉ mở bằng phiên kho hợp lệ. Muốn thu hồi toàn bộ link, đổi SESSION_SECRET (đồng thời các phiên kho hết hiệu lực).
-- Tối đa 10 MB/file do ứng dụng quy định. GitHub có giới hạn API/dung lượng/băng thông; kho này không phải dịch vụ lưu file không giới hạn. Mỗi lần tải file tạo một commit. Không tự xóa lịch sử Git.
-- Không công khai kho dữ liệu. Giữ .env ngoài Git. Sao lưu dữ liệu trước khi chuyển máy/đổi tên miền; không xóa dữ liệu trình duyệt khi chưa sao lưu.
-- Nên tách repository mã nguồn và repository kho dữ liệu. Không dùng GitHub Pages làm máy chủ chứa mật khẩu/dữ liệu học sinh.
-
-## Kiểm tra
-
-`npm test` dùng GitHub giả lập: kiểm tra repo private, xác thực kho, tải/đọc đề, chặn đáp án với học sinh, không lộ token. Không cần GitHub token thật để chạy kiểm tra.
-
-Tài liệu API: https://docs.github.com/en/rest/repos/contents
-Giới hạn GitHub Pages: https://docs.github.com/en/pages/getting-started-with-github-pages/github-pages-limits
-
-## Tự cập nhật từ mã nguồn
+# Phần mềm giáo dục — Thầy Bùi Văn Được
 
 Repository phát hành: `vanduocyh2-commits/phanmemgiaoduc`, nhánh `main`.
 
-- Sửa giao diện ở `public/index.html`, máy chủ ở `server.mjs`; commit và push lên GitHub.
-- GitHub Actions chạy `Check application`. Render liên kết tài khoản GitHub và repository này với `autoDeployTrigger: checksPass`; chỉ triển khai khi kiểm tra đạt.
-- `render.yaml` chuẩn bị cấu hình dịch vụ Node miễn phí; chưa tự tạo dịch vụ hoặc kết nối tài khoản Render.
-- Link public Git URL đơn thuần không bật được auto-deploy: phải cấp quyền GitHub trong Render và chọn repository từ tài khoản đã kết nối.
-- Dữ liệu file nằm ở repository PRIVATE khác, cấu hình bằng GITHUB_REPO. Không dùng repository public phanmemgiaoduc làm kho dữ liệu.
-- Mật khẩu, token và cấu hình dữ liệu đặt ở môi trường Render; không sửa trong mã nguồn.
-- Có thể sửa file trực tiếp trên GitHub hoặc push từ máy. File chưa push sẽ không thay đổi website.
-- Học sinh đang làm bài không bị ép tải lại trang khi có phiên bản mới; mở trang/tải lại sau khi triển khai xong để dùng bản mới.
+## Website dùng chung dữ liệu
 
-Chưa mở cho học sinh/phụ huynh chỉ bằng việc push mã này: cần hoàn thiện xác thực máy chủ của cổng và cơ sở dữ liệu chung trước khi dùng dữ liệu thật. CI hiện kiểm tra API kho file; chưa xác nhận đăng nhập và đồng bộ cổng trên dịch vụ thật.
+- Giao diện: `public/index.html`. Máy chủ: `portal-server.mjs`.
+- Supabase PostgreSQL lưu lớp, học sinh, giáo viên, điểm, bài giao, bài nộp, báo lỗi, tiến trình ; file nằm trong bucket Storage riêng tư. Dữ liệu này nằm ngoài GitHub và ngoài filesystem tạm của dịch vụ.
+- Xác thực tại máy chủ, cookie HttpOnly, mật khẩu băm PBKDF2; kiểm tra quyền từng lớp/tài khoản. Phụ huynh chỉ được xem dữ liệu của con; giáo viên chỉ quản lí lớp được giao.
+- Chấm trắc nghiệm tại máy chủ. Đáp án/hướng dẫn và file đáp án không gửi vào snapshot cho học sinh.
+- Bài tự luận chụp ảnh/file được đưa lên máy chủ, giáo viên mở từ máy khác.
+- Bản HTML độc lập vẫn có chế độ offline. Chỉ website do `portal-server.mjs` phục vụ mới kích hoạt dữ liệu chung và xác thực máy chủ.
+
+## Triển khai
+
+Dùng Blueprint `render.yaml` với tài khoản GitHub đã liên kết Render. Không chọn kho public đơn thuần nếu muốn tự triển khai. Cần Node.js 22 và một dự án Supabase Free. Áp dụng migration `supabase/migrations/202610270001_portal.sql` trước khi chạy. Các biến:
+
+- `SUPABASE_URL`: địa chỉ dự án Supabase.
+- `SUPABASE_SERVICE_ROLE_KEY`: secret key dành cho máy chủ (legacy service_role hoặc sb_secret). Không dùng publishable/anon key và không đưa vào HTML.
+- `DATABASE_URL`: tùy chọn để dùng PostgreSQL trực tiếp thay cho Supabase adapter.
+- `SESSION_SECRET`: giá trị ngẫu nhiên tối thiểu 32 ký tự. Không sửa thường xuyên vì sẽ đăng xuất các phiên cũ.
+- `ADMIN_PASSWORD`: mật khẩu khởi tạo tài khoản `admin`, tối thiểu 12 ký tự. Chỉ dùng khi cơ sở dữ liệu được tạo lần đầu. Sau đó đổi mật khẩu trong phần Quản lí tài khoản.
+- `NODE_ENV=production`: cookie Secure qua HTTPS.
+- `PUBLIC_ORIGIN`: tùy chọn khi dùng tên miền riêng; mặc định dùng `RENDER_EXTERNAL_URL`.
+
+Website khởi tạo trống, không công khai dữ liệu hoặc tài khoản mẫu. Giám đốc đăng nhập, tạo giáo viên, lớp và nhập học sinh; giáo viên/học sinh/phụ huynh dùng cùng dữ liệu máy chủ. Có thể nhập bản sao lưu JSON cũ qua mục Sao lưu dữ liệu sau khi đã kiểm tra nội dung.
+
+## Tự cập nhật mã nguồn
+
+1. Sửa `public/index.html` (giao diện) hoặc `portal-server.mjs` (máy chủ).
+2. Commit và push/merge lên `main`.
+3. GitHub Actions chạy `Check application`; Render cấu hình `checksPass` sẽ tự triển khai khi các kiểm tra đạt. Khi tạo bằng API giới hạn chỉ có `autoDeploy=yes`, buildCommand vẫn chạy kiểm tra và chặn bản lỗi; có thể chọn After CI Checks Pass trong Dashboard.
+4. Xác nhận deploy mới `live`. Mở lại/tải lại trang để nhận bản mới. Không ép học sinh đang làm bài tải lại.
+
+Danh sách và bài làm ở PostgreSQL không bị ghi đè bởi mã nguồn mới. Không xóa cơ sở dữ liệu hoặc chạy SQL xóa dữ liệu khi cập nhật.
+
+## Giới hạn gói miễn phí
+
+Render Web Service Free chạy website, Supabase Free lưu dữ liệu và file. Cấu hình này không sử dụng Render Postgres dùng thử 30 ngày. Supabase Free hiện có 500 MB database và 1 GB Storage; dự án có thể tạm dừng sau một tuần ít hoạt động. Render Free có thể ngủ khi không có truy cập. Không bật gói trả phí.
+
+Tối đa 10 MB/file do ứng dụng quy định. Khi đạt hạn mức miễn phí cần dọn/lưu trữ bớt dữ liệu hoặc tự quyết định nâng cấp. Khóa Supabase chỉ ở Render, bucket không công khai. Tải sao lưu định kỳ.
+
+## Kiểm tra
+
+`npm test` kiểm tra API kho GitHub cũ và API cổng trực tuyến với dữ liệu giả lập: xác thực, phân lớp, chấm trắc nghiệm, ngăn sửa điểm từ phía học sinh, phụ huynh chỉ đọc, file đáp án riêng tư. Luồng trình duyệt được kiểm tra riêng trong quá trình phát triển.
+
+`server.mjs` giữ adapter kho GitHub riêng tư ở chế độ độc lập. Website hiện dùng Supabase PostgreSQL cho dữ liệu và Storage riêng tư cho file, không cần đặt GitHub token vào frontend. Không dùng repository public `phanmemgiaoduc` làm nơi lưu hồ sơ hoặc đáp án riêng tư.
