@@ -17,6 +17,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - run: npm install --omit=dev
       - run: node --check server.mjs
       - run: node --check portal-server.mjs
       - run: node --check supabase-store.mjs
