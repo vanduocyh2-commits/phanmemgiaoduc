@@ -45,3 +45,19 @@ Tối đa 10 MB/file do ứng dụng quy định. Khi đạt hạn mức miễn 
 `npm test` kiểm tra API kho GitHub cũ và API cổng trực tuyến với dữ liệu giả lập: xác thực, phân lớp, chấm trắc nghiệm, ngăn sửa điểm từ phía học sinh, phụ huynh chỉ đọc, file đáp án riêng tư. Luồng trình duyệt được kiểm tra riêng trong quá trình phát triển.
 
 `server.mjs` giữ adapter kho GitHub riêng tư ở chế độ độc lập. Website hiện dùng Supabase PostgreSQL cho dữ liệu và Storage riêng tư cho file, không cần đặt GitHub token vào frontend. Không dùng repository public `phanmemgiaoduc` làm nơi lưu hồ sơ hoặc đáp án riêng tư.
+
+
+## Dịch vụ đã tạo cho tài khoản này
+
+- Website: https://phanmemgiaoduc.onrender.com
+- Render: https://dashboard.render.com/web/srv-dbg366qjnfac73f4kjg0/env
+- Supabase: https://supabase.com/dashboard/project/cfbtycpmgrvfualaktts/settings/api-keys
+
+Migration đã áp dụng vào dự án phanmemgiaoduc. Bảng được khóa với anon/authenticated; bucket portal-files là private.
+
+Để mở đăng nhập lần đầu, chủ dự án điền hai biến trong Render Environment:
+
+1. SUPABASE_SERVICE_ROLE_KEY: secret key của dự án Supabase (sb_secret_... hoặc legacy service_role), không dùng publishable/anon key.
+2. ADMIN_PASSWORD: mật khẩu tự đặt, ít nhất 12 ký tự. Đây là mật khẩu khởi tạo tài khoản admin khi dữ liệu trung tâm còn trống.
+
+Lưu thay đổi và chọn tùy chọn triển khai lại trong Render. Không gửi secret key qua chat, không commit khóa vào GitHub. Trước khi cấu hình xong, website chỉ hiển thị trang đang thiết lập; học sinh/phụ huynh chưa đăng nhập được.
