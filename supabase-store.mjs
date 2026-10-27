@@ -1,0 +1,12 @@
+// Supabase secret key is used only on the server, never sent to the browser.
+export async function createSupabaseStore({url,key,initialState,fetchImpl=fetch}){
+ if(!url||!key)throw Error('Configure SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.');
+ const base=url.replace(/\/$/,'');if(!/^https:\/\/[-a-z0-9]+\.supabase\.co$/i.test(base))throw Error('Invalid SUPABASE_URL.');
+ const headers={apikey:key,...(key.startsWith('eyJ')?{Authorization:'Bearer '+key}:{})};
+ async function api(path,options={}){const response=await fetchImpl(base+path,{...options,signal:AbortSignal.timeout(15000),headers:{...headers,...options.headers}});if(!response.ok){throw Error('Kho dữ liệu Supabase chưa sẵn sàng ('+response.status+'). Kiểm tra kết nối hoặc cấu hình máy chủ.');}return response;}
+ const json=(value)=>({'Content-Type':'application/json',body:JSON.stringify(value)});
+ const rpc=async(name,value)=>{const data=json(value);const r=await api('/rest/v1/rpc/'+name,{method:'POST',headers:{'Content-Type':data['Content-Type']},body:data.body});const text=await r.text();return text?JSON.parse(text):null;};
+ await rpc('portal_initialize',{p_data:initialState});
+ const read=async()=>{const rows=await(await api('/rest/v1/portal_state?id=eq.1&select=data')).json();if(!rows[0]?.data)throw Error('Chưa khởi tạo dữ liệu trung tâm.');return structuredClone(rows[0].data)};
+ return {read,mutate:async fn=>{for(let i=0;i<5;i++){const current=await read(),revision=current._revision;const next=fn(current);if(await rpc('portal_compare_save',{p_revision:revision,p_data:next}))return structuredClone(next);}throw Error('Dữ liệu vừa thay đổi từ tài khoản khác, vui lòng thử lại.');},putFile:async f=>{const old=await(await api('/rest/v1/portal_file_metadata?id=eq.'+encodeURIComponent(f.id)+'&select=id,owner')).json();if(old.length){if(old[0].owner!==f.owner)throw Error('File này thuộc tài khoản khác.');return;}await api('/storage/v1/object/portal-files/'+encodeURIComponent(f.id),{method:'POST',headers:{'Content-Type':f.type,'x-upsert':'false'},body:f.data});await api('/rest/v1/portal_file_metadata',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:f.id,name:f.name,type:f.type,kind:f.kind,owner:f.owner})});},getFile:async id=>{const rows=await(await api('/rest/v1/portal_file_metadata?id=eq.'+encodeURIComponent(id)+'&select=*')).json();if(!rows[0])return null;const response=await api('/storage/v1/object/authenticated/portal-files/'+encodeURIComponent(id));return {...rows[0],data:Buffer.from(await response.arrayBuffer())};}};
+}
