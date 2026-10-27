@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: phanmemgiaoduc
+    runtime: node
+    plan: free
+    branch: main
+    autoDeployTrigger: checksPass
+    buildCommand: npm test
+    startCommand: node server.mjs
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: '22'
+      - key: GITHUB_OWNER
+        value: vanduocyh2-commits
+      - key: GITHUB_REPO
+        sync: false
+      - key: GITHUB_BRANCH
+        value: main
+      - key: GITHUB_TOKEN
+        sync: false
+      - key: VAULT_PASSWORD
+        sync: false
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: PUBLIC_ORIGIN
+        sync: false
