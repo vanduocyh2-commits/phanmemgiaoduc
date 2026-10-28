@@ -1570,22 +1570,46 @@ window.app.logoutCurrentAccount=logoutCurrentAccount;
             if(!['teacher','admin'].includes(state.sessionRole)||!canManageClass(cid))return;const c=state.classes.find(c=>c.id===cid),student=c?.students.find(s=>s.sbd===sbd);if(!c||sbd&&!student)return;closeSubjectModal();const modal=document.createElement('div');modal.id='subject-edit-modal';modal.className='qcard-modal';const fields=[['sbd','Số báo danh'],['name','Họ tên'],['dob','Ngày sinh (dd/mm/yyyy)'],['address','Địa chỉ'],['parentName','Họ tên phụ huynh'],['parentPhone','SĐT phụ huynh'],['school','Trường'],['schoolClass','Lớp tại trường']];modal.innerHTML=`<section class="qcard-dialog"><h3>${student?'Cập nhật':'Thêm'} học sinh · ${esc(c.name)}</h3><p class="ts-help">Đồng bộ với giám đốc. SBD đã cấp được giữ để liên kết tài khoản, bài nộp, điểm và học phí.</p><div class="ts-grid">${fields.map(([k,label])=>`<label>${label}<input id="teacher-student-${k}" class="ts-input" value="${esc(student?.[k]||'')}" ${k==='sbd'&&student?'readonly':''}></label>`).join('')}${!student?'<label>Mật khẩu ban đầu<input id="teacher-student-password" class="ts-input" type="password" autocomplete="new-password" placeholder="Tối thiểu 6 ký tự"></label>':''}</div><div class="ts-row"><button id="save-teacher-student" class="ts-btn">Lưu học sinh</button><button class="ts-btn ts-secondary" onclick="window.app.closeSubjectModal()">Hủy</button></div></section>`;document.body.append(modal);$('save-teacher-student').onclick=()=>{const row=Object.fromEntries(fields.map(([k])=>[k,$('teacher-student-'+k).value.trim()]));if(!/^[-\w]{1,80}$/.test(row.sbd)||!row.name)return toast('Nhập SBD hợp lệ và họ tên.');try{row.dob=normalizeRosterDOB(row.dob)}catch(e){return toast(e.message)}if(!student&&c.students.some(s=>s.sbd===row.sbd))return toast('SBD đã có trong lớp.');const password=$('teacher-student-password')?.value;if(!student&&(!password||password.length<6))return toast('Nhập mật khẩu ban đầu ít nhất 6 ký tự.');if(student)Object.assign(student,row);else c.students.push({...newStudent(row.sbd,row.name,password),...row});save(c);closeSubjectModal();refreshUI();TS.students();toast('Đã gửi đề xuất tới giám đốc, chờ chấp nhận.');};
         }
         Object.assign(window.app,{openOwnProfile,teacherRosterEditor,changeTuitionExtra,editStudentTuition,toggleFeeStudent,toggleFeeClass,selectFeeVisible,previewBulkFees,applyBulkFees});
+        let notificationOpenBatch=null;
+        const notificationSeenMemory=new Map();
+        function notificationAccountKey(){return 'edu_notif_seen_v2_'+JSON.stringify([state.sessionRole,activeAccount?.username||'',cur?.cid||'',cur?.sbd||'']);}
+        function notificationToken(n){return n.id+'|'+(n.updatedAt||'');}
+        function notificationSeen(){
+            const key=notificationAccountKey();let stored=[];
+            try{const value=JSON.parse(localStorage.getItem(key)||'[]');if(Array.isArray(value))stored=value.filter(x=>typeof x==='string');}catch(e){}
+            const seen=new Set([...stored,...(notificationSeenMemory.get(key)||[])]);
+            notificationSeenMemory.set(key,seen);return seen;
+        }
+        function notificationList(){return state.sessionRole==='admin'?state.notifications:notifFor(state.sessionRole);}
+        function notificationCount(list,seen){
+            const unread=list.filter(n=>!seen.has(notificationToken(n))).length;
+            $('corner-notification-count').textContent=unread;
+            $('corner-notification-count').classList.toggle('hidden',unread===0);
+            $('corner-notification-button').setAttribute('aria-label','Thông báo: '+unread+' chưa đọc');
+        }
         function renderCornerNotifications(){renderStudentSupport();
             const role=state.sessionRole,wrap=$('corner-notifications');if(!wrap)return;
             wrap.classList.toggle('hidden',!role);
-            if(!role){$('corner-notification-panel').classList.add('hidden');$('corner-notification-button').setAttribute('aria-expanded','false');return;}
-            const list=role==='admin'?state.notifications:notifFor(role);
-            const key='edu_notif_seen_'+role+'_'+(activeAccount?.username||cur?.sbd||'');
-            let seen=[];try{seen=JSON.parse(localStorage.getItem(key)||'[]')}catch(e){}
-            const unseen=list.filter(n=>!seen.includes(n.id+'|'+(n.updatedAt||''))).length;
-            $('corner-notification-count').textContent=unseen;
-            $('corner-notification-button').setAttribute('aria-label','Thông báo: '+unseen+' chưa đọc');
-            $('corner-notification-items').innerHTML=[...list].reverse().map(n=>notifHtml(n,false)).join('')||noNotif;
+            const panel=$('corner-notification-panel');
+            if(!role){notificationOpenBatch=null;panel.classList.add('hidden');$('corner-notification-button').setAttribute('aria-expanded','false');return;}
+            const key=notificationAccountKey(),list=notificationList(),seen=notificationSeen();
+            if(notificationOpenBatch&&notificationOpenBatch.key!==key){notificationOpenBatch=null;panel.classList.add('hidden');$('corner-notification-button').setAttribute('aria-expanded','false');}
+            notificationCount(list,seen);
+            const visible=notificationOpenBatch&&!panel.classList.contains('hidden')?list.filter(n=>notificationOpenBatch.tokens.has(notificationToken(n))):list.filter(n=>!seen.has(notificationToken(n)));
+            $('corner-notification-items').innerHTML=[...visible].reverse().map(n=>notifHtml(n,false)).join('')||'<p class="text-xs text-slate-400">Không có thông báo mới.</p>';
         }
         function toggleCornerNotifications(){
-            const panel=$('corner-notification-panel');const opening=panel.classList.contains('hidden');
+            if(!state.sessionRole)return;
+            const panel=$('corner-notification-panel'),opening=panel.classList.contains('hidden');
+            if(opening){
+                const key=notificationAccountKey(),list=notificationList(),seen=notificationSeen();
+                notificationOpenBatch={key,tokens:new Set(list.filter(n=>!seen.has(notificationToken(n))).map(notificationToken))};
+                for(const token of notificationOpenBatch.tokens)seen.add(token);
+                notificationSeenMemory.set(key,seen);
+                try{localStorage.setItem(key,JSON.stringify([...seen]));}catch(e){}
+            }else notificationOpenBatch=null;
             panel.classList.toggle('hidden',!opening);$('corner-notification-button').setAttribute('aria-expanded',String(opening));
-            if(opening){const role=state.sessionRole,list=role==='admin'?state.notifications:notifFor(role);try{localStorage.setItem('edu_notif_seen_'+role+'_'+(activeAccount?.username||cur?.sbd||''),JSON.stringify(list.map(n=>n.id+'|'+(n.updatedAt||''))))}catch(e){}renderCornerNotifications();}
+            renderCornerNotifications();
         }
         window.app.toggleCornerNotifications=toggleCornerNotifications;
         window.addEventListener('storage',event=>{
