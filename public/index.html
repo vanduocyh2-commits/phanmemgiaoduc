@@ -653,7 +653,7 @@ import {createTeacherScanUI} from "/teacher-scan-ui.mjs";
         }
         function setSel(id, h) { const e = $(id); if (!e) return; const v = e.value; e.innerHTML = h; if ([...e.options].some(o => o.value === v)) e.value = v; }
         const notifFor = role => state.notifications.filter(n=>(!n.classId||(role==='teacher'?teacherClasses().some(c=>c.id===n.classId):cur?.cid===n.classId))&&(n.target==='PARENTS'?(role==='parent'?n.sbd===cur?.sbd:role==='teacher'&&n.owner===activeAccount?.username):(n.target==='ALL'||(role==='teacher'?n.target==='TEACHERS':n.target==='STUDENTS'))));
-        const notifHtml = (n, del) => `<div class="p-3 bg-slate-50 border rounded-xl text-xs"><div class="flex justify-between gap-2"><strong>${esc(n.title)}</strong>${del ? `<button onclick="window.app.deleteNotification('${n.id}')" class="text-red-600"><i class="fa-solid fa-trash"></i></button>` : ''}</div><p class="whitespace-pre-line text-slate-600 mt-1">${esc(n.content)}</p><span class="text-[10px] text-slate-400">${esc(n.date)}${del ? ' · Gửi tới: ' + esc(n.target) : ''}</span>${n.kind==='enrollment'&&state.sessionRole==='admin'?'<button class="ts-btn ts-secondary" onclick="window.app.openAdmissionsQueue()">Xem hồ sơ</button>':''}</div>`;
+        const notifHtml = (n, del) => `<div class="p-3 bg-slate-50 border rounded-xl text-xs"><div class="flex justify-between gap-2"><strong>${esc(n.title)}</strong>${del ? `<button onclick="window.app.deleteNotification('${n.id}')" class="text-red-600"><i class="fa-solid fa-trash"></i></button>` : ''}</div><p class="whitespace-pre-line text-slate-600 mt-1">${esc(n.content)}</p><span class="text-[10px] text-slate-400">${esc(n.date)}${n.senderRole?' · '+esc(n.senderRole==='parent'?'Phụ huynh':'Giáo viên')+': '+esc(n.senderName||''):''}${del ? ' · Gửi tới: ' + esc(n.target) : ''}</span>${n.kind==='enrollment'&&state.sessionRole==='admin'?'<button class="ts-btn ts-secondary" onclick="window.app.openAdmissionsQueue()">Xem hồ sơ</button>':''}</div>`;
         const noNotif = '<p class="text-xs text-slate-400">Chưa có thông báo.</p>';
 
         // ---------- Đăng nhập / đăng xuất ----------
@@ -737,7 +737,7 @@ import {createTeacherScanUI} from "/teacher-scan-ui.mjs";
             $('admin-teachers-tbody').innerHTML = Object.entries(g).map(([t, cs]) => `<tr class="border-b"><td class="p-3 font-bold">${esc(t)}</td><td class="p-3">${cs.map(c => esc(c.name)).join(', ')}</td><td class="p-3 text-center font-bold">${cs.length}</td><td class="p-3 text-center font-bold">${cs.reduce((a, c) => a + c.students.length, 0)}</td><td class="p-3 text-center font-bold text-indigo-700">${state.timetable.filter(x => cs.some(c => c.id === x.classId)).length}</td></tr>`).join('') || empty(5);
             $('admin-classes-table-tbody').innerHTML = state.classes.map(c => `<tr class="border-b"><td class="p-3 font-bold">Lớp ${esc(c.name)}</td><td class="p-3">${esc(c.teacher)}</td><td class="p-3">${esc(c.schedule)}</td><td class="p-3 text-center font-bold">${c.students.length}</td><td class="p-3 text-center"><button onclick="window.app.editClass('${c.id}')" class="text-indigo-600 font-bold mr-3"><i class="fa-solid fa-pen"></i></button><button onclick="window.app.deleteClass('${c.id}')" class="text-red-600 font-bold"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('') || empty(5);
             $('admin-timetable-tbody').innerHTML = [...state.timetable].sort((a, b) => DAYS.indexOf(a.day) - DAYS.indexOf(b.day) || a.time.localeCompare(b.time)).map(t => { const c = state.classes.find(x => x.id === t.classId); return `<tr class="border-b"><td class="p-3 font-bold">${esc(t.day)}</td><td class="p-3">${esc(t.time)}</td><td class="p-3 font-semibold text-indigo-700">Lớp ${esc(c?.name || '?')}</td><td class="p-3">${esc(scheduleSubject(t,c))}</td><td class="p-3">${esc(c?.teacher || '')}</td><td class="p-3 text-center">${esc(t.room)}</td><td class="p-3 text-center"><button class="ts-btn ts-secondary" onclick="window.app.editSchedule('${t.id}')">Chỉnh sửa</button><button onclick="window.app.deleteSchedule('${t.id}')" class="text-red-600 font-bold"><i class="fa-solid fa-trash"></i></button></td></tr>`; }).join('') || empty(7);
-            $('admin-notifications-list').innerHTML = [...state.notifications].reverse().map(n => notifHtml(n, true)).join('') || noNotif;
+            $('admin-notifications-list').innerHTML = [...directorNotifications()].reverse().map(n => notifHtml(n, true)).join('') || noNotif;
             renderTeacherAndClassSubjects();showCenterLessons();renderOverviewDashboard();renderAdminStudentsTable(); renderAdminFinance(); renderAccounts();renderEnrollmentAdmin();
         }
         const attSel = (c,s) => attendanceSelector(c,s);
@@ -852,7 +852,7 @@ import {createTeacherScanUI} from "/teacher-scan-ui.mjs";
             state.notifications.push({ id: uid('nt'), title, content, target: $('input-notif-target').value, date: new Date().toLocaleString('vi-VN') });
             $('input-notif-title').value = ''; $('input-notif-content').value = ''; persist(); refreshUI(); toast('Đã phát thông báo.');
         }
-        function deleteAllNotifications(){if(state.sessionRole!=='admin')return;if(!state.notifications.length)return toast('Không có thông báo để xóa.');if(!confirm('Xóa toàn bộ '+state.notifications.length+' thông báo trên hệ thống? Thao tác này không xóa hồ sơ hoặc bài làm.'))return;state.notifications=[];persist();refreshUI();toast('Đã xóa hết thông báo.');}
+        function deleteAllNotifications(){if(state.sessionRole!=='admin')return;const list=directorNotifications();if(!list.length)return toast('Không có thông báo gửi tới giám đốc.');if(!confirm('Xóa '+list.length+' thông báo gửi tới giám đốc?'))return;const ids=new Set(list.map(n=>n.id));state.notifications=state.notifications.filter(n=>!ids.has(n.id));persist();refreshUI();toast('Đã xóa thông báo gửi tới giám đốc.');}
         function deleteNotification(id) { if(state.sessionRole!=='admin')return;state.notifications = state.notifications.filter(n => n.id !== id); persist(); refreshUI(); }
 
 
@@ -1580,14 +1580,29 @@ window.app.logoutCurrentAccount=logoutCurrentAccount;
             const seen=new Set([...stored,...(notificationSeenMemory.get(key)||[])]);
             notificationSeenMemory.set(key,seen);return seen;
         }
-        function notificationList(){return state.sessionRole==='admin'?state.notifications:notifFor(state.sessionRole);}
+        function directorNotifications(){return state.notifications.filter(n=>n.target==='DIRECTOR');}
+        function renderDirectorFeedback(){
+            let button=$('director-feedback-button');if(!button){button=document.createElement('button');button.id='director-feedback-button';button.className='ts-btn';button.textContent='Phản ánh giám đốc';button.onclick=openDirectorFeedback;$('corner-notifications')?.parentElement?.insertBefore(button,$('corner-notifications'));}
+            button.hidden=!['teacher','parent'].includes(state.sessionRole)||!!onlineMember?.pendingAdmission;
+        }
+        function openDirectorFeedback(){
+            if(!['teacher','parent'].includes(state.sessionRole))return;
+            closeSubjectModal();const modal=document.createElement('div');modal.id='subject-edit-modal';modal.className='qcard-modal';
+            modal.innerHTML='<section class="qcard-dialog"><h3>Gửi phản ánh tới giám đốc</h3><label>Tiêu đề<input id="director-feedback-title" class="ts-input" maxlength="200"></label><label>Nội dung<textarea id="director-feedback-content" class="ts-input" rows="5" maxlength="5000"></textarea></label><p id="director-feedback-status" role="status"></p><div class="ts-row"><button id="director-feedback-send" class="ts-btn">Gửi giám đốc</button><button class="ts-btn ts-secondary" onclick="window.app.closeSubjectModal()">Đóng</button></div></section>';document.body.append(modal);
+            $('director-feedback-send').onclick=async()=>{
+                const title=$('director-feedback-title').value.trim(),content=$('director-feedback-content').value.trim();if(!title||!content)return $('director-feedback-status').textContent='Nhập tiêu đề và nội dung phản ánh.';
+                const button=$('director-feedback-send');button.disabled=true;
+                try{if(hosted){await onlineRequest('/api/director-feedback',{method:'POST',body:JSON.stringify({title,content})});}else{const c=cur&&state.classes.find(c=>c.id===cur.cid),p=c?.students.find(s=>s.sbd===cur.sbd);state.notifications.push({id:uid('feedback'),target:'DIRECTOR',kind:'feedback',senderRole:state.sessionRole,senderName:activeAccount?.name||p?.parent||p?.name||'',title,content,date:new Date().toLocaleString('vi-VN'),updatedAt:new Date().toISOString()});persist();}closeSubjectModal();toast('Đã gửi phản ánh tới giám đốc.');}catch(e){$('director-feedback-status').textContent=e.message;button.disabled=false;}
+            };
+        }
+        function notificationList(){return state.sessionRole==='admin'?directorNotifications():notifFor(state.sessionRole);}
         function notificationCount(list,seen){
             const unread=list.filter(n=>!seen.has(notificationToken(n))).length;
             $('corner-notification-count').textContent=unread;
             $('corner-notification-count').classList.toggle('hidden',unread===0);
             $('corner-notification-button').setAttribute('aria-label','Thông báo: '+unread+' chưa đọc');
         }
-        function renderCornerNotifications(){renderStudentSupport();
+        function renderCornerNotifications(){renderStudentSupport();renderDirectorFeedback();
             const role=state.sessionRole,wrap=$('corner-notifications');if(!wrap)return;
             wrap.classList.toggle('hidden',!role);
             const panel=$('corner-notification-panel');
