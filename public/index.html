@@ -653,7 +653,7 @@ import {createTeacherScanUI} from "/teacher-scan-ui.mjs";
         }
         function setSel(id, h) { const e = $(id); if (!e) return; const v = e.value; e.innerHTML = h; if ([...e.options].some(o => o.value === v)) e.value = v; }
         const notifFor = role => state.notifications.filter(n=>(!n.classId||(role==='teacher'?teacherClasses().some(c=>c.id===n.classId):cur?.cid===n.classId))&&(n.target==='PARENTS'?(role==='parent'?n.sbd===cur?.sbd:role==='teacher'&&n.owner===activeAccount?.username):(n.target==='ALL'||(role==='teacher'?n.target==='TEACHERS':n.target==='STUDENTS'))));
-        const notifHtml = (n, del) => `<div class="p-3 bg-slate-50 border rounded-xl text-xs"><div class="flex justify-between gap-2"><strong>${esc(n.title)}</strong>${del ? `<button onclick="window.app.deleteNotification('${n.id}')" class="text-red-600"><i class="fa-solid fa-trash"></i></button>` : ''}</div><p class="whitespace-pre-line text-slate-600 mt-1">${esc(n.content)}</p><span class="text-[10px] text-slate-400">${esc(n.date)}${n.senderRole?' · '+esc(n.senderRole==='parent'?'Phụ huynh':'Giáo viên')+': '+esc(n.senderName||''):''}${del ? ' · Gửi tới: ' + esc(n.target) : ''}</span>${n.kind==='enrollment'&&state.sessionRole==='admin'?'<button class="ts-btn ts-secondary" onclick="window.app.openAdmissionsQueue()">Xem hồ sơ</button>':''}</div>`;
+        const notifHtml = (n, del) => `<div class="p-3 bg-slate-50 border rounded-xl text-xs"><div class="flex justify-between gap-2"><strong>${esc(n.title)}</strong>${del ? `<button onclick="window.app.deleteNotification('${n.id}')" class="text-red-600"><i class="fa-solid fa-trash"></i></button>` : ''}</div><p class="whitespace-pre-line text-slate-600 mt-1">${esc(n.content)}</p><span class="text-[10px] text-slate-400">${esc(n.date)}${n.senderRole?' · '+esc(n.senderRole==='parent'?'Phụ huynh':'Giáo viên')+': '+esc(n.senderName||''):''}${del ? ' · Gửi tới: ' + esc(n.target) : ''}</span>${n.kind==='support_report'?'<button class="ts-btn ts-secondary" onclick="window.app.openStaffReportInbox()">Xem & xử lý</button>':''}${n.kind==='enrollment'&&state.sessionRole==='admin'?'<button class="ts-btn ts-secondary" onclick="window.app.openAdmissionsQueue()">Xem hồ sơ</button>':''}</div>`;
         const noNotif = '<p class="text-xs text-slate-400">Chưa có thông báo.</p>';
 
         // ---------- Đăng nhập / đăng xuất ----------
@@ -1628,9 +1628,9 @@ window.app.logoutCurrentAccount=logoutCurrentAccount;
                 try{if(hosted){await onlineRequest('/api/director-feedback',{method:'POST',body:JSON.stringify({title,content})});}else{const c=cur&&state.classes.find(c=>c.id===cur.cid),p=c?.students.find(s=>s.sbd===cur.sbd);state.notifications.push({id:uid('feedback'),target:'DIRECTOR',kind:'feedback',senderRole:state.sessionRole,senderName:activeAccount?.name||p?.parent||p?.name||'',title,content,date:new Date().toLocaleString('vi-VN'),updatedAt:new Date().toISOString()});persist();}closeSubjectModal();toast('Đã gửi phản ánh tới giám đốc.');}catch(e){$('director-feedback-status').textContent=e.message;button.disabled=false;}
             };
         }
-        function notificationList(){return state.sessionRole==='admin'?directorNotifications():notifFor(state.sessionRole);}
+        function notificationList(){const regular=state.sessionRole==='admin'?directorNotifications():notifFor(state.sessionRole);return [...regular,...pendingSupportReports().map(r=>({id:'support_report_'+r.id,kind:'support_report',title:r.sourceRole==='parent'?'Phản hồi mới từ phụ huynh':'Báo lỗi từ học sinh',content:(r.name||r.sbd)+' · '+(state.classes.find(c=>c.id===r.classId)?.name||'')+'\n'+r.message,date:r.createdAt?new Date(r.createdAt).toLocaleString('vi-VN'):'',updatedAt:r.updatedAt||r.createdAt||''}))];}
         function notificationCount(list,seen){
-            const unread=list.filter(n=>!seen.has(notificationToken(n))).length;
+            const unread=list.filter(n=>n.kind==='support_report'||!seen.has(notificationToken(n))).length;
             $('corner-notification-count').textContent=unread;
             $('corner-notification-count').classList.toggle('hidden',unread===0);
             $('corner-notification-button').setAttribute('aria-label','Thông báo: '+unread+' chưa đọc');
@@ -1655,14 +1655,11 @@ window.app.logoutCurrentAccount=logoutCurrentAccount;
             if(state.sessionRole!=='admin')return;closeSubjectModal();const modal=document.createElement('div');modal.id='subject-edit-modal';modal.className='qcard-modal';modal.innerHTML='<section class="qcard-dialog"><div class="ts-row"><h3>Báo lỗi & phản hồi chưa xử lý</h3><button class="ts-btn ts-secondary" onclick="window.app.closeSubjectModal()">Đóng</button></div><div id="staff-report-inbox">'+staffReportRowsHTML()+'</div></section>';document.body.append(modal);bindFeedbackDeleteButtons();
         }
         function renderStaffReportAlerts(){
-            let button=$('staff-report-alert');if(!button){button=document.createElement('button');button.id='staff-report-alert';button.className='ts-btn';button.onclick=openStaffReportInbox;$('header-account-controls')?.prepend(button);}
-            const enabled=['teacher','admin'].includes(state.sessionRole);button.hidden=!enabled;if(!enabled)return;
-            const rows=pendingSupportReports(),fresh=rows.filter(r=>r.status!=='reviewing').length;
-            button.textContent='🚩 Báo lỗi & phản hồi'+(rows.length?' ('+rows.length+')':'');button.title=fresh+' mới nhận · '+(rows.length-fresh)+' đang kiểm tra';
-            button.style.cssText=rows.length?'background:#dc2626;color:white;font-weight:800':'';
-            document.querySelectorAll('[data-report-count]').forEach(el=>{el.textContent=rows.length;el.hidden=!rows.length;});
+            $('staff-report-alert')?.remove();
+            const rows=pendingSupportReports();document.querySelectorAll('[data-report-count]').forEach(el=>{el.textContent=rows.length;el.hidden=!rows.length;});
             const inbox=$('staff-report-inbox');if(inbox){inbox.innerHTML=staffReportRowsHTML();bindFeedbackDeleteButtons();}
         }
+        window.app.openStaffReportInbox=openStaffReportInbox;
         function renderCornerNotifications(){renderStudentSupport();renderDirectorFeedback();renderStaffReportAlerts();
             const role=state.sessionRole,wrap=$('corner-notifications');if(!wrap)return;
             wrap.classList.toggle('hidden',!role);
@@ -1671,8 +1668,8 @@ window.app.logoutCurrentAccount=logoutCurrentAccount;
             const key=notificationAccountKey(),list=notificationList(),seen=notificationSeen();
             if(notificationOpenBatch&&notificationOpenBatch.key!==key){notificationOpenBatch=null;panel.classList.add('hidden');$('corner-notification-button').setAttribute('aria-expanded','false');}
             notificationCount(list,seen);
-            const visible=notificationOpenBatch&&!panel.classList.contains('hidden')?list.filter(n=>notificationOpenBatch.tokens.has(notificationToken(n))):list.filter(n=>!seen.has(notificationToken(n)));
-            $('corner-notification-items').innerHTML=[...visible].reverse().map(n=>notifHtml(n,false)).join('')||'<p class="text-xs text-slate-400">Không có thông báo mới.</p>';
+            const visible=notificationOpenBatch&&!panel.classList.contains('hidden')?list.filter(n=>n.kind==='support_report'||notificationOpenBatch.tokens.has(notificationToken(n))):list.filter(n=>n.kind==='support_report'||!seen.has(notificationToken(n)));
+            $('corner-notification-items').innerHTML=(['teacher','admin'].includes(role)?'<button class="ts-btn ts-secondary" onclick="window.app.openStaffReportInbox()">Mở báo lỗi & phản hồi</button>':'')+([...visible].reverse().map(n=>notifHtml(n,false)).join('')||'<p class="text-xs text-slate-400">Không có thông báo mới.</p>');
         }
         function toggleCornerNotifications(){
             if(!state.sessionRole)return;
