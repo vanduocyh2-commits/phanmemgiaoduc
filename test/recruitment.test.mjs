@@ -22,3 +22,24 @@ test('public API hides drafts and refuses anonymous writes; director can publish
  await request('DELETE','/api/recruitment',{id},cookie);assert.equal(d.recruitmentPosts.length,0);
  }finally{await new Promise(r=>server.close(r));}
 });
+
+test('teacher portrait is available anonymously as a PNG',async()=>{
+ const server=createPortalServer({env:{SESSION_SECRET:'x'.repeat(64)},store:{read:async()=>emptyState('test123456')}});
+ await new Promise(r=>server.listen(0,'127.0.0.1',r));
+ try{const response=await fetch('http://127.0.0.1:'+server.address().port+'/assets/thay-bui-van-duoc.png');assert.equal(response.status,200);assert.equal(response.headers.get('content-type'),'image/png');assert.equal(Buffer.from(await response.arrayBuffer()).subarray(0,8).toString('hex'),'89504e470d0a1a0a');}
+ finally{await new Promise(r=>server.close(r));}
+});
+
+test('poster keeps authored text safe and routes both public registrations to the existing form',async()=>{
+ const {readFile}=await import('node:fs/promises');const {runInNewContext}=await import('node:vm');
+ const html=await readFile(new URL('../public/index.html',import.meta.url),'utf8');
+ const code=html.slice(html.indexOf('        function recruitmentPoster(p){'),html.indexOf('        async function changeRecruitment'));
+ const buttons=['parent','student'].map(role=>({dataset:{recruitRole:role}}));const pub={querySelectorAll:()=>buttons};const calls=[];
+ const context={esc:s=>String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;'),state:{sessionRole:null},recruitmentItems:[{published:true,title:'<script>alert(1)</script>',content:'Học toán lớp 8',image:'',updatedAt:'2026-10-29'}],$:id=>id==='public-recruitment'?pub:null,openEnrollmentForm:(...args)=>calls.push(args)};
+ runInNewContext(code+';renderRecruitment();',context);
+ assert.ok(pub.innerHTML.includes('&lt;script&gt;'));assert.ok(!pub.innerHTML.includes('<script>'));assert.ok(pub.innerHTML.includes('Học toán lớp 8'));
+ for(const phone of ['0867881119','0988739427']){assert.ok(pub.innerHTML.includes('tel:'+phone));assert.ok(pub.innerHTML.includes('https://zalo.me/'+phone));}
+ for(const b of buttons)b.onclick();assert.deepEqual(calls,[[null,'parent'],[null,'student']]);assert.equal(pub.hidden,false);
+ context.state.sessionRole='parent';runInNewContext('renderRecruitment()',context);assert.equal(pub.hidden,true);
+ context.state.sessionRole=null;context.recruitmentItems[0].published=false;runInNewContext('renderRecruitment()',context);assert.equal(pub.hidden,true);
+});
