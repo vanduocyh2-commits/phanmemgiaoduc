@@ -80,3 +80,12 @@ Trong **Lớp học & Học sinh** (Giám đốc) hoặc **Danh sách học sinh
 Hồ sơ lưu bản gốc thông tin học sinh, phụ huynh, trường/lớp/giáo viên, học phí và ghi chú, lịch sử điểm danh, điểm/bài nộp/lượt làm, phản hồi, tiến trình và hồ sơ đăng ký liên quan. Tệp đính kèm được giữ và giáo viên lớp có quyền đọc lại từ kho. Dữ liệu được chuyển khỏi danh sách đang học trong một lần lưu trạng thái chung; không phát sinh nhắc học phí hay lượt giao bài mới cho em đã bỏ học. Các bản lưu cũ trên màn hình không được tự đưa em trở lại lớp. SBD đang lưu trữ được giữ chỗ khi cấp mã mới.
 
 Giám đốc có thể khôi phục vào lớp cũ cùng lịch sử và tài khoản. Không khôi phục khi lớp mất, SBD/tài khoản/hồ sơ bị trùng. Thông tin xác thực được cất riêng trên máy chủ, không gửi xuống kho hiển thị hay bản JSON tải về. Mọi hồ sơ tiếp tục nằm trong dữ liệu Supabase hiện có, không ghi thông tin học sinh lên GitHub. Không cần thay đổi schema.
+
+
+## Cập nhật danh sách học sinh và hoàn tác
+
+Trong danh sách học sinh của giám đốc và giáo viên, bảng dùng hàng ngang gọn, cuộn ngang để xem đầy đủ cột. Nút **Cập nhật mới** cập nhật các thông tin có nội dung và thêm học sinh chưa có; không xóa học sinh vắng mặt trong file. Nút **Cập nhật thêm** chỉ thêm học sinh mới, bỏ qua toàn bộ hồ sơ đã có hoặc đề nghị của giáo viên đang chờ duyệt. Khớp bằng SBD nếu có; nếu không, dùng tên/ngày sinh trong lớp đã chọn. Ô trống không xóa thông tin hiện tại, không đổi mật khẩu học sinh cũ.
+
+Bản nhập gần nhất của mỗi lớp được lưu trên máy chủ. **Trở lại** hoàn tác đúng bản nhập này, kể cả sau khi tải lại trang. Chỉ hoàn tác những trường hồ sơ đã đổi; không phục hồi đè lên điểm, học phí, điểm danh. Học sinh mới chỉ được rút khỏi danh sách nếu chưa phát sinh dữ liệu học tập/tài chính hoặc thay đổi tài khoản. Dữ liệu đã đổi tiếp hoặc hồ sơ giáo viên đã được duyệt sẽ chặn hoàn tác để tránh mất dữ liệu mới. Giáo viên vẫn gửi giám đốc duyệt; có thể hoàn tác đề nghị còn chờ xử lý. Giám đốc có thể hoàn tác lần nhập gần nhất trong lớp, giáo viên chỉ thao tác lớp được phân công và bản nhập của mình.
+
+API POST `/api/students/import` và `/api/students/import/undo` xử lý tại máy chủ qua cơ chế lưu trạng thái hiện có, không cần đổi schema. Bản lưu hoàn tác và thông tin xác thực không gửi về trình duyệt; chỉ gửi thời điểm/tệp/chỉ số của lần nhập. Kiểm thử bổ sung: `node --test test/roster-import.test.mjs`.
