@@ -61,3 +61,14 @@ Migration đã áp dụng vào dự án phanmemgiaoduc. Bảng được khóa v�
 2. ADMIN_PASSWORD: mật khẩu tự đặt, ít nhất 12 ký tự. Đây là mật khẩu khởi tạo tài khoản admin khi dữ liệu trung tâm còn trống.
 
 Lưu thay đổi và chọn tùy chọn triển khai lại trong Render. Không gửi secret key qua chat, không commit khóa vào GitHub. Trước khi cấu hình xong, website chỉ hiển thị trang đang thiết lập; học sinh/phụ huynh chưa đăng nhập được.
+
+
+## Nhắc nộp học phí
+
+Trong Tài chính & Học phí, giám đốc có nút **Nhắc nộp học phí** cho từng em hoặc **Nhắc nộp học phí các em đã chọn**. Chọn gửi tới cả học sinh/phụ huynh, chỉ phụ huynh hoặc chỉ học sinh; thêm lời nhắn nếu cần. Thông báo chứa đúng học sinh, lớp, tháng và số tiền còn thiếu sau khi trừ tiền đã nộp/dư. Thông báo vào chuông trong website; không tự gửi SMS, email hoặc Zalo.
+
+Nút **Hạn nộp & tự động nhắc** đặt hạn chung cho các học sinh đã chọn hoặc riêng từng em. Chọn bật/tắt và khoảng nhắc lại 1–30 ngày (mặc định 3 ngày). Chỉ tự nhắc sau ngày hết hạn theo Asia/Ho_Chi_Minh; nếu chưa đặt hạn, chỉ các khoản đã đánh dấu Quá hạn mới đủ điều kiện. Khoản chưa lưu, đã nộp đủ, còn dư hoặc đã chuyển nợ không bị thu/nhắc trùng. Khi lưu thanh toán đủ, nhắc hiện tại tự biến mất; nộp một phần cập nhật số còn thiếu. Gửi lại thay thông báo cũ, đồng thời báo lại chưa đọc bằng updatedAt.
+
+Máy chủ tự kiểm tra khi khởi động, mỗi 5 phút trong lúc hoạt động và kiểm tra bù khi mở/đăng nhập/làm mới dữ liệu. Không cần giữ tab giám đốc mở. Render Free có thể ngủ khi không có truy cập: lúc ngủ không thể bảo đảm gửi đúng giờ; lần truy cập tiếp theo sẽ kiểm tra bù. Không tạo cron hay tài nguyên trả phí.
+
+`tuition-reminders.mjs` chứa logic dùng chung và runner. API POST `/api/tuition-reminders` và `/api/tuition-reminders/settings` chỉ dành cho giám đốc. Thông báo TUITION được lọc đồng thời theo lớp, SBD và vai trò người nhận ở máy chủ và giao diện. Cấu hình/lịch sử nhắc do máy chủ giữ, không bị bản dữ liệu lớp cũ trên trình duyệt ghi đè. Mọi cập nhật đi qua giao dịch/CAS của kho dữ liệu hiện có.
