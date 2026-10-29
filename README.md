@@ -72,3 +72,11 @@ Nút **Hạn nộp & tự động nhắc** đặt hạn chung cho các học sin
 Máy chủ tự kiểm tra khi khởi động, mỗi 5 phút trong lúc hoạt động và kiểm tra bù khi mở/đăng nhập/làm mới dữ liệu. Không cần giữ tab giám đốc mở. Render Free có thể ngủ khi không có truy cập: lúc ngủ không thể bảo đảm gửi đúng giờ; lần truy cập tiếp theo sẽ kiểm tra bù. Không tạo cron hay tài nguyên trả phí.
 
 `tuition-reminders.mjs` chứa logic dùng chung và runner. API POST `/api/tuition-reminders` và `/api/tuition-reminders/settings` chỉ dành cho giám đốc. Thông báo TUITION được lọc đồng thời theo lớp, SBD và vai trò người nhận ở máy chủ và giao diện. Cấu hình/lịch sử nhắc do máy chủ giữ, không bị bản dữ liệu lớp cũ trên trình duyệt ghi đè. Mọi cập nhật đi qua giao dịch/CAS của kho dữ liệu hiện có.
+
+## Kho học sinh bỏ học
+
+Trong **Lớp học & Học sinh** (Giám đốc) hoặc **Danh sách học sinh** (Giáo viên), nút **Bỏ học** chuyển hồ sơ của học sinh trong lớp đã chọn vào kho. Giám đốc thao tác mọi lớp; giáo viên chỉ thao tác/xem kho của lớp được phân công. Kho có nút mở riêng ngoài danh sách, tìm theo tên, SBD, phụ huynh, số điện thoại hoặc lớp cũ, xem đầy đủ hồ sơ và tải bản JSON.
+
+Hồ sơ lưu bản gốc thông tin học sinh, phụ huynh, trường/lớp/giáo viên, học phí và ghi chú, lịch sử điểm danh, điểm/bài nộp/lượt làm, phản hồi, tiến trình và hồ sơ đăng ký liên quan. Tệp đính kèm được giữ và giáo viên lớp có quyền đọc lại từ kho. Dữ liệu được chuyển khỏi danh sách đang học trong một lần lưu trạng thái chung; không phát sinh nhắc học phí hay lượt giao bài mới cho em đã bỏ học. Các bản lưu cũ trên màn hình không được tự đưa em trở lại lớp. SBD đang lưu trữ được giữ chỗ khi cấp mã mới.
+
+Giám đốc có thể khôi phục vào lớp cũ cùng lịch sử và tài khoản. Không khôi phục khi lớp mất, SBD/tài khoản/hồ sơ bị trùng. Thông tin xác thực được cất riêng trên máy chủ, không gửi xuống kho hiển thị hay bản JSON tải về. Mọi hồ sơ tiếp tục nằm trong dữ liệu Supabase hiện có, không ghi thông tin học sinh lên GitHub. Không cần thay đổi schema.
