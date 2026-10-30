@@ -11,7 +11,8 @@
     "node": ">=22.9"
   },
   "dependencies": {
+    "pdfjs-dist": "5.6.205",
     "pg": "^8.16.0",
-    "pdfjs-dist": "5.6.205"
+    "pptxgenjs": "4.0.1"
   }
 }
