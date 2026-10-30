@@ -12,6 +12,19 @@ export function normalizeRosterDate(value,cell,date1904=false){
  if(year<1900||d.getUTCDate()!==day||d.getUTCMonth()+1!==month||!Number.isFinite(d.getTime())||d.toISOString().slice(0,10)>today)throw Error('Ngày sinh không hợp lệ.');
  return String(day).padStart(2,'0')+'/'+String(month).padStart(2,'0')+'/'+year;
 }
+// Roster files may contain dates auto-coerced by Excel using US order.
+// Display mode preserves the visible numeric order as Vietnamese day/month;
+// excel mode retains the underlying calendar value. Neither changes the workbook.
+export function readRosterExcelDate(value,cell,date1904=false,dateMode='display'){
+ if(!['display','excel'].includes(dateMode))throw Error('Chọn cách đọc ngày sinh hợp lệ.');
+ const calendar=normalizeRosterDate(value,cell,date1904);
+ if(!calendar||dateMode==='excel'||!['n','d'].includes(cell?.t))return calendar;
+ const format=String(cell.z||'').replace(/"[^"]*"|\[[^\]]*\]|\\./g,'');
+ const tokens=format.match(/y+|m+|d+/gi)?.map(t=>t.toLowerCase())||[];
+ if(tokens[0]?.[0]!=='m'||tokens[1]?.[0]!=='d'||tokens[0].length>2)return calendar;
+ const [day,month,year]=calendar.split('/');
+ try{return normalizeRosterDate(month+'/'+day+'/'+year)}catch{throw Error('Ô ngày Excel đang hiển thị theo tháng/ngày và không thể đọc là ngày/tháng. Chọn “Giá trị ngày Excel” để đối chiếu, không tự suy đoán.');}
+}
 // Append imports fill empty profile values only; never overwrite populated fields.
 export function rosterMissingFields(existing,incoming){
  return Object.fromEntries(Object.entries(incoming).filter(([key,value])=>['name','dob','address','parentName','parentPhone','school','schoolClass','gender','studentPhone','email'].includes(key)&&typeof value==='string'&&value.trim()&&(existing?.[key]==null||typeof existing[key]==='string'&&!existing[key].trim())).map(([key,value])=>[key,value.trim()]));
