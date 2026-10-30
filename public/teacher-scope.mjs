@@ -1,0 +1,6 @@
+import {classGrade,examCodes} from '../teacher-tools.mjs';
+export function examInTeacherClass(exam,course){if(!course)return true;const source=exam.classId||exam.sourceClassId;if(source)return source===course.id;const grade=classGrade(course);return !exam.grade||!grade||String(exam.grade)===grade;}
+export function teacherTabStatistics({classes=[],exams=[],assignments=[],submissions=[],plans=[],reports=[]},classId='',username=''){
+ const selected=classes.filter(c=>!classId||c.id===classId),ids=new Set(selected.map(c=>c.id)),course=classId?selected[0]:null,bank=exams.filter(e=>!e.archivedAt&&(!username||e.owner===username)&&examInTeacherClass(e,course)),given=assignments.filter(a=>!a.archivedAt&&ids.has(a.classId));
+ const submitted=submissions.filter(s=>ids.has(s.classId)&&given.some(a=>a.id===s.assignmentId));return {students:selected.reduce((n,c)=>n+(c.students||[]).length,0),author:bank.length,assign:given.length,grade:submitted.filter(s=>s.status!=='graded').length,reports:reports.filter(r=>ids.has(r.classId)&&r.status!=='resolved').length,lessons:plans.filter(p=>(!username||p.owner===username)&&(!classId||p.classId===classId)).length,mixing:bank.filter(e=>examCodes(e).length>1).length};
+}
