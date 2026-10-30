@@ -89,3 +89,14 @@ Trong danh sách học sinh của giám đốc và giáo viên, bảng dùng hà
 Bản nhập gần nhất của mỗi lớp được lưu trên máy chủ. **Trở lại** hoàn tác đúng bản nhập này, kể cả sau khi tải lại trang. Chỉ hoàn tác những trường hồ sơ đã đổi; không phục hồi đè lên điểm, học phí, điểm danh. Học sinh mới chỉ được rút khỏi danh sách nếu chưa phát sinh dữ liệu học tập/tài chính hoặc thay đổi tài khoản. Dữ liệu đã đổi tiếp hoặc hồ sơ giáo viên đã được duyệt sẽ chặn hoàn tác để tránh mất dữ liệu mới. Giáo viên vẫn gửi giám đốc duyệt; có thể hoàn tác đề nghị còn chờ xử lý. Giám đốc có thể hoàn tác lần nhập gần nhất trong lớp, giáo viên chỉ thao tác lớp được phân công và bản nhập của mình.
 
 API POST `/api/students/import` và `/api/students/import/undo` xử lý tại máy chủ qua cơ chế lưu trạng thái hiện có, không cần đổi schema. Bản lưu hoàn tác và thông tin xác thực không gửi về trình duyệt; chỉ gửi thời điểm/tệp/chỉ số của lần nhập. Kiểm thử bổ sung: `node --test test/roster-import.test.mjs`.
+
+
+## Miễn học phí và cộng dồn theo ô được chọn
+
+Tài chính & Học phí: chọn **Miễn toàn bộ tháng này (0 đ)** trong Chỉnh sửa mức thu sẽ đưa tổng phải thu tháng đó về 0, bao gồm phô tô và khoản khác; không phát sinh lại tiền khi cập nhật điểm danh. Nợ các tháng trước vẫn giữ ở tháng cũ, không chuyển vào tháng miễn. Số tiền đã thực nộp, ngày thu và ghi chú được giữ; tiền đã nộp thừa trở thành số dư. Giảm % và giảm số tiền vẫn chỉ giảm tiền học.
+
+Ba tổng Phải thu / Đã nộp / Còn thiếu cộng đúng các học sinh đã tích chọn, theo khóa lớp + SBD; tích thêm lớp cộng thêm, bỏ tích trừ lớp đó. Không chọn ô nào thì các tổng bằng 0. Giữ lựa chọn khi đổi lớp, tìm kiếm hoặc trạng thái; đổi tháng hoặc Bỏ chọn tất cả xóa lựa chọn. Dòng phạm vi nêu số lớp / học sinh đã chọn kể cả ngoài bộ lọc. Mỗi lớp có thể có đơn giá và khoản thu riêng, không cần đặt một giá chung mới tính được tổng.
+
+**Tính lại các ô đã chọn** tính và lưu lại từ điểm danh hiện tại trên máy chủ cùng cài đặt đã lưu của từng lớp. **Lưu cách tính cho các em đã chọn** áp dụng các giá trị đang xem trước. Khoản đã đóng có thu tiền hoặc đã chuyển nợ được giữ nguyên; khoản miễn được tính lại về 0. Bản ghi miễn cũ cần chọn và bấm Tính lại để áp dụng cách miễn toàn bộ tháng. Trong hộp chỉnh sửa từng học sinh có thêm **Tính lại** để xem lại trước khi lưu; chỉnh sửa riêng vẫn giữ khoản đã thu. API chỉ cho giám đốc, lưu cả nhóm trong một giao dịch, chặn bản dữ liệu cũ / trùng dòng / học sinh không tồn tại.
+
+Kiểm tra: `npm test`, gồm tính miễn bằng 0, giữ nợ cũ và số tiền đã nộp, cộng nhiều lớp khác đơn giá, bỏ chọn, đổi bộ lọc và phân quyền API.
