@@ -96,3 +96,32 @@ export function notificationVisible(n,m,allowedClassIds=[]){
  if(n.target==='PARENTS')return role==='parent'?n.sbd===m.sbd:role==='teacher'&&n.owner===m.username;
  return n.target==='ALL'||(role==='teacher'?n.target==='TEACHERS':n.target==='STUDENTS');
 }
+
+// Keep the existing authorized solution loader; present its output as an inline toggle.
+export function installSubmittedSolutionToggle(doc=globalThis.document){
+ if(!doc?.head||doc.__submittedSolutionToggle)return;doc.__submittedSolutionToggle=true;
+ const style=doc.createElement('style');style.id='submitted-solution-toggle-style';style.textContent='.student-solutions-host{flex-wrap:wrap}.student-solutions-inline{width:100%;min-width:0;margin:12px 0;padding:16px;border:1px solid #ddd6fe;border-radius:12px;background:#fff}.student-solutions-inline[hidden]{display:none!important}.student-solutions-host>.student-solutions-inline{flex-basis:100%}.student-solutions-inline>.student-solutions-dialog{width:100%;max-width:none;max-height:none;overflow:visible;padding:0;background:transparent;box-shadow:none}';doc.head.append(style);
+ const views=new WeakMap();let sequence=0;
+ function show(button,view,expanded){view.expanded=expanded;view.panel.hidden=!expanded;button.setAttribute('aria-expanded',String(expanded));button.textContent=expanded?'Thu gọn đáp án & hướng dẫn':'Xem đáp án & hướng dẫn';}
+ function discard(button,view){view.panel.remove();views.delete(button);button.setAttribute('aria-expanded','false');button.removeAttribute('aria-controls');button.removeAttribute('aria-busy');button.textContent='Xem đáp án & hướng dẫn';}
+ doc.addEventListener('click',async event=>{
+  const button=event.target.closest?.('button'),handler=button?.getAttribute('onclick')||'',match=handler.match(/\b(?:window\.)?TS\.showSubmittedSolutions\(\s*(['"])([^'"]+)\1\s*\)/),api=doc.defaultView?.TS;
+  if(!match||typeof api?.showSubmittedSolutions!=='function')return;
+  event.preventDefault();event.stopImmediatePropagation();
+  const old=views.get(button);if(old?.panel.isConnected){show(button,old,!old.expanded);return;}
+  const panel=doc.createElement('section');do{panel.id='student-solution-inline-'+(++sequence)}while(doc.getElementById(panel.id));panel.className='student-solutions-inline';panel.setAttribute('role','region');panel.setAttribute('aria-label','Đáp án và hướng dẫn bài đã nộp');
+  const loading=doc.createElement('p');loading.setAttribute('role','status');loading.textContent='Đang tải đáp án và hướng dẫn…';panel.append(loading);
+  const card=button.closest('.ts-list');if(card){card.classList.add('student-solutions-host');card.append(panel)}else button.after(panel);
+  const view={panel,expanded:true};views.set(button,view);button.setAttribute('aria-controls',panel.id);button.setAttribute('aria-busy','true');show(button,view,true);
+  try{
+   const previousModal=doc.getElementById('subject-edit-modal');await api.showSubmittedSolutions(match[2]);
+   const modal=doc.getElementById('subject-edit-modal'),content=modal?.querySelector('.student-solutions-dialog');
+   if(!content||modal===previousModal){discard(button,view);return;}
+   if(!button.isConnected||!panel.isConnected){modal.remove();discard(button,view);return;}
+   content.classList.remove('qcard-dialog');const close=content.querySelector('button[onclick*="closeSubjectModal"]');
+   if(close){close.removeAttribute('onclick');close.type='button';close.textContent='Thu gọn';close.addEventListener('click',()=>{show(button,view,false);button.focus()});}
+   panel.replaceChildren(content);modal.remove();button.removeAttribute('aria-busy');show(button,view,view.expanded);
+  }catch{discard(button,view);}
+ },true);
+}
+installSubmittedSolutionToggle();
