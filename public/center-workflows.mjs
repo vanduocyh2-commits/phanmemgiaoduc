@@ -12,6 +12,31 @@ export function normalizeRosterDate(value,cell,date1904=false){
  if(year<1900||d.getUTCDate()!==day||d.getUTCMonth()+1!==month||!Number.isFinite(d.getTime())||d.toISOString().slice(0,10)>today)throw Error('Ngày sinh không hợp lệ.');
  return String(day).padStart(2,'0')+'/'+String(month).padStart(2,'0')+'/'+year;
 }
+// Presentation only: do not mutate saved student profiles or guess US dates.
+export function formatRosterDateDisplay(value){
+ const original=String(value??'').trim();if(!original)return '';
+ const iso=original.match(/^(\d{4})-(\d{2})-(\d{2})(?:T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2}))?$/);
+ const dayFirst=original.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})$/);
+ if(!iso&&!dayFirst)return original;
+ const [day,month,year]=iso?[+iso[3],+iso[2],+iso[1]]:[+dayFirst[1],+dayFirst[2],+dayFirst[3]],date=new Date(Date.UTC(year,month-1,day));
+ if(year<1900||date.getUTCFullYear()!==year||date.getUTCMonth()+1!==month||date.getUTCDate()!==day)return original;
+ return String(day).padStart(2,'0')+'/'+String(month).padStart(2,'0')+'/'+year;
+}
+export function formatRosterDatesInView(doc=globalThis.document){
+ if(!doc?.querySelectorAll)return;
+ const tables=new Set([...doc.querySelectorAll('#admin-students-tbody,.student-roster-table')].map(n=>n.tagName==='TABLE'?n:n.closest('table')).filter(Boolean));
+ for(const table of tables){const headers=[...(table.tHead?.rows[0]?.cells||[])],index=headers.findIndex(th=>/^ngày\s*(?:tháng\s*năm\s*)?sinh$/i.test(th.textContent.trim()));if(index<0)continue;
+  for(const body of table.tBodies)for(const row of body.rows){const cell=row.cells[index];if(!cell||cell.querySelector('input,textarea,button,a'))continue;const text=cell.textContent.trim(),formatted=formatRosterDateDisplay(text);if(formatted!==text)cell.textContent=formatted;}
+ }
+ const input=doc.getElementById('teacher-student-dob');if(input&&doc.activeElement!==input){const value=formatRosterDateDisplay(input.value);if(value!==input.value)input.value=value;}
+}
+export function installRosterDateDisplay(doc=globalThis.document){
+ if(!doc?.documentElement||doc.__rosterDateDisplayInstalled)return;doc.__rosterDateDisplayInstalled=true;formatRosterDatesInView(doc);
+ const Observer=doc.defaultView?.MutationObserver;if(!Observer)return;let scheduled=false;
+ const observer=new Observer(()=>{if(scheduled)return;scheduled=true;const run=()=>{scheduled=false;formatRosterDatesInView(doc);};if(doc.defaultView.requestAnimationFrame)doc.defaultView.requestAnimationFrame(run);else queueMicrotask(run);});
+ observer.observe(doc.documentElement,{childList:true,subtree:true,characterData:true});
+}
+installRosterDateDisplay();
 export const weekDays=['Thứ 2','Thứ 3','Thứ 4','Thứ 5','Thứ 6','Thứ 7','Chủ nhật'];
 export function classSchedule(timetable,classId){return timetable.filter(t=>t.classId===classId).slice().sort((a,b)=>weekDays.indexOf(a.day)-weekDays.indexOf(b.day)||String(a.time).localeCompare(String(b.time)));}
 export function scheduleSummary(timetable,classId){return classSchedule(timetable,classId).map(t=>t.day+' ('+t.time+')'+(t.subject?' · '+t.subject:'')+(t.room?' · Phòng '+t.room:'')).join('; ')||'Chưa xếp thời khóa biểu';}

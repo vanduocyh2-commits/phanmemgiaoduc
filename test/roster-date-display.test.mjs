@@ -1,0 +1,3 @@
+import {test} from 'node:test';import assert from 'node:assert/strict';
+import {formatRosterDateDisplay} from '../public/center-workflows.mjs';
+test('roster display uses day/month/year without swapping ambiguous days or shifting calendar dates',()=>{assert.equal(formatRosterDateDisplay('2010-06-05'),'05/06/2010');assert.equal(formatRosterDateDisplay('2010-06-05T00:00:00.000Z'),'05/06/2010');assert.equal(formatRosterDateDisplay('5/6/2010'),'05/06/2010');assert.equal(formatRosterDateDisplay('05/06/2010'),'05/06/2010');assert.equal(formatRosterDateDisplay('2012-02-29'),'29/02/2012');for(const value of ['31/02/2010','12/25/2010','06/05/10','—',''])assert.equal(formatRosterDateDisplay(value),value);});
