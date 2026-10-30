@@ -37,6 +37,14 @@ export function installRosterDateDisplay(doc=globalThis.document){
  observer.observe(doc.documentElement,{childList:true,subtree:true,characterData:true});
 }
 installRosterDateDisplay();
+export function installTuitionActionColors(doc=globalThis.document){
+ if(!doc?.head||doc.getElementById('tuition-action-colors'))return;
+ const style=doc.createElement('style');style.id='tuition-action-colors';style.textContent='#fee-bulk-controls button.ts-btn{background:#f1f5f9;color:#475569;border:1px solid #dbe3f0;box-shadow:none}#fee-bulk-controls button.ts-btn:hover{background:#e2e8f0}#fee-bulk-controls button.ts-btn.fee-action-clicked,#fee-bulk-controls button.ts-btn:active{background:#2563eb;color:#fff;border-color:#2563eb}#fee-bulk-controls button.ts-btn:focus-visible{outline:3px solid #bfdbfe;outline-offset:2px}';doc.head.append(style);
+ doc.addEventListener('click',event=>{const button=event.target.closest?.('#fee-bulk-controls button.ts-btn');if(!button||button.disabled)return;for(const old of button.closest('#fee-bulk-controls').querySelectorAll('.fee-action-clicked'))old.classList.remove('fee-action-clicked');button.classList.add('fee-action-clicked');},true);
+ const resetHidden=()=>{const panel=doc.getElementById('fee-bulk-controls');if(panel?.closest('[hidden],.hidden'))for(const button of panel.querySelectorAll('.fee-action-clicked'))button.classList.remove('fee-action-clicked');};
+ const Observer=doc.defaultView?.MutationObserver;if(Observer)new Observer(resetHidden).observe(doc.documentElement,{subtree:true,attributes:true,attributeFilter:['class','hidden']});resetHidden();
+}
+installTuitionActionColors();
 export const weekDays=['Thứ 2','Thứ 3','Thứ 4','Thứ 5','Thứ 6','Thứ 7','Chủ nhật'];
 export function classSchedule(timetable,classId){return timetable.filter(t=>t.classId===classId).slice().sort((a,b)=>weekDays.indexOf(a.day)-weekDays.indexOf(b.day)||String(a.time).localeCompare(String(b.time)));}
 export function scheduleSummary(timetable,classId){return classSchedule(timetable,classId).map(t=>t.day+' ('+t.time+')'+(t.subject?' · '+t.subject:'')+(t.room?' · Phòng '+t.room:'')).join('; ')||'Chưa xếp thời khóa biểu';}
