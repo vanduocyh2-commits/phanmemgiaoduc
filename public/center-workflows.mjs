@@ -12,6 +12,10 @@ export function normalizeRosterDate(value,cell,date1904=false){
  if(year<1900||d.getUTCDate()!==day||d.getUTCMonth()+1!==month||!Number.isFinite(d.getTime())||d.toISOString().slice(0,10)>today)throw Error('Ngày sinh không hợp lệ.');
  return String(day).padStart(2,'0')+'/'+String(month).padStart(2,'0')+'/'+year;
 }
+// Append imports fill empty profile values only; never overwrite populated fields.
+export function rosterMissingFields(existing,incoming){
+ return Object.fromEntries(Object.entries(incoming).filter(([key,value])=>['name','dob','address','parentName','parentPhone','school','schoolClass','gender','studentPhone','email'].includes(key)&&typeof value==='string'&&value.trim()&&(existing?.[key]==null||typeof existing[key]==='string'&&!existing[key].trim())).map(([key,value])=>[key,value.trim()]));
+}
 // Presentation only: do not mutate saved student profiles or guess US dates.
 export function formatRosterDateDisplay(value){
  const original=String(value??'').trim();if(!original)return '';
