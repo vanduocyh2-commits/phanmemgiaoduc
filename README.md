@@ -23,7 +23,7 @@ Dùng Blueprint `render.yaml` với tài khoản GitHub đã liên kết Render.
 - `NODE_ENV=production`: cookie Secure qua HTTPS.
 - `PUBLIC_ORIGIN`: tùy chọn khi dùng tên miền riêng; mặc định dùng `RENDER_EXTERNAL_URL`.
 
-Website khởi tạo trống, không công khai dữ liệu hoặc tài khoản mẫu. Giám đốc đăng nhập, tạo giáo viên, lớp và nhập học sinh; giáo viên/học sinh/phụ huynh dùng cùng dữ liệu máy chủ. Có thể nhập bản sao lưu JSON cũ qua mục Sao lưu dữ liệu sau khi đã kiểm tra nội dung.
+Website khởi tạo trống, không công khai dữ liệu hoặc tài khoản mẫu. Quản lí đăng nhập, tạo giáo viên, lớp và nhập học sinh; giáo viên/học sinh/phụ huynh dùng cùng dữ liệu máy chủ. Có thể nhập bản sao lưu JSON cũ qua mục Sao lưu dữ liệu sau khi đã kiểm tra nội dung.
 
 ## Tự cập nhật mã nguồn
 
@@ -65,28 +65,28 @@ Lưu thay đổi và chọn tùy chọn triển khai lại trong Render. Không 
 
 ## Nhắc nộp học phí
 
-Trong Tài chính & Học phí, giám đốc có nút **Nhắc nộp học phí** cho từng em hoặc **Nhắc nộp học phí các em đã chọn**. Chọn gửi tới cả học sinh/phụ huynh, chỉ phụ huynh hoặc chỉ học sinh; thêm lời nhắn nếu cần. Thông báo chứa đúng học sinh, lớp, tháng và số tiền còn thiếu sau khi trừ tiền đã nộp/dư. Thông báo vào chuông trong website; không tự gửi SMS, email hoặc Zalo.
+Trong Tài chính & Học phí, quản lí có nút **Nhắc nộp học phí** cho từng em hoặc **Nhắc nộp học phí các em đã chọn**. Chọn gửi tới cả học sinh/phụ huynh, chỉ phụ huynh hoặc chỉ học sinh; thêm lời nhắn nếu cần. Thông báo chứa đúng học sinh, lớp, tháng và số tiền còn thiếu sau khi trừ tiền đã nộp/dư. Thông báo vào chuông trong website; không tự gửi SMS, email hoặc Zalo.
 
 Nút **Hạn nộp & tự động nhắc** đặt hạn chung cho các học sinh đã chọn hoặc riêng từng em. Chọn bật/tắt và khoảng nhắc lại 1–30 ngày (mặc định 3 ngày). Chỉ tự nhắc sau ngày hết hạn theo Asia/Ho_Chi_Minh; nếu chưa đặt hạn, chỉ các khoản đã đánh dấu Quá hạn mới đủ điều kiện. Khoản chưa lưu, đã nộp đủ, còn dư hoặc đã chuyển nợ không bị thu/nhắc trùng. Khi lưu thanh toán đủ, nhắc hiện tại tự biến mất; nộp một phần cập nhật số còn thiếu. Gửi lại thay thông báo cũ, đồng thời báo lại chưa đọc bằng updatedAt.
 
-Máy chủ tự kiểm tra khi khởi động, mỗi 5 phút trong lúc hoạt động và kiểm tra bù khi mở/đăng nhập/làm mới dữ liệu. Không cần giữ tab giám đốc mở. Render Free có thể ngủ khi không có truy cập: lúc ngủ không thể bảo đảm gửi đúng giờ; lần truy cập tiếp theo sẽ kiểm tra bù. Không tạo cron hay tài nguyên trả phí.
+Máy chủ tự kiểm tra khi khởi động, mỗi 5 phút trong lúc hoạt động và kiểm tra bù khi mở/đăng nhập/làm mới dữ liệu. Không cần giữ tab quản lí mở. Render Free có thể ngủ khi không có truy cập: lúc ngủ không thể bảo đảm gửi đúng giờ; lần truy cập tiếp theo sẽ kiểm tra bù. Không tạo cron hay tài nguyên trả phí.
 
-`tuition-reminders.mjs` chứa logic dùng chung và runner. API POST `/api/tuition-reminders` và `/api/tuition-reminders/settings` chỉ dành cho giám đốc. Thông báo TUITION được lọc đồng thời theo lớp, SBD và vai trò người nhận ở máy chủ và giao diện. Cấu hình/lịch sử nhắc do máy chủ giữ, không bị bản dữ liệu lớp cũ trên trình duyệt ghi đè. Mọi cập nhật đi qua giao dịch/CAS của kho dữ liệu hiện có.
+`tuition-reminders.mjs` chứa logic dùng chung và runner. API POST `/api/tuition-reminders` và `/api/tuition-reminders/settings` chỉ dành cho quản lí. Thông báo TUITION được lọc đồng thời theo lớp, SBD và vai trò người nhận ở máy chủ và giao diện. Cấu hình/lịch sử nhắc do máy chủ giữ, không bị bản dữ liệu lớp cũ trên trình duyệt ghi đè. Mọi cập nhật đi qua giao dịch/CAS của kho dữ liệu hiện có.
 
 ## Kho học sinh bỏ học
 
-Trong **Lớp học & Học sinh** (Giám đốc) hoặc **Danh sách học sinh** (Giáo viên), nút **Bỏ học** chuyển hồ sơ của học sinh trong lớp đã chọn vào kho. Giám đốc thao tác mọi lớp; giáo viên chỉ thao tác/xem kho của lớp được phân công. Kho có nút mở riêng ngoài danh sách, tìm theo tên, SBD, phụ huynh, số điện thoại hoặc lớp cũ, xem đầy đủ hồ sơ và tải bản JSON.
+Trong **Lớp học & Học sinh** (Quản lí) hoặc **Danh sách học sinh** (Giáo viên), nút **Bỏ học** chuyển hồ sơ của học sinh trong lớp đã chọn vào kho. Quản lí thao tác mọi lớp; giáo viên chỉ thao tác/xem kho của lớp được phân công. Kho có nút mở riêng ngoài danh sách, tìm theo tên, SBD, phụ huynh, số điện thoại hoặc lớp cũ, xem đầy đủ hồ sơ và tải bản JSON.
 
 Hồ sơ lưu bản gốc thông tin học sinh, phụ huynh, trường/lớp/giáo viên, học phí và ghi chú, lịch sử điểm danh, điểm/bài nộp/lượt làm, phản hồi, tiến trình và hồ sơ đăng ký liên quan. Tệp đính kèm được giữ và giáo viên lớp có quyền đọc lại từ kho. Dữ liệu được chuyển khỏi danh sách đang học trong một lần lưu trạng thái chung; không phát sinh nhắc học phí hay lượt giao bài mới cho em đã bỏ học. Các bản lưu cũ trên màn hình không được tự đưa em trở lại lớp. SBD đang lưu trữ được giữ chỗ khi cấp mã mới.
 
-Giám đốc có thể khôi phục vào lớp cũ cùng lịch sử và tài khoản. Không khôi phục khi lớp mất, SBD/tài khoản/hồ sơ bị trùng. Thông tin xác thực được cất riêng trên máy chủ, không gửi xuống kho hiển thị hay bản JSON tải về. Mọi hồ sơ tiếp tục nằm trong dữ liệu Supabase hiện có, không ghi thông tin học sinh lên GitHub. Không cần thay đổi schema.
+Quản lí có thể khôi phục vào lớp cũ cùng lịch sử và tài khoản. Không khôi phục khi lớp mất, SBD/tài khoản/hồ sơ bị trùng. Thông tin xác thực được cất riêng trên máy chủ, không gửi xuống kho hiển thị hay bản JSON tải về. Mọi hồ sơ tiếp tục nằm trong dữ liệu Supabase hiện có, không ghi thông tin học sinh lên GitHub. Không cần thay đổi schema.
 
 
 ## Cập nhật danh sách học sinh và hoàn tác
 
-Trong danh sách học sinh của giám đốc và giáo viên, bảng dùng hàng ngang gọn, cuộn ngang để xem đầy đủ cột. Nút **Cập nhật mới** cập nhật các thông tin có nội dung và thêm học sinh chưa có; không xóa học sinh vắng mặt trong file. Nút **Cập nhật thêm** chỉ thêm học sinh mới, bỏ qua toàn bộ hồ sơ đã có hoặc đề nghị của giáo viên đang chờ duyệt. Khớp bằng SBD nếu có; nếu không, dùng tên/ngày sinh trong lớp đã chọn. Ô trống không xóa thông tin hiện tại, không đổi mật khẩu học sinh cũ.
+Trong danh sách học sinh của quản lí và giáo viên, bảng dùng hàng ngang gọn, cuộn ngang để xem đầy đủ cột. Nút **Cập nhật mới** cập nhật các thông tin có nội dung và thêm học sinh chưa có; không xóa học sinh vắng mặt trong file. Nút **Cập nhật thêm** chỉ thêm học sinh mới, bỏ qua toàn bộ hồ sơ đã có hoặc đề nghị của giáo viên đang chờ duyệt. Khớp bằng SBD nếu có; nếu không, dùng tên/ngày sinh trong lớp đã chọn. Ô trống không xóa thông tin hiện tại, không đổi mật khẩu học sinh cũ.
 
-Bản nhập gần nhất của mỗi lớp được lưu trên máy chủ. **Trở lại** hoàn tác đúng bản nhập này, kể cả sau khi tải lại trang. Chỉ hoàn tác những trường hồ sơ đã đổi; không phục hồi đè lên điểm, học phí, điểm danh. Học sinh mới chỉ được rút khỏi danh sách nếu chưa phát sinh dữ liệu học tập/tài chính hoặc thay đổi tài khoản. Dữ liệu đã đổi tiếp hoặc hồ sơ giáo viên đã được duyệt sẽ chặn hoàn tác để tránh mất dữ liệu mới. Giáo viên vẫn gửi giám đốc duyệt; có thể hoàn tác đề nghị còn chờ xử lý. Giám đốc có thể hoàn tác lần nhập gần nhất trong lớp, giáo viên chỉ thao tác lớp được phân công và bản nhập của mình.
+Bản nhập gần nhất của mỗi lớp được lưu trên máy chủ. **Trở lại** hoàn tác đúng bản nhập này, kể cả sau khi tải lại trang. Chỉ hoàn tác những trường hồ sơ đã đổi; không phục hồi đè lên điểm, học phí, điểm danh. Học sinh mới chỉ được rút khỏi danh sách nếu chưa phát sinh dữ liệu học tập/tài chính hoặc thay đổi tài khoản. Dữ liệu đã đổi tiếp hoặc hồ sơ giáo viên đã được duyệt sẽ chặn hoàn tác để tránh mất dữ liệu mới. Giáo viên vẫn gửi quản lí duyệt; có thể hoàn tác đề nghị còn chờ xử lý. Quản lí có thể hoàn tác lần nhập gần nhất trong lớp, giáo viên chỉ thao tác lớp được phân công và bản nhập của mình.
 
 API POST `/api/students/import` và `/api/students/import/undo` xử lý tại máy chủ qua cơ chế lưu trạng thái hiện có, không cần đổi schema. Bản lưu hoàn tác và thông tin xác thực không gửi về trình duyệt; chỉ gửi thời điểm/tệp/chỉ số của lần nhập. Kiểm thử bổ sung: `node --test test/roster-import.test.mjs`.
 
@@ -97,7 +97,7 @@ Tài chính & Học phí: chọn **Miễn toàn bộ tháng này (0 đ)** trong 
 
 Ba tổng Phải thu / Đã nộp / Còn thiếu cộng đúng các học sinh đã tích chọn, theo khóa lớp + SBD; tích thêm lớp cộng thêm, bỏ tích trừ lớp đó. Không chọn ô nào thì các tổng bằng 0. Giữ lựa chọn khi đổi lớp, tìm kiếm hoặc trạng thái; đổi tháng hoặc Bỏ chọn tất cả xóa lựa chọn. Dòng phạm vi nêu số lớp / học sinh đã chọn kể cả ngoài bộ lọc. Mỗi lớp có thể có đơn giá và khoản thu riêng, không cần đặt một giá chung mới tính được tổng.
 
-**Tính lại các ô đã chọn** tính và lưu lại từ điểm danh hiện tại trên máy chủ cùng cài đặt đã lưu của từng lớp. **Lưu cách tính cho các em đã chọn** áp dụng các giá trị đang xem trước. Khoản đã đóng có thu tiền hoặc đã chuyển nợ được giữ nguyên; khoản miễn được tính lại về 0. Bản ghi miễn cũ cần chọn và bấm Tính lại để áp dụng cách miễn toàn bộ tháng. Trong hộp chỉnh sửa từng học sinh có thêm **Tính lại** để xem lại trước khi lưu; chỉnh sửa riêng vẫn giữ khoản đã thu. API chỉ cho giám đốc, lưu cả nhóm trong một giao dịch, chặn bản dữ liệu cũ / trùng dòng / học sinh không tồn tại.
+**Tính lại các ô đã chọn** tính và lưu lại từ điểm danh hiện tại trên máy chủ cùng cài đặt đã lưu của từng lớp. **Lưu cách tính cho các em đã chọn** áp dụng các giá trị đang xem trước. Khoản đã đóng có thu tiền hoặc đã chuyển nợ được giữ nguyên; khoản miễn được tính lại về 0. Bản ghi miễn cũ cần chọn và bấm Tính lại để áp dụng cách miễn toàn bộ tháng. Trong hộp chỉnh sửa từng học sinh có thêm **Tính lại** để xem lại trước khi lưu; chỉnh sửa riêng vẫn giữ khoản đã thu. API chỉ cho quản lí, lưu cả nhóm trong một giao dịch, chặn bản dữ liệu cũ / trùng dòng / học sinh không tồn tại.
 
 Kiểm tra: `npm test`, gồm tính miễn bằng 0, giữ nợ cũ và số tiền đã nộp, cộng nhiều lớp khác đơn giá, bỏ chọn, đổi bộ lọc và phân quyền API.
 
@@ -106,7 +106,7 @@ Kiểm tra: `npm test`, gồm tính miễn bằng 0, giữ nợ cũ và số ti�
 
 Giáo viên xem và dùng các đề đang có trong ngân hàng của toàn trung tâm, kể cả đề do giáo viên khác tạo; chỉ tác giả (hoặc quản trị viên) sửa và xóa đề gốc. Xem đề và Giao bài là các thao tác riêng với Chỉnh sửa. Xóa khỏi ngân hàng chỉ rút nguồn khỏi danh sách chọn mới, giữ đề đã giao, lượt làm, bài nộp và điểm. Thông tin lớp ngoài phân công dùng cho giao bài chỉ có tên lớp, khối, SBD và tên học sinh; không mở quyền sửa danh sách, xem học phí hoặc hồ sơ phụ huynh.
 
-Chọn bất cứ lớp nhận bài nào cùng khối với đề. Khối nhận từ tên lớp, khối được giám đốc chọn trong Chỉnh sửa lớp học, hoặc hồ sơ lớp tại trường nếu cùng một khối. Lớp tên không chuẩn cần khai báo khối. Đề đã ghi khối chỉ giao/hiển thị cho đúng khối; dữ liệu đề cũ chưa ghi khối giữ tương thích. Học sinh và phụ huynh chỉ nhận bài thuộc lớp của mình. Bộ chọn lớp ở Giao bài đồng thời lọc các đề đã giao; danh sách Bài nộp để chấm của lớp đó nằm cuối phần này.
+Chọn bất cứ lớp nhận bài nào cùng khối với đề. Khối nhận từ tên lớp, khối được quản lí chọn trong Chỉnh sửa lớp học, hoặc hồ sơ lớp tại trường nếu cùng một khối. Lớp tên không chuẩn cần khai báo khối. Đề đã ghi khối chỉ giao/hiển thị cho đúng khối; dữ liệu đề cũ chưa ghi khối giữ tương thích. Học sinh và phụ huynh chỉ nhận bài thuộc lớp của mình. Bộ chọn lớp ở Giao bài đồng thời lọc các đề đã giao; danh sách Bài nộp để chấm của lớp đó nằm cuối phần này.
 
 Ngày giờ tạo, cập nhật gần nhất và giao bài được máy chủ ghi tự động. Ngày tạo được giữ khi sửa; dữ liệu cũ không có ngày tạo hiển thị chưa ghi ngày. Trước khi giao phải xác nhận tên đề, lớp, giờ mở/hạn và cách chấm.
 

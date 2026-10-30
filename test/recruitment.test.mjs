@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {emptyState,saveRecruitment,recruitmentPosts,createPortalServer} from '../portal-server.mjs';
 test('only director can write; drafts stay private; publish, unpublish and update keep identity',()=>{
  const d=emptyState('test123456');
- assert.throws(()=>saveRecruitment(d,{role:'teacher'},{title:'Test',content:'Body'}),/giám đốc/);
+ assert.throws(()=>saveRecruitment(d,{role:'teacher'},{title:'Test',content:'Body'}),/quản lí/);
  assert.throws(()=>saveRecruitment(d,{role:'admin'},{title:'Test',content:'Body',image:'javascript:alert(1)'}),/HTTPS/);
  saveRecruitment(d,{role:'admin'},{title:'Tuyển sinh lớp 10',content:'Liên hệ trung tâm',published:false});
  assert.equal(recruitmentPosts(d).length,0);const id=d.recruitmentPosts[0].id;

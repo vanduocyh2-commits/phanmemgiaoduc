@@ -1,9 +1,9 @@
 const clone=x=>JSON.parse(JSON.stringify(x));
 const relatedKeys=['gradeBook','learningSubmissions','learningAttempts','learningReports','lessonProgress','notifications','teacherSubmissions'];
 export const activeArchive=(d,cid,sbd)=>(d.archivedStudents||[]).find(a=>!a.restoredAt&&a.classId===cid&&a.student.sbd===sbd);
-function director(actor){if(actor?.role!=='admin')throw Error('Chỉ giám đốc được lưu trữ và khôi phục học sinh.');}
+function director(actor){if(actor?.role!=='admin')throw Error('Chỉ quản lí được lưu trữ và khôi phục học sinh.');}
 export function archiveCenterStudent(d,actor,{classId,sbd,reason='Bỏ học'}={}){
- const managed=actor?.role==='admin'||actor?.role==='teacher'&&actor.account?.id&&d.classes.some(c=>c.id===classId&&c.teacherId===actor.account.id);if(!managed)throw Error('Chỉ giám đốc hoặc giáo viên phụ trách lớp được lưu trữ học sinh.');if(typeof reason!=='string'||reason.length>2000)throw Error('Lý do tối đa 2000 ký tự.');
+ const managed=actor?.role==='admin'||actor?.role==='teacher'&&actor.account?.id&&d.classes.some(c=>c.id===classId&&c.teacherId===actor.account.id);if(!managed)throw Error('Chỉ quản lí hoặc giáo viên phụ trách lớp được lưu trữ học sinh.');if(typeof reason!=='string'||reason.length>2000)throw Error('Lý do tối đa 2000 ký tự.');
  const c=d.classes.find(c=>c.id===classId),s=c?.students?.find(s=>s.sbd===sbd);if(!s)throw Error('Học sinh không còn trong danh sách đang học.');
  if(activeArchive(d,classId,sbd))throw Error('Học sinh đã có trong kho bỏ học.');
  const classInfo=clone(c);delete classInfo.students;const teacher=d.accounts?.find(a=>a.id===c.teacherId);if(teacher){classInfo.teacher=teacher.name||classInfo.teacher;classInfo.teacherInfo=clone(teacher);}const applicants=(d.admissionAccounts||[]).filter(a=>a.classId===classId&&a.sbd===sbd),appIds=new Set(applicants.map(a=>a.id));

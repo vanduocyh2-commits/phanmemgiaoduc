@@ -1,6 +1,6 @@
 import {randomUUID} from 'node:crypto';
 export function sendDirectorNotification(d,m,p){
- if(m?.role!=='admin')throw Error('Chỉ giám đốc được phát thông báo.');
+ if(m?.role!=='admin')throw Error('Chỉ quản lí được phát thông báo.');
  const title=String(p.title||'').trim(),content=String(p.content||'').trim();
  if(!title||title.length>200||!content||content.length>5000)throw Error('Nhập tiêu đề tối đa 200 và nội dung tối đa 5000 ký tự.');
  const audiences=p.audiences,classIds=p.classIds||[],teacherUsernames=p.teacherUsernames||[];
