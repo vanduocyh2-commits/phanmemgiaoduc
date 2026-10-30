@@ -69,3 +69,24 @@ test('API saves durable undo metadata without exposing private backups or hashes
   r=await fetch(base+'/api/students/import/undo',{method:'POST',headers:{Cookie:cookie},body:JSON.stringify({classId:'c1',batchId})});assert.equal(r.status,200);assert.equal((await r.json()).view.classes[0].students.length,2);
  }finally{server.closeAllConnections();await new Promise(r=>server.close(r));}
 });
+
+test('append fills only missing profile fields, preserves existing birth dates and leaves financial data intact',()=>{
+ const d=fixture(),s=d.classes[0].students[0];s.email='   ';s.school=null;const before=structuredClone(s),auth=d._auth['student:c1:S1'];
+ const r=importCenterRoster(d,admin,request([{sbd:'S1',name:'Renamed',dob:'06/05/2010',address:'Changed address',parentPhone:'0999999999',parentName:'Synthetic parent',school:'Synthetic school',schoolClass:'8A',gender:'Nam',studentPhone:'0910000000',email:'test@example.test',fields:['name','dob','address','parentPhone','parentName','school','schoolClass','gender','studentPhone','email']}],'append'));
+ assert.equal(r.updated,1);assert.equal(r.added,0);assert.equal(r.skipped,0);
+ assert.equal(s.name,before.name);assert.equal(s.dob,before.dob);assert.equal(s.address,before.address);assert.equal(s.parentPhone,before.parentPhone);
+ assert.equal(s.parentName,'Synthetic parent');assert.equal(s.school,'Synthetic school');assert.equal(s.email,'test@example.test');assert.equal(s.schoolClass,'8A');assert.equal(s.gender,'Nam');assert.equal(s.studentPhone,'0910000000');assert.deepEqual(s.fees,before.fees);assert.deepEqual(s.attendanceRecords,before.attendanceRecords);assert.equal(d.gradeBook[0].score,8);assert.equal(d._auth['student:c1:S1'],auth);
+ const again=importCenterRoster(d,admin,request([{name:'An',sbd:'S1',schoolClass:'Different',fields:['schoolClass']}],'append'));assert.equal(again.skipped,1);assert.equal(again.batchId,undefined);
+ undoCenterRoster(d,admin,{classId:'c1',batchId:r.batchId});assert.deepEqual(s,before);
+});
+
+test('teacher missing-only imports wait for approval, keep newly populated fields at approval and can extend pending profiles',()=>{
+ const d=fixture(),s=d.classes[0].students[0],auth=d._auth['student:c1:S1'];
+ let r=importCenterRoster(d,teacher,request([{name:'An',sbd:'S1',dob:'06/05/2010',schoolClass:'8A',email:'pupil@example.test',fields:['dob','schoolClass','email']}],'append'));
+ assert.equal(r.pending,true);assert.equal(r.updated,1);assert.equal(s.schoolClass,undefined);assert.equal(s.dob,'01/01/2010');
+ let a=d.enrollmentApplications[0];assert.equal(a.fillMissingOnly,true);assert.equal(a.dob,'01/01/2010');
+ s.schoolClass='8A2';approveEnrollments(d,admin,[{id:a.id,classId:'c1'}]);assert.equal(s.schoolClass,'8A2');assert.equal(s.email,'pupil@example.test');assert.equal(s.dob,'01/01/2010');assert.equal(d._auth['student:c1:S1'],auth);
+ r=importCenterRoster(d,teacher,request([row('New pending')],'append'));assert.equal(r.added,1);a=d.enrollmentApplications.find(a=>a.studentName==='New pending');const pendingId=a.id;
+ r=importCenterRoster(d,teacher,request([{name:'New pending',sbd:a.proposedSbd,dob:'11/02/2013',schoolClass:'8B',fields:['dob','schoolClass']}],'append'));assert.equal(r.added,0);assert.equal(r.updated,1);assert.equal(d.enrollmentApplications.filter(a=>a.id===pendingId).length,1);assert.equal(d.enrollmentApplications.find(a=>a.id===pendingId).dob,'11/02/2013');
+ approveEnrollments(d,admin,[{id:pendingId,classId:'c1'}]);assert.equal(d.classes[0].students.find(s=>s.sbd===a.proposedSbd).dob,'11/02/2013');
+});
