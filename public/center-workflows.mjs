@@ -58,10 +58,12 @@ export function installPortalReadability(doc=globalThis.document){
  if(!doc?.head||doc.getElementById('portal-readable-type'))return;
  const style=doc.createElement('style');style.id='portal-readable-type';style.textContent=`
  body{font-size:15px;line-height:1.55}
+ #gateway-form-student input,#gateway-form-parent input{min-height:46px;font-size:15px;line-height:1.5}#gateway-form-student>div,#gateway-form-parent>div{max-width:100%}#gateway-form-student button.w-full,#gateway-form-parent button.w-full{min-height:46px;border-radius:12px;font-size:14px}#gateway-form-student label,#gateway-form-parent label{display:block;margin-bottom:7px}
  .text-xs{font-size:14px!important;line-height:1.5!important}
  .text-sm{font-size:15px!important;line-height:1.5!important}
  [class~="text-[10px]"],[class~="text-[11px]"]{font-size:12px!important;line-height:1.45!important}
  .ts-help{font-size:13px!important;line-height:1.6}
+ .assignment-timing{display:flex;flex-wrap:wrap;gap:6px 20px;margin:10px 0;padding:10px 12px;border:1px solid #dce8e4;border-radius:9px;background:#f8fafc;font-size:13px;line-height:1.6}.assignment-timing>small{flex-basis:100%;font-size:11px;color:#64748b}
  .ts-input,.ts-btn{font-size:14px!important;line-height:1.5}
  .ts-note{font-size:14px!important;line-height:1.65}
  .ts-table table,.ts-table th,.ts-table td,.student-roster-table,.student-roster-table th,.student-roster-table td{font-size:14px!important;line-height:1.55}
@@ -125,3 +127,18 @@ export function installSubmittedSolutionToggle(doc=globalThis.document){
  },true);
 }
 installSubmittedSolutionToggle();
+
+
+export function assignmentScheduleRows(assignment={}){
+ const format=value=>{
+  if(!['string','number'].includes(typeof value)||value==='')return null;
+  const date=new Date(value);if(!Number.isFinite(date.getTime()))return null;
+  const parts=Object.fromEntries(new Intl.DateTimeFormat('vi-VN',{timeZone:'Asia/Ho_Chi_Minh',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(date).map(p=>[p.type,p.value]));
+  return parts.day+'/'+parts.month+'/'+parts.year+' · '+parts.hour+':'+parts.minute;
+ };
+ const closing=assignment.closed?format(assignment.closedAt)||'Đã đóng · chưa lưu giờ đóng':format(assignment.end)||'Không giới hạn';
+ return [{label:'Giao đề',value:format(assignment.createdAt)||'Chưa lưu thời gian giao'},{label:'Mở đề',value:format(assignment.start)||'Ngay khi giao'},{label:'Đóng đề',value:closing},...(assignment.closed&&format(assignment.end)?[{label:'Giờ đóng đã đặt',value:format(assignment.end)}]:[])];
+}
+export function assignmentTimingHTML(assignment){return '<div class="assignment-timing">'+assignmentScheduleRows(assignment).map(row=>'<span><b>'+row.label+':</b> '+row.value+'</span>').join('')+'<small>Giờ Việt Nam (GMT+7)</small></div>';}
+
+export function portalAccountLabel(name,role){return role==='admin'&&/^(?:giám đốc|quản l[íý](?: trung tâm)?|quản trị)$/i.test(String(name||'').trim())?'Quản trị':name;}
