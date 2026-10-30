@@ -41,7 +41,7 @@ export function assignmentSource(d,a){
  const ids=[...new Set([a.examId,...(a.examIds||[])])];
  const exams=ids.map(id=>d.learningExams.find(e=>e.id===id&&!e.archivedAt));
  if(exams.some(e=>!e))throw Error('Không tìm thấy đủ các đề đã chọn.');
- const base=JSON.parse(JSON.stringify(exams[0]));if(exams.length===1)return base;
+ const base=JSON.parse(JSON.stringify(exams[0]));const grades=[...new Set(exams.map(e=>schoolGrade(e.grade)).filter(Boolean))];if(grades.length>1)throw Error('Các mã đề ghép phải cùng khối lớp.');if(grades.length)base.grade=grades[0];if(exams.length===1)return base;
  const variants={},files={},contents={};
  for(const ex of exams){validateVariantFiles(ex);const codes=examCodes(ex);for(const code of codes.length?codes:[String(ex.code||ex.presentation?.code||'101')]){
  if(variants[code])throw Error('Trùng mã đề '+code+'. Hãy đổi mã trước khi giao.');
@@ -54,3 +54,7 @@ export function assignmentSource(d,a){
  base.answerVariants=variants;base.variantAttachments=files;base.variantContent=contents;return base;
 }
 
+
+export function schoolGrade(value){const match=String(value??'').trim().match(/^(?:khối\s*|lớp\s*)?(1[0-2]|[1-9])$/i);return match?match[1]:'';}
+export function classGrade(c){const explicit=schoolGrade(c?.grade);if(explicit)return explicit;const infer=value=>{const text=String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();return text.match(/(?:^|\s)(?:lop\s*|khoi\s*)?(1[0-2]|[1-9])(?=[a-z]|\b)/)?.[1]||'';};const named=infer(c?.name);if(named)return named;const grades=[...new Set((c?.students||[]).map(s=>infer(s.schoolClass)).filter(Boolean))];return grades.length===1?grades[0]:'';}
+export function examMatchesClass(ex,c){const grade=schoolGrade(ex?.grade),target=classGrade(c);return !grade||!!target&&grade===target;}

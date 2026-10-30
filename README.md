@@ -100,3 +100,18 @@ Ba tổng Phải thu / Đã nộp / Còn thiếu cộng đúng các học sinh �
 **Tính lại các ô đã chọn** tính và lưu lại từ điểm danh hiện tại trên máy chủ cùng cài đặt đã lưu của từng lớp. **Lưu cách tính cho các em đã chọn** áp dụng các giá trị đang xem trước. Khoản đã đóng có thu tiền hoặc đã chuyển nợ được giữ nguyên; khoản miễn được tính lại về 0. Bản ghi miễn cũ cần chọn và bấm Tính lại để áp dụng cách miễn toàn bộ tháng. Trong hộp chỉnh sửa từng học sinh có thêm **Tính lại** để xem lại trước khi lưu; chỉnh sửa riêng vẫn giữ khoản đã thu. API chỉ cho giám đốc, lưu cả nhóm trong một giao dịch, chặn bản dữ liệu cũ / trùng dòng / học sinh không tồn tại.
 
 Kiểm tra: `npm test`, gồm tính miễn bằng 0, giữ nợ cũ và số tiền đã nộp, cộng nhiều lớp khác đơn giá, bỏ chọn, đổi bộ lọc và phân quyền API.
+
+
+## Ngân hàng đề dùng chung, cập nhật đáp án và giao theo lớp
+
+Giáo viên xem và dùng các đề đang có trong ngân hàng của toàn trung tâm, kể cả đề do giáo viên khác tạo; chỉ tác giả (hoặc quản trị viên) sửa và xóa đề gốc. Xem đề và Giao bài là các thao tác riêng với Chỉnh sửa. Xóa khỏi ngân hàng chỉ rút nguồn khỏi danh sách chọn mới, giữ đề đã giao, lượt làm, bài nộp và điểm. Thông tin lớp ngoài phân công dùng cho giao bài chỉ có tên lớp, khối, SBD và tên học sinh; không mở quyền sửa danh sách, xem học phí hoặc hồ sơ phụ huynh.
+
+Chọn bất cứ lớp nhận bài nào cùng khối với đề. Khối nhận từ tên lớp, khối được giám đốc chọn trong Chỉnh sửa lớp học, hoặc hồ sơ lớp tại trường nếu cùng một khối. Lớp tên không chuẩn cần khai báo khối. Đề đã ghi khối chỉ giao/hiển thị cho đúng khối; dữ liệu đề cũ chưa ghi khối giữ tương thích. Học sinh và phụ huynh chỉ nhận bài thuộc lớp của mình. Bộ chọn lớp ở Giao bài đồng thời lọc các đề đã giao; danh sách Bài nộp để chấm của lớp đó nằm cuối phần này.
+
+Ngày giờ tạo, cập nhật gần nhất và giao bài được máy chủ ghi tự động. Ngày tạo được giữ khi sửa; dữ liệu cũ không có ngày tạo hiển thị chưa ghi ngày. Trước khi giao phải xác nhận tên đề, lớp, giờ mở/hạn và cách chấm.
+
+Nút Cập nhật lại đề & đáp án lưu nguồn và chấm lại các bài đã dùng nguồn trong một giao dịch, gồm đề ghép nhiều mã và lớp do giáo viên khác giao. Giữ ngày nộp, file bài làm, nhận xét và điểm tự luận đã chấm. Khi đã có lượt làm, giữ mã câu, dạng câu, số câu, điểm từng câu và mã đề để tránh ghép sai bài làm. Bản dữ liệu cũ bị chặn khi đã có cập nhật khác.
+
+Cách chấm khi giao: Tự động chấm câu khách quan, tự luận chờ giáo viên; Bán tự động giữ điểm máy đề xuất và chờ giáo viên duyệt; Chấm tay để toàn bộ điểm câu trống cho giáo viên nhập. Điểm bán tự động/chấm tay chưa duyệt không gửi cho học sinh. Cập nhật đáp án giữ điểm tự luận đã chấm; bài bán tự động được đưa lại về chờ duyệt, bài chấm tay giữ điểm do giáo viên nhập.
+
+Kiểm tra bổ sung: `node --test test/shared-bank.test.mjs` và `npm test`.
