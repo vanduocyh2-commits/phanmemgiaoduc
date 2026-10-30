@@ -54,6 +54,24 @@ export function installRosterDateDisplay(doc=globalThis.document){
  observer.observe(doc.documentElement,{childList:true,subtree:true,characterData:true});
 }
 installRosterDateDisplay();
+export function installPortalReadability(doc=globalThis.document){
+ if(!doc?.head||doc.getElementById('portal-readable-type'))return;
+ const style=doc.createElement('style');style.id='portal-readable-type';style.textContent=`
+ body{font-size:15px;line-height:1.55}
+ .text-xs{font-size:14px!important;line-height:1.5!important}
+ .text-sm{font-size:15px!important;line-height:1.5!important}
+ [class~="text-[10px]"],[class~="text-[11px]"]{font-size:12px!important;line-height:1.45!important}
+ .ts-help{font-size:13px!important;line-height:1.6}
+ .ts-input,.ts-btn{font-size:14px!important;line-height:1.5}
+ .ts-note{font-size:14px!important;line-height:1.65}
+ .ts-table table,.ts-table th,.ts-table td,.student-roster-table,.student-roster-table th,.student-roster-table td{font-size:14px!important;line-height:1.55}
+ .student-roster-table small,.student-roster-table .ts-btn{font-size:12px!important}
+ .roster-import-dialog h3{font-size:18px}
+ .roster-import-dialog td:nth-child(3),.roster-import-dialog td:nth-child(4){white-space:nowrap;font-variant-numeric:tabular-nums}
+ .roster-import-dialog .ts-input{min-height:40px}
+ `;doc.head.append(style);
+}
+installPortalReadability();
 export function installTuitionActionColors(doc=globalThis.document){
  if(!doc?.head||doc.getElementById('tuition-action-colors'))return;
  const style=doc.createElement('style');style.id='tuition-action-colors';style.textContent='#fee-bulk-controls button.ts-btn{background:#f1f5f9;color:#475569;border:1px solid #dbe3f0;box-shadow:none}#fee-bulk-controls button.ts-btn:hover{background:#e2e8f0}#fee-bulk-controls button.ts-btn.fee-action-clicked,#fee-bulk-controls button.ts-btn:active{background:#2563eb;color:#fff;border-color:#2563eb}#fee-bulk-controls button.ts-btn:focus-visible{outline:3px solid #bfdbfe;outline-offset:2px}';doc.head.append(style);
