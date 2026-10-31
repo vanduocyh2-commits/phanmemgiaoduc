@@ -25,9 +25,10 @@ test('profile update preserves blank fields and credentials; undo retains later 
  undoCenterRoster(d,admin,{classId:'c1',batchId:summary.batchId});assert.equal(s.name,'An');assert.equal(s.parentPhone,'0900000000');assert.equal(s.fees['10/2026'].paidAmount,500);assert.equal(s.attendanceRecords.length,2);assert.equal(d.gradeBook[0].score,9);assert.equal(d.classes[0].students.length,2);
 });
 
-test('matching by name/date prevents duplicates and auto IDs reserve explicit file IDs',()=>{
+test('matching by name/date preserves existing pupils; new file IDs are replaced by shared automatic IDs',()=>{
  const d=fixture();const summary=importCenterRoster(d,admin,request([row('An',{dob:'01/01/2010',address:'New address'}),row('New auto'),row('Explicit',{sbd:'HS00001'})]));
- assert.equal(summary.updated,1);assert.equal(d.classes[0].students.filter(s=>s.name==='An').length,1);assert.equal(d.classes[0].students.find(s=>s.name==='New auto').sbd,'HS00002');
+ assert.equal(summary.updated,1);assert.equal(d.classes[0].students.filter(s=>s.name==='An').length,1);assert.equal(d.classes[0].students.find(s=>s.name==='New auto').sbd,'HS00001');
+ assert.equal(d.classes[0].students.find(s=>s.name==='Explicit').sbd,'HS00002');
  assert.throws(()=>importCenterRoster(d,admin,request([row('A',{sbd:'same'}),row('B',{sbd:'same'})])),/trùng/);
  const before=structuredClone(d);assert.throws(()=>importCenterRoster(d,admin,request([row('Valid'),row('Bad',{password:'x'})])),/Mật khẩu/);assert.deepEqual(d,before);
 });
