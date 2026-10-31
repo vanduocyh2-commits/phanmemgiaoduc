@@ -282,10 +282,10 @@ body:has(#ts-attempt .exam-live-toolbar)>header{display:none!important}
                 </button>
                 <button onclick="window.app.openStudentArchive()" class="admin-sidebar-btn w-full text-left px-4 py-3 rounded-xl text-xs font-bold text-slate-600"><i class="fa-solid fa-box-archive mr-2"></i>8. Kho lưu học sinh bỏ học</button>
                 <button onclick="window.app.switchAdminTab('recruitment',this);" class="admin-sidebar-btn w-full text-left px-4 py-3 rounded-xl text-xs font-bold text-slate-600"><i class="fa-solid fa-bullhorn mr-2"></i>9. Tuyển sinh</button>
-                <button onclick="window.app.switchAdminTab('accounts', this)" class="admin-sidebar-btn w-full text-left px-4 py-3 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50 transition"><i class="fa-solid fa-users-gear mr-2"></i>10. Tài Khoản & Phân Quyền</button>
-                <button onclick="window.app.switchAdminTab('centerlessons', this)" class="admin-sidebar-btn w-full text-left px-4 py-3 rounded-xl text-xs font-bold text-slate-600"><i class="fa-solid fa-book-open mr-2"></i>11. Thư Viện</button>
-                <button onclick="window.app.switchAdminTab('backup', this)" class="admin-sidebar-btn w-full text-left px-4 py-3 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50 transition"><i class="fa-solid fa-database mr-2"></i>12. Sao Lưu Dữ Liệu</button>
-                <button onclick="window.app.switchAdminTab('waiting',this)" class="admin-sidebar-btn w-full text-left px-4 py-3 rounded-xl text-xs font-bold text-slate-600"><i class="fa-solid fa-user-clock mr-2"></i>13. Lớp chờ · Chờ phân lớp <span id="waiting-admission-count"></span></button>
+                <button onclick="window.app.switchAdminTab('centerlessons', this)" class="admin-sidebar-btn w-full text-left px-4 py-3 rounded-xl text-xs font-bold text-slate-600"><i class="fa-solid fa-book-open mr-2"></i>10. Thư Viện</button>
+                <button onclick="window.app.switchAdminTab('waiting',this)" class="admin-sidebar-btn w-full text-left px-4 py-3 rounded-xl text-xs font-bold text-slate-600"><i class="fa-solid fa-user-clock mr-2"></i>11. Lớp chờ · Chờ phân lớp <span id="waiting-admission-count"></span></button>
+<button onclick="window.app.switchAdminTab('backup', this)" class="admin-sidebar-btn w-full text-left px-4 py-3 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50 transition"><i class="fa-solid fa-database mr-2"></i>12. Sao Lưu Dữ Liệu</button>
+
             </div>
 
             <!-- Nội dung các Tab Quản Trị -->
@@ -297,13 +297,20 @@ body:has(#ts-attempt .exam-live-toolbar)>header{display:none!important}
 
                 <!-- TAB 2: GIÁO VIÊN -->
                 <div id="adm-tab-teachers" class="admin-content-tab hidden space-y-4">
+                <div id="admin-account-permissions" class=" bg-white p-5 rounded-2xl border space-y-4">
+                    <h3 class="font-extrabold">1. Phân quyền</h3>
+                    <div class="grid sm:grid-cols-4 gap-2"><input id="acc-user" placeholder="Tên đăng nhập" class="border rounded-xl p-2 text-xs"><input id="acc-name" placeholder="Họ tên" class="border rounded-xl p-2 text-xs"><input id="acc-pass" type="password" placeholder="Mật khẩu" class="border rounded-xl p-2 text-xs"><select id="acc-role" class="border rounded-xl p-2 text-xs"><option value="teacher">Giáo viên</option><option value="admin">Quản trị</option><option value="superadmin">Admin tối cao</option></select></div>
+                    <button onclick="window.app.addAccount()" class="bg-indigo-600 text-white px-4 py-2 rounded-xl text-xs font-bold">Thêm tài khoản</button>
+                    <div id="account-list" class="overflow-x-auto"></div>
+                </div>
+
                     <div class="bg-white p-5 rounded-2xl border shadow-xs space-y-4">
-                        <h3 class="text-base font-extrabold text-slate-800"><i class="fa-solid fa-chalkboard-user text-violet-600 mr-2"></i>1. Tài khoản giáo viên</h3>
+                        <h3 class="text-base font-extrabold text-slate-800"><i class="fa-solid fa-chalkboard-user text-violet-600 mr-2"></i>2. Tài khoản giáo viên</h3>
                         <button type="button" class="ts-btn" onclick="window.app.createTeacherAccount()">Thêm giáo viên</button><label class="ts-btn">Nhập danh sách giáo viên<input id="teacher-roster-file" type="file" accept=".xlsx,.xls,.csv" hidden onchange="window.app.importTeachers(this)"></label><button class="ts-btn ts-secondary" onclick="window.app.teacherTemplate()">Tải mẫu giáo viên</button><button class="ts-btn ts-secondary" onclick="PortalFiles.setup()">Kho file GitHub</button><button class="ts-btn ts-secondary" onclick="window.app.configureSharedSync()">Kết nối dữ liệu chung</button><p class="ts-help">Tài khoản, môn dạy và phân công lớp dùng chung một mã giáo viên. Bấm vào ô môn để chỉnh sửa.</p><div class="overflow-x-auto rounded-xl border"><table class="w-full text-left text-xs border-collapse">
                             <thead><tr class="bg-slate-100 font-bold border-b"><th class="p-3">Giáo viên</th><th class="p-3">Môn giảng dạy</th><th class="p-3">Lớp phụ trách</th><th class="p-3 text-center">Số lớp</th><th class="p-3 text-center">Số học sinh</th><th class="p-3 text-center">Ca/tuần</th><th class="p-3">Thao tác</th></tr></thead>
                             <tbody id="admin-teachers-tbody"></tbody></table></div>
                     </div>
-                    <div id="admin-family-accounts"><section class="ts-box"><h3>2. Quản lí tài khoản · Phụ huynh & học sinh</h3></section></div>
+                    <div id="admin-family-accounts"><section class="ts-box"><h3>3. Quản lí tài khoản · Phụ huynh & học sinh</h3></section></div>
                 </div>
 
 
@@ -370,13 +377,6 @@ body:has(#ts-attempt .exam-live-toolbar)>header{display:none!important}
                     </div>
                 </div>
 
-                <div id="adm-tab-accounts" class="admin-content-tab hidden bg-white p-5 rounded-2xl border space-y-4">
-                    <h3 class="font-extrabold">Quản trị tài khoản và phân quyền</h3>
-                    <p class="text-xs text-amber-700">Chế độ HTML minh họa: quyền truy cập chưa được bảo vệ bằng máy chủ. Không sử dụng cho dữ liệu thật khi chưa triển khai xác thực an toàn.</p>
-                    <div class="grid sm:grid-cols-4 gap-2"><input id="acc-user" placeholder="Tên đăng nhập" class="border rounded-xl p-2 text-xs"><input id="acc-name" placeholder="Họ tên" class="border rounded-xl p-2 text-xs"><input id="acc-pass" type="password" placeholder="Mật khẩu" class="border rounded-xl p-2 text-xs"><select id="acc-role" class="border rounded-xl p-2 text-xs"><option value="teacher">Giáo viên</option><option value="admin">Quản trị</option><option value="superadmin">Admin tối cao</option></select></div>
-                    <button onclick="window.app.addAccount()" class="bg-indigo-600 text-white px-4 py-2 rounded-xl text-xs font-bold">Thêm tài khoản</button>
-                    <div id="account-list" class="overflow-x-auto"></div>
-                </div>
                 <div id="adm-tab-backup" class="admin-content-tab hidden bg-white p-5 rounded-2xl border space-y-3"><h3 class="font-extrabold">Sao lưu / khôi phục</h3><p class="text-xs text-slate-500">Xuất dữ liệu ra JSON để lưu trên máy. Khôi phục sẽ thay thế dữ liệu hiện tại.</p><button onclick="window.app.exportBackup()" class="bg-emerald-600 text-white px-4 py-2 rounded-xl text-xs font-bold">Tải bản sao lưu JSON</button><label class="inline-block bg-indigo-600 text-white px-4 py-2 rounded-xl text-xs font-bold cursor-pointer">Khôi phục JSON<input type="file" accept=".json,application/json" class="hidden" onchange="window.app.importBackup(this)"></label></div>
                 <!-- TAB 7: TÀI CHÍNH & HỌC PHÍ THEO THÁNG (ĐÃ NÂNG CẤP) -->
                 <div id="adm-tab-enrollments" class="admin-content-tab hidden space-y-4"></div><div id="adm-tab-finance" class="admin-content-tab hidden space-y-4">
@@ -880,6 +880,7 @@ import {createTeacherScanUI} from "/teacher-scan-ui.mjs";
         function exportFinance(){if(state.sessionRole!=='admin')return;const filter=$('admin-fee-class').value,classes=state.classes.filter(c=>filter==='ALL'||c.name===filter);return downloadClassReport({kind:'fees',classIds:classes.map(c=>c.id),month:$('admin-fee-month').value,status:$('admin-fee-status')?.value||'ALL',query:$('admin-fee-search')?.value||''});}
 
         function switchAdminTab(tabId, btn) {
+            if(tabId==='accounts')tabId='teachers';
             if(tabId==='waiting'||tabId==='enrollments'){enrollmentWaitingOnly=tabId==='waiting';enrollmentSelected.clear();if(!btn)btn=[...document.querySelectorAll('.admin-sidebar-btn')].find(b=>b.getAttribute('onclick')?.includes("'"+tabId+"'"));tabId='enrollments';}
             if(tabId==='recruitment')loadRecruitment();
             if(tabId==='classes'){tabId='students';btn=null;}if(tabId==='students')renderAdminStudentsTable();

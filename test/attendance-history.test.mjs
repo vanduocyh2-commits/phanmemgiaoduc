@@ -1,5 +1,5 @@
 import {test} from 'node:test';import assert from 'node:assert/strict';
-import {emptyState,passwordHash,saveClassAttendance,createPortalServer} from '../portal-server.mjs';
+import {emptyState,passwordHash,saveClassAttendance,deleteClassAttendance,createPortalServer} from '../portal-server.mjs';
 import {attendanceHistory} from '../attendance-history.mjs';
 import {attendanceDayLabel} from '../public/attendance-history-ui.mjs';
 const teacher={role:'teacher',username:'teacher',account:{id:'t1'}};
@@ -21,4 +21,11 @@ test('history endpoint is scoped, private and read-only; internal session regist
  let d=fixture();saveClassAttendance(d,teacher,body);const server=createPortalServer({env:{SESSION_SECRET:'x'.repeat(64)},store:{read:async()=>structuredClone(d),mutate:async fn=>{d=fn(structuredClone(d));return structuredClone(d)}}});await new Promise(r=>server.listen(0,'127.0.0.1',r));const base='http://127.0.0.1:'+server.address().port;
  const login=async payload=>{const r=await fetch(base+'/api/login',{method:'POST',body:JSON.stringify(payload)});assert.equal(r.status,200);return r.headers.get('set-cookie').split(';')[0];};
  try{assert.equal((await fetch(base+'/api/attendance/history?className=8A')).status,403);const tc=await login({role:'teacher',username:'teacher',password:'teacher123'}),pc=await login({role:'parent',sbd:'S1',password:'student123'}),ac=await login({role:'admin',username:'admin',password:'admin123456'}),before=structuredClone(d);const own=await fetch(base+'/api/attendance/history?className=8A',{headers:{Cookie:tc}});assert.equal(own.status,200);assert.match(own.headers.get('Cache-Control'),/no-store/);assert.equal((await own.json()).sessions.length,2);assert.equal((await fetch(base+'/api/attendance/history?classId=b',{headers:{Cookie:tc}})).status,400);assert.equal((await fetch(base+'/api/attendance/history?classId=a',{headers:{Cookie:pc}})).status,403);assert.equal((await fetch(base+'/api/attendance/history?classId=b',{headers:{Cookie:ac}})).status,200);const state=await(await fetch(base+'/api/state',{headers:{Cookie:tc}})).json();assert.equal(state.view._attendanceSessions,undefined);assert.deepEqual(d,before);}finally{server.closeAllConnections();await new Promise(r=>server.close(r));}
+});
+
+test('delete only selected class/date/session, recalculate and enforce permissions',()=>{
+ const d=fixture();saveClassAttendance(d,teacher,body);saveClassAttendance(d,teacher,{...body,session:'3'});const other=structuredClone(d.classes[1]);
+ const before=structuredClone(d);assert.throws(()=>deleteClassAttendance(d,teacher,{...body,classId:'b'}),/quyền/);assert.throws(()=>deleteClassAttendance(d,{role:'parent'},body),/quyền/);assert.throws(()=>deleteClassAttendance(d,teacher,{...body,date:'2026-02-30'}),/hợp lệ/);assert.deepEqual(d,before);
+ d.archivedStudents=[{classId:'a',student:{sbd:'OLD',attendanceRecords:[{date:body.date,session:'2',status:'Có mặt'},{date:body.date,session:'3',status:'Vắng'}]}}];
+ deleteClassAttendance(d,teacher,body);assert.deepEqual(d.classes[1],other);for(const student of d.classes[0].students)assert.deepEqual(student.attendanceRecords.filter(r=>r.date===body.date).map(r=>r.session),['3']);assert.deepEqual(d.archivedStudents[0].student.attendanceRecords.filter(r=>r.date===body.date).map(r=>r.session),['3']);assert.deepEqual(attendanceHistory(d,teacher,['a'],{classId:'a'}).sessions.filter(r=>r.date===body.date).map(r=>r.session),['3']);
 });
