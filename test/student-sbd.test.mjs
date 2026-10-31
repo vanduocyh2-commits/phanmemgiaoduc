@@ -1,32 +1,50 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {emptyState,passwordHash,importCenterRoster,undoCenterRoster,approveEnrollments,deleteCenterStudent,createPortalServer,applyChanges} from '../portal-server.mjs';
-import {studentSbdHighWater,createStudentSbdSequence} from '../student-sbd.mjs';
+import {studentSbdHighWater,createStudentSbdSequence,studentSbdPrefix,studentSbdForTransfer} from '../student-sbd.mjs';
 const admin={role:'admin',username:'admin'},teacher={role:'teacher',username:'teacher',account:{id:'t1'}};
-function fixture(){const d=emptyState('admin123456');d.classes=[{id:'a',name:'8A',teacherId:'t1',students:[{sbd:'HS00003',name:'Existing',dob:'02/11/2013',fees:{},attendanceRecords:[]},{sbd:'HS00100',name:'Latest',fees:{},attendanceRecords:[]}]},{id:'b',name:'8B',teacherId:'t1',students:[]}];d.accounts.push({id:'t1',username:'teacher',role:'teacher'});d._auth.teacher=passwordHash('teacher123');d._auth['student:a:HS00003']=passwordHash('existing123');return d;}
+function fixture(){const d=emptyState('admin123456');d.classes=[{id:'a',name:'8A',grade:'8',teacherId:'t1',students:[{sbd:'K8A03',name:'Existing',dob:'02/11/2013',fees:{},attendanceRecords:[]},{sbd:'K8A10',name:'Latest',fees:{},attendanceRecords:[]}]},{id:'b',name:'8B',grade:'8',teacherId:'t1',students:[{sbd:'K8B05',name:'Other class',fees:{},attendanceRecords:[]}]}];d.accounts.push({id:'t1',username:'teacher',role:'teacher'});d._auth.teacher=passwordHash('teacher123');d._auth['student:a:K8A03']=passwordHash('existing123');return d;}
 const input=(classId,name,extra={})=>({classId,mode:'append',rows:[{name,dob:'',fields:['name','dob'],...extra}]});
-test('allocation starts after highest issued HS number, keeps gaps and existing IDs untouched',()=>{
- const d=fixture(),old=structuredClone(d.classes[0].students);importCenterRoster(d,admin,input('a','First new',{sbd:'HS00001'}));importCenterRoster(d,admin,input('b','Second new',{sbd:'HS99999'}));assert.equal(d.classes[0].students.at(-1).sbd,'HS00101');assert.equal(d.classes[1].students[0].sbd,'HS00102');assert.deepEqual(d.classes[0].students.slice(0,2),old);assert.equal(d._studentSbdSequence,102);
+test('class prefixes encode grade and stream; each class owns its own number sequence',()=>{
+ assert.equal(studentSbdPrefix('8A'),'K8A');assert.equal(studentSbdPrefix('9A1'),'K9A1');assert.equal(studentSbdPrefix('11A2'),'K11A2');assert.equal(studentSbdPrefix('6'),'K6');
+ const d=fixture();assert.equal(studentSbdHighWater(d,'a'),10);assert.equal(studentSbdHighWater(d,'b'),5);
+ const a=createStudentSbdSequence(d,'a'),b=createStudentSbdSequence(d,'b');
+ assert.equal(a.next(),'K8A11');assert.equal(a.next(),'K8A12');assert.equal(b.next(),'K8B06');a.commit();b.commit();
 });
-test('teacher reservations and admin additions share one sequence; approval keeps the reserved pupil number',()=>{
- const d=fixture();importCenterRoster(d,teacher,input('b','Teacher new'));const a=d.enrollmentApplications[0];assert.equal(a.proposedSbd,'HS00101');assert.equal(d.classes[1].students.length,0);importCenterRoster(d,admin,input('a','Admin new'));assert.equal(d.classes[0].students.at(-1).sbd,'HS00102');approveEnrollments(d,admin,[{id:a.id,classId:'b'}]);assert.equal(d.classes[1].students[0].sbd,'HS00101');importCenterRoster(d,teacher,input('b','Teacher next'));assert.equal(d.enrollmentApplications.at(-1).proposedSbd,'HS00103');
+test('roster imports issue class-scoped SBDs and reject duplicate requested identifiers without changing existing pupils',()=>{
+ const d=fixture(),old=structuredClone(d.classes[0].students),hash=d._auth['student:a:K8A03'];
+ const r=importCenterRoster(d,admin,{classId:'a',mode:'append',rows:[{name:'New A',sbd:'HS00001',fields:['name']},{name:'New B',sbd:'HS00001',fields:['name']}]});
+ assert.equal(r.added,2);assert.equal(r.warnings.length,2);assert.deepEqual(d.classes[0].students.slice(0,2),old);
+ assert.deepEqual(d.classes[0].students.slice(2).map(s=>s.sbd),['K8A11','K8A12']);
+ assert.equal(d._auth['student:a:K8A03'],hash);
+ undoCenterRoster(d,admin,{classId:'a',batchId:r.batchId});assert.deepEqual(d.classes[0].students,old);
 });
-test('delete, import undo, rejected proposals and state reload never reuse allocated numbers',()=>{
- let d=fixture();deleteCenterStudent(d,admin,{classId:'a',sbd:'HS00100'});const batch=importCenterRoster(d,admin,input('a','Undo me'));assert.equal(d.classes[0].students.at(-1).sbd,'HS00101');undoCenterRoster(d,admin,{classId:'a',batchId:batch.batchId});d=JSON.parse(JSON.stringify(d));importCenterRoster(d,teacher,input('b','Rejected'));const a=d.enrollmentApplications.at(-1);assert.equal(a.proposedSbd,'HS00102');a.status='rejected';importCenterRoster(d,admin,input('b','Next official'));assert.equal(d.classes[1].students[0].sbd,'HS00103');
+test('teacher reservations and administrator additions allocate independently for their own classes',()=>{
+ const d=fixture();const t=importCenterRoster(d,teacher,input('b','Teacher new'));assert.equal(d.enrollmentApplications[0].proposedSbd,'K8B06');
+ const a=importCenterRoster(d,admin,input('a','Admin new'));assert.equal(d.classes[0].students.at(-1).sbd,'K8A11');
+ approveEnrollments(d,admin,d.enrollmentApplications.map(x=>({id:x.id,classId:'b'})));assert.equal(d.classes[1].students.at(-1).sbd,'K8B06');
+ importCenterRoster(d,teacher,input('b','Teacher next'));assert.equal(d.enrollmentApplications.at(-1).proposedSbd,'K8B07');
 });
-test('legacy archived, pending and historical numbers initialize high water without renumbering current pupils',()=>{
- const d=fixture();d.archivedStudents=[{restoredAt:'yesterday',student:{sbd:'HS00200'}}];d.enrollmentApplications=[{id:'old',status:'rejected',proposedSbd:'HS00300'}];d._rosterImportHistory=[{students:[{sbd:'HS00400'}]}];assert.equal(studentSbdHighWater(d),400);const seq=createStudentSbdSequence(d);assert.equal(seq.next(),'HS00401');seq.commit();assert.equal(d.classes[0].students[0].sbd,'HS00003');
+test('deleted, archived, pending and historical SBDs reserve only their own class sequence',()=>{
+ const d=fixture();d.archivedStudents=[{classId:'a',student:{sbd:'K8A20'}}];d.enrollmentApplications=[{id:'pending',classId:'b',proposedSbd:'K8B30'}];d._rosterImportHistory=[{classId:'a',students:[{sbd:'K8A40'}]}];
+ assert.equal(studentSbdHighWater(d,'a'),40);assert.equal(studentSbdHighWater(d,'b'),30);
+ const a=createStudentSbdSequence(d,'a'),b=createStudentSbdSequence(d,'b');assert.equal(a.next(),'K8A41');assert.equal(b.next(),'K8B31');
 });
-test('invalid imports leave sequence unchanged and updates keep issued number despite a different file SBD',()=>{
- const d=fixture(),before=structuredClone(d),hash=d._auth['student:a:HS00003'];assert.throws(()=>importCenterRoster(d,admin,{classId:'a',mode:'append',rows:[{name:'Valid'},{name:'Invalid',password:'x'}]}),/Mật khẩu/);assert.deepEqual(d,before);importCenterRoster(d,admin,input('a','Existing',{sbd:'HS99999',dob:'02/11/2013'}));assert.equal(d.classes[0].students.length,2);assert.equal(d.classes[0].students[0].sbd,'HS00003');assert.equal(d._auth['student:a:HS00003'],hash);applyChanges(d,admin,{_studentSbdSequence:{upsert:[0],remove:[]}});assert.equal(d._studentSbdSequence,100);
+test('transfer keeps sequence and changes only the class prefix; target collision is rejected',()=>{
+ const d=fixture();assert.equal(studentSbdForTransfer(d,'a','b','K8A03'),'K8B03');
+ assert.throws(()=>studentSbdForTransfer(d,'a','b','HS00003'),/không theo định dạng/);
 });
-test('simultaneous teacher/admin HTTP additions allocate inside shared storage transaction and do not expose counter',async()=>{
- let d=fixture(),queue=Promise.resolve();const store={read:async()=>structuredClone(d),mutate:fn=>{const job=queue.then(async()=>{await new Promise(r=>setImmediate(r));d=fn(structuredClone(d));return structuredClone(d);});queue=job.catch(()=>{});return job;}};const server=createPortalServer({env:{SESSION_SECRET:'x'.repeat(64)},store});await new Promise(r=>server.listen(0,'127.0.0.1',r));const base='http://127.0.0.1:'+server.address().port;
+test('invalid imports leave issued numbers and authentication unchanged',()=>{
+ const d=fixture(),before=structuredClone(d),hash=d._auth['student:a:K8A03'];
+ assert.throws(()=>importCenterRoster(d,admin,{classId:'a',mode:'append',rows:[{name:'Valid'},{name:'Invalid',password:'x'}]}),/Mật khẩu/);
+ assert.deepEqual(d,before);assert.equal(d._auth['student:a:K8A03'],hash);
+});
+test('concurrent teacher/admin HTTP additions allocate within separate class sequences and do not expose the counter',async()=>{
+ let d=fixture(),queue=Promise.resolve();const store={read:async()=>structuredClone(d),mutate:fn=>{const job=queue.then(async()=>{await new Promise(r=>setImmediate(r));d=fn(structuredClone(d));return structuredClone(d);});queue=job.catch(()=>{});return job;}};
+ const server=createPortalServer({env:{SESSION_SECRET:'x'.repeat(64)},store});await new Promise(r=>server.listen(0,'127.0.0.1',r));const base='http://127.0.0.1:'+server.address().port;
  const login=async(role,password)=>{const r=await fetch(base+'/api/login',{method:'POST',body:JSON.stringify({role,username:role,password})});assert.equal(r.status,200);return r.headers.get('set-cookie').split(';')[0];};
- try{const ac=await login('admin','admin123456'),tc=await login('teacher','teacher123'),responses=await Promise.all([[ac,input('a','Admin concurrent')],[tc,input('b','Teacher concurrent')]].map(([cookie,body])=>fetch(base+'/api/students/import',{method:'POST',headers:{Cookie:cookie},body:JSON.stringify(body)})));for(const r of responses){assert.equal(r.status,200);assert.equal((await r.json()).view._studentSbdSequence,undefined);}const issued=[d.classes[0].students.at(-1).sbd,d.enrollmentApplications.at(-1).proposedSbd];assert.equal(new Set(issued).size,2);assert.deepEqual(new Set(issued),new Set(['HS00101','HS00102']));assert.equal(d._studentSbdSequence,102);}finally{server.closeAllConnections();await new Promise(r=>server.close(r));}
-});
-for(const mode of ['update','append'])test(mode+' imports retain every previously issued SBD and append new pupils without replacing absent pupils',()=>{
- const d=fixture(),auth=d._auth['student:a:HS00003'];const originalIds=d.classes[0].students.map(s=>s.sbd);
- importCenterRoster(d,admin,{classId:'a',mode,rows:[{name:'Existing',dob:'02/11/2013',sbd:'HS00100',fields:['name','dob','address'],address:'Bổ sung địa chỉ'},{name:'New file pupil',sbd:'HS00001',fields:['name']}]});
- assert.equal(d.classes[0].students.length,3);assert.deepEqual(d.classes[0].students.slice(0,2).map(s=>s.sbd),originalIds);assert.equal(d.classes[0].students[0].name,'Existing');assert.equal(d.classes[0].students[0].address,'Bổ sung địa chỉ');assert.equal(d.classes[0].students[1].name,'Latest');assert.equal(d.classes[0].students[2].sbd,'HS00101');assert.equal(d._auth['student:a:HS00003'],auth);
+ try{const ac=await login('admin','admin123456'),tc=await login('teacher','teacher123'),responses=await Promise.all([[ac,input('a','Admin concurrent')],[tc,input('b','Teacher concurrent')]].map(([cookie,body])=>fetch(base+'/api/students/import',{method:'POST',headers:{Cookie:cookie},body:JSON.stringify(body)})));
+  for(const r of responses){assert.equal(r.status,200);assert.equal((await r.json()).view._studentSbdSequence,undefined);}
+  const issued=[d.classes[0].students.at(-1).sbd,d.enrollmentApplications.at(-1).proposedSbd];assert.equal(new Set(issued).size,2);assert.deepEqual(new Set(issued),new Set(['K8A11','K8B06']));
+ }finally{server.closeAllConnections();await new Promise(r=>server.close(r));}
 });

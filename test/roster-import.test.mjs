@@ -12,10 +12,10 @@ test('append only adds new pupils, ignores all existing fields/passwords and kee
  const summary=importCenterRoster(d,admin,request([row('An',{sbd:'S1',password:'changedpassword',parentPhone:'0999999999'}),row('New')],'append'));
  assert.equal(summary.added,1);assert.equal(summary.updated,0);assert.equal(summary.skipped,1);
  assert.deepEqual(d.classes[0].students.slice(0,2),old);assert.equal(d._auth['student:c1:S1'],auth);
- assert.equal(d.classes[0].students[2].sbd,'HS00001');assert.equal(d.gradeBook[0].score,8);
+ assert.equal(d.classes[0].students[2].sbd,'K8A01');assert.equal(d.gradeBook[0].score,8);
  // Merely viewing a zero tuition line must not prevent undo.
  d.classes[0].students[2].fees['10/2026']={amount:0,status:'Chưa đóng',creditApplied:0,creditRemaining:0};
- undoCenterRoster(d,admin,{classId:'c1',batchId:summary.batchId});assert.deepEqual(d.classes[0].students,old);assert.equal(d._auth['student:c1:HS00001'],undefined);
+ undoCenterRoster(d,admin,{classId:'c1',batchId:summary.batchId});assert.deepEqual(d.classes[0].students,old);assert.equal(d._auth['student:c1:K8A01'],undefined);
 });
 
 test('profile update preserves blank fields and credentials; undo retains later fees, grades and attendance',()=>{
@@ -27,8 +27,8 @@ test('profile update preserves blank fields and credentials; undo retains later 
 
 test('matching by name/date preserves existing pupils; new file IDs are replaced by shared automatic IDs',()=>{
  const d=fixture();const summary=importCenterRoster(d,admin,request([row('An',{dob:'01/01/2010',address:'New address'}),row('New auto'),row('Explicit',{sbd:'HS00001'})]));
- assert.equal(summary.updated,1);assert.equal(d.classes[0].students.filter(s=>s.name==='An').length,1);assert.equal(d.classes[0].students.find(s=>s.name==='New auto').sbd,'HS00001');
- assert.equal(d.classes[0].students.find(s=>s.name==='Explicit').sbd,'HS00002');
+ assert.equal(summary.updated,1);assert.equal(d.classes[0].students.filter(s=>s.name==='An').length,1);assert.equal(d.classes[0].students.find(s=>s.name==='New auto').sbd,'K8A01');
+ assert.equal(d.classes[0].students.find(s=>s.name==='Explicit').sbd,'K8A02');
  const duplicates=importCenterRoster(d,admin,request([row('A',{sbd:'same'}),row('B',{sbd:'same'})]));assert.equal(duplicates.added,2);assert.equal(duplicates.warnings.length,2);assert.notEqual(d.classes[0].students.at(-1).sbd,d.classes[0].students.at(-2).sbd);
  const before=structuredClone(d);assert.throws(()=>importCenterRoster(d,admin,request([row('Valid'),row('Bad',{password:'x'})])),/Mật khẩu/);assert.deepEqual(d,before);
 });
