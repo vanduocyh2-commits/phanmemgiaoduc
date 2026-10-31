@@ -9,7 +9,7 @@ const request=(rows,mode='update')=>({classId:'c1',mode,rows,filename:'students.
 
 test('append only adds new pupils, ignores all existing fields/passwords and keeps missing pupils',()=>{
  const d=fixture(),old=structuredClone(d.classes[0].students),auth=d._auth['student:c1:S1'];
- const summary=importCenterRoster(d,admin,request([row('Renamed',{sbd:'S1',password:'changedpassword',parentPhone:'0999999999'}),row('New')],'append'));
+ const summary=importCenterRoster(d,admin,request([row('An',{sbd:'S1',password:'changedpassword',parentPhone:'0999999999'}),row('New')],'append'));
  assert.equal(summary.added,1);assert.equal(summary.updated,0);assert.equal(summary.skipped,1);
  assert.deepEqual(d.classes[0].students.slice(0,2),old);assert.equal(d._auth['student:c1:S1'],auth);
  assert.equal(d.classes[0].students[2].sbd,'HS00001');assert.equal(d.gradeBook[0].score,8);
@@ -19,7 +19,7 @@ test('append only adds new pupils, ignores all existing fields/passwords and kee
 });
 
 test('profile update preserves blank fields and credentials; undo retains later fees, grades and attendance',()=>{
- const d=fixture(),auth=d._auth['student:c1:S1'];const summary=importCenterRoster(d,admin,request([row('New name',{sbd:'S1',parentPhone:'0999999999',password:'newpassword',fees:{bad:1}})]));
+ const d=fixture(),auth=d._auth['student:c1:S1'];const summary=importCenterRoster(d,admin,{...request([row('New name',{sbd:'S1',parentPhone:'0999999999',password:'newpassword',fees:{bad:1}})]),editSbd:'S1'});
  const s=d.classes[0].students[0];assert.equal(s.name,'New name');assert.equal(s.address,'Old address');assert.equal(s.parentPhone,'0999999999');assert.equal(d._auth['student:c1:S1'],auth);assert.equal(s.fees['10/2026'].paidAmount,300);
  s.fees['10/2026'].paidAmount=500;s.attendanceRecords.push({date:'2026-10-29',status:'Muộn'});d.gradeBook[0].score=9;
  undoCenterRoster(d,admin,{classId:'c1',batchId:summary.batchId});assert.equal(s.name,'An');assert.equal(s.parentPhone,'0900000000');assert.equal(s.fees['10/2026'].paidAmount,500);assert.equal(s.attendanceRecords.length,2);assert.equal(d.gradeBook[0].score,9);assert.equal(d.classes[0].students.length,2);
@@ -29,7 +29,7 @@ test('matching by name/date preserves existing pupils; new file IDs are replaced
  const d=fixture();const summary=importCenterRoster(d,admin,request([row('An',{dob:'01/01/2010',address:'New address'}),row('New auto'),row('Explicit',{sbd:'HS00001'})]));
  assert.equal(summary.updated,1);assert.equal(d.classes[0].students.filter(s=>s.name==='An').length,1);assert.equal(d.classes[0].students.find(s=>s.name==='New auto').sbd,'HS00001');
  assert.equal(d.classes[0].students.find(s=>s.name==='Explicit').sbd,'HS00002');
- assert.throws(()=>importCenterRoster(d,admin,request([row('A',{sbd:'same'}),row('B',{sbd:'same'})])),/trùng/);
+ const duplicates=importCenterRoster(d,admin,request([row('A',{sbd:'same'}),row('B',{sbd:'same'})]));assert.equal(duplicates.added,2);assert.equal(duplicates.warnings.length,2);assert.notEqual(d.classes[0].students.at(-1).sbd,d.classes[0].students.at(-2).sbd);
  const before=structuredClone(d);assert.throws(()=>importCenterRoster(d,admin,request([row('Valid'),row('Bad',{password:'x'})])),/Mật khẩu/);assert.deepEqual(d,before);
 });
 
@@ -52,7 +52,7 @@ test('teacher batches stay pending, append skips pending duplicates, undo cancel
 
 test('approved teacher applications cannot be undone, and only latest batch may roll back',()=>{
  const d=fixture();const summary=importCenterRoster(d,teacher,request([row('New')]));approveEnrollments(d,admin,[{id:d.enrollmentApplications[0].id,classId:'c1'}]);assert.throws(()=>undoCenterRoster(d,teacher,{classId:'c1',batchId:summary.batchId}),/được duyệt/);
- const one=importCenterRoster(d,admin,request([row('Name1',{sbd:'S1'})]));const two=importCenterRoster(d,admin,request([row('Name2',{sbd:'S1'})]));assert.throws(()=>undoCenterRoster(d,admin,{classId:'c1',batchId:one.batchId}),/phù hợp/);undoCenterRoster(d,admin,{classId:'c1',batchId:two.batchId});assert.equal(d.classes[0].students[0].name,'Name1');
+ const one=importCenterRoster(d,admin,{...request([row('Name1',{sbd:'S1'})]),editSbd:'S1'});const two=importCenterRoster(d,admin,{...request([row('Name2',{sbd:'S1'})]),editSbd:'S1'});assert.throws(()=>undoCenterRoster(d,admin,{classId:'c1',batchId:one.batchId}),/phù hợp/);undoCenterRoster(d,admin,{classId:'c1',batchId:two.batchId});assert.equal(d.classes[0].students[0].name,'Name1');
 });
 
 test('student and unrelated teacher cannot import or undo; archived IDs stay protected',()=>{
@@ -73,7 +73,7 @@ test('API saves durable undo metadata without exposing private backups or hashes
 
 test('append fills only missing profile fields, preserves existing birth dates and leaves financial data intact',()=>{
  const d=fixture(),s=d.classes[0].students[0];s.email='   ';s.school=null;const before=structuredClone(s),auth=d._auth['student:c1:S1'];
- const r=importCenterRoster(d,admin,request([{sbd:'S1',name:'Renamed',dob:'06/05/2010',address:'Changed address',parentPhone:'0999999999',parentName:'Synthetic parent',school:'Synthetic school',schoolClass:'8A',gender:'Nam',studentPhone:'0910000000',email:'test@example.test',fields:['name','dob','address','parentPhone','parentName','school','schoolClass','gender','studentPhone','email']}],'append'));
+ const r=importCenterRoster(d,admin,request([{sbd:'S1',name:'An',dob:'06/05/2010',address:'Changed address',parentPhone:'0999999999',parentName:'Synthetic parent',school:'Synthetic school',schoolClass:'8A',gender:'Nam',studentPhone:'0910000000',email:'test@example.test',fields:['name','dob','address','parentPhone','parentName','school','schoolClass','gender','studentPhone','email']}],'append'));
  assert.equal(r.updated,1);assert.equal(r.added,0);assert.equal(r.skipped,0);
  assert.equal(s.name,before.name);assert.equal(s.dob,before.dob);assert.equal(s.address,before.address);assert.equal(s.parentPhone,before.parentPhone);
  assert.equal(s.parentName,'Synthetic parent');assert.equal(s.school,'Synthetic school');assert.equal(s.email,'test@example.test');assert.equal(s.schoolClass,'8A');assert.equal(s.gender,'Nam');assert.equal(s.studentPhone,'0910000000');assert.deepEqual(s.fees,before.fees);assert.deepEqual(s.attendanceRecords,before.attendanceRecords);assert.equal(d.gradeBook[0].score,8);assert.equal(d._auth['student:c1:S1'],auth);

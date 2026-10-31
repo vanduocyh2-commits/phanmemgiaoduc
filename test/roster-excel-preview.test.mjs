@@ -37,3 +37,7 @@ test('changing date interpretation rebuilds preview without writing or mutating 
  vm.runInContext('let rosterImportSaving=false;'+html.slice(html.indexOf('function setRosterDateMode('),html.indexOf('function showRosterImport('))+';setRosterDateMode("display")',c);
  const first=c.rosterImportDraft.rows[0].dob;vm.runInContext('setRosterDateMode("excel")',c);const second=c.rosterImportDraft.rows[0].dob;assert.notEqual(first,second);assert.equal(ws.B2.v,v);assert.equal(shown,2);
 });
+
+test('preview warns on reused SBD for different pupils while keeping each new row eligible for automatic numbering',()=>{
+ const c=context(),X=c.XLSX,ws=X.utils.aoa_to_sheet([['Họ và tên HS','SBD'],['Different pupil','S1'],['Another pupil','S1']]);const rows=c.prepare(ws,'c',false,'update');assert.equal(rows.length,2);for(const row of rows){assert.equal(row.error,'');assert.equal(row.existingSbd,null);assert.match(row.warning,/bị trùng.*nối tiếp/);assert.match(row.action,/Thêm mới/);}
+});
