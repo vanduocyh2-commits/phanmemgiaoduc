@@ -88,6 +88,7 @@ export function scheduleSummary(timetable,classId){return classSchedule(timetabl
 export function notificationVisible(n,m,allowedClassIds=[]){
  if(!m)return false;if(m.role==='admin')return true;
  const role=m.role,allowed=new Set(allowedClassIds),classId=m.cid;
+ if(n.kind==='assignment_reminder')return role==='teacher'?n.owner===m.username:allowed.has(n.classId)&&n.sbd===m.sbd&&n.recipient===role;
  if(n.kind==='director_broadcast'){
   if(!n.audiences?.includes(role))return false;
   if(role==='teacher')return (!n.teacherUsernames?.length||n.teacherUsernames.includes(m.username))&&(!n.classIds?.length||n.classIds.some(id=>allowed.has(id)));
