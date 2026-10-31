@@ -1,3 +1,4 @@
+import './attendance-history-ui.mjs';
 const doc=globalThis.document;
 const text=(tag,value,cls)=>{const e=doc.createElement(tag);if(value!==undefined)e.textContent=value;if(cls)e.className=cls;return e};
 const button=(label,fn,cls='ts-btn ts-secondary')=>{const b=text('button',label,cls);b.type='button';b.onclick=fn;return b};
