@@ -1,14 +1,22 @@
-// Class-scoped student SBDs. Examples: 8A -> K8A01, 9A1 -> K9A101, 11A2 -> K11A201.
+// Class-scoped SBDs. Examples: 8A -> K8A01, 9A1 -> K9A101, 11A2 -> K11A201.
 export function studentSbdPrefix(className){
- const normalized=String(className||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/^LOP/,'').replace(/[^A-Z0-9]/g,'');
+ const normalized=String(className||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/^(LOP|CLASS)/,'').replace(/[^A-Z0-9]/g,'');
  const match=/^(1[0-2]|[1-9])([A-Z]?\d*)$/.exec(normalized);
- if(!match)throw Error('Tên lớp không thể tạo SBD. Định dạng lớp cần dạng 6, 8A, 9A1 hoặc 11A2.');
- return 'K'+match[1]+match[2];
+ return match?'K'+match[1]+match[2]:null;
 }
 function classById(d,classId){const c=(d.classes||[]).find(x=>x.id===classId);if(!c)throw Error('Không tìm thấy lớp để cấp số báo danh.');return c}
+function legacyHighWater(d){
+ let max=Number.isSafeInteger(d._studentSbdSequence)&&d._studentSbdSequence>=0?d._studentSbdSequence:0;
+ const see=value=>{const m=/^HS(\d+)$/i.exec(String(value||''));if(m){const n=Number(m[1]);if(Number.isSafeInteger(n))max=Math.max(max,n);}};
+ const walk=(v,seen=new WeakSet())=>{if(!v||typeof v!=='object'||seen.has(v))return;seen.add(v);if(Array.isArray(v)){for(const x of v)walk(x,seen);return;}if(typeof v.sbd==='string')see(v.sbd);if(typeof v.proposedSbd==='string')see(v.proposedSbd);for(const child of Object.values(v))walk(child,seen)};
+ for(const key of ['classes','archivedStudents','enrollmentApplications','_rosterImportHistory','gradeBook','learningSubmissions','learningAttempts','learningReports','lessonProgress','teacherSubmissions','teacherExams','notifications','assignments','timetable','centerLessons','_tuitionResets','_attendanceSessions','admissionAccounts'])walk(d[key]);
+ for(const key of Object.keys(d._auth||{}))if(/^(student|parent):/.test(key))see(key.split(':').at(-1));
+ for(const collection of ['_familyAccounts','_familyPasswordVault'])for(const key of Object.keys(d[collection]||{})){const m=/^(student|parent):[^:]+:(.+)$/.exec(key);if(m)see(m[2]);}
+ return max;
+}
 function visitSbdValues(value,classId,see,seen=new WeakSet()){
- if(!value||typeof value!=='object')return;
- if(seen.has(value))return;seen.add(value);
+ if(!value||typeof value!=='object'||seen.has(value))return;
+ seen.add(value);
  if(Array.isArray(value)){for(const x of value)visitSbdValues(x,classId,see,seen);return;}
  const cid=typeof value.classId==='string'?value.classId:classId;
  if(typeof value.sbd==='string')see(cid,value.sbd);
@@ -22,14 +30,13 @@ function visitSbdValues(value,classId,see,seen=new WeakSet()){
 }
 export function studentSbdHighWater(d,classId){
  const classes=classId?[classById(d,classId)]:d.classes||[];
+ const prefixes=new Map(classes.map(c=>[c.id,studentSbdPrefix(c.name)]).filter(([,p])=>p));
+ if(classId&&!prefixes.size)return legacyHighWater(d);
  let max=0;
- const prefixes=new Map(classes.map(c=>[c.id,studentSbdPrefix(c.name)]));
  const see=(cid,value)=>{
-  if(!cid||!prefixes.has(cid))return;
-  const prefix=prefixes.get(cid),text=String(value||'');
-  if(!text.startsWith(prefix))return;
-  const suffix=text.slice(prefix.length);
-  if(!/^\d+$/.test(suffix))return;
+  const prefix=prefixes.get(cid);if(!prefix)return;
+  const text=String(value||'');if(!text.startsWith(prefix))return;
+  const suffix=text.slice(prefix.length);if(!/^\d+$/.test(suffix))return;
   const n=Number(suffix);if(Number.isSafeInteger(n))max=Math.max(max,n);
  };
  for(const c of classes)visitSbdValues(c.students||[],c.id,see);
@@ -46,15 +53,17 @@ export function studentSbdHighWater(d,classId){
 export function createStudentSbdSequence(d,classId){
  const c=classById(d,classId),prefix=studentSbdPrefix(c.name);
  let value=studentSbdHighWater(d,classId);
- return {next(){if(value>=999999)throw Error('Số thứ tự SBD của lớp đã hết giới hạn.');return prefix+String(++value).padStart(2,'0');},commit(){d._studentSbdSequence=Math.max(Number(d._studentSbdSequence)||0,studentSbdHighWater(d));}};
+ if(!prefix){value=legacyHighWater(d);return {next(){if(value>=999999)throw Error('Bộ số báo danh đã hết giới hạn.');return 'HS'+String(++value).padStart(5,'0');},commit(){d._studentSbdSequence=Math.max(Number(d._studentSbdSequence)||0,value);}};}
+ return {next(){if(value>=999999)throw Error('Số thứ tự SBD của lớp đã hết giới hạn.');return prefix+String(++value).padStart(2,'0');},commit(){d._studentSbdSequence=Math.max(Number(d._studentSbdSequence)||0,value);}};
 }
 export function studentSbdForTransfer(d,fromClassId,toClassId,sbd){
- const from=studentSbdPrefix(classById(d,fromClassId).name),to=studentSbdPrefix(classById(d,toClassId).name);
- const value=String(sbd||'');
+ const from=studentSbdPrefix(classById(d,fromClassId).name),to=studentSbdPrefix(classById(d,toClassId).name),value=String(sbd||'');
+ if(!from||!to)return value;
  if(!value.startsWith(from)||!/^\d+$/.test(value.slice(from.length)))throw Error('SBD hiện tại không theo định dạng lớp; cần rà soát trước khi chuyển.');
  return to+String(Number(value.slice(from.length))).padStart(2,'0');
 }
 export function rememberStudentSbds(d,floor=0){
- let max=0;for(const c of d.classes||[])max=Math.max(max,studentSbdHighWater(d,c.id));
- d._studentSbdSequence=Math.max(Number.isSafeInteger(d._studentSbdSequence)?d._studentSbdSequence:0,floor,max);
+ let max=Number.isSafeInteger(d._studentSbdSequence)?d._studentSbdSequence:0;
+ for(const c of d.classes||[])if(studentSbdPrefix(c.name))max=Math.max(max,studentSbdHighWater(d,c.id));
+ d._studentSbdSequence=Math.max(max,floor,legacyHighWater(d));
 }
