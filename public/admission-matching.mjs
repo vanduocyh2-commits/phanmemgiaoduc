@@ -12,3 +12,22 @@ export function admissionMatches(classes,application){
  return name&&dob?all.filter(s=>nameKey(s.name)===name&&dateKey(s.dob)===dob):[];
 }
 export const isWaitingAdmission=a=>['received','needs_info'].includes(a.status)||a.status==='draft'&&a.source==='student';
+
+// Keep the admin menu numbering together with the waiting-room entry.
+export function orderAdmissionMenu(root=globalThis.document){
+ if(!root?.querySelectorAll)return;
+ const buttons=[...root.querySelectorAll('.admin-sidebar-btn')];
+ const waiting=buttons.find(b=>b.getAttribute('onclick')?.includes("'waiting'"));
+ const backup=buttons.find(b=>b.getAttribute('onclick')?.includes("'backup'"));
+ if(!waiting||!backup||waiting.parentElement!==backup.parentElement)return;
+ const label=button=>[...button.childNodes].find(n=>n.nodeType===3&&n.textContent.trim());
+ const waitingLabel=label(waiting),backupLabel=label(backup);
+ if(!waitingLabel||!backupLabel)return;
+ waitingLabel.textContent='12. Lớp chờ · Chờ phân lớp ';
+ backupLabel.textContent='13. Sao Lưu Dữ Liệu';
+ backup.before(waiting);
+}
+if(typeof document!=='undefined'){
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>orderAdmissionMenu(),{once:true});
+ else orderAdmissionMenu();
+}
