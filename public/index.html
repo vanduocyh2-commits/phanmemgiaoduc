@@ -905,7 +905,7 @@ import {createTeacherScanUI} from "/teacher-scan-ui.mjs";
             if (!c || !sbd || !name) return toast('Nhập đủ lớp, SBD và họ tên!');
             if (!/^[\w-]+$/.test(sbd)) return toast('SBD chỉ gồm chữ, số, gạch nối!');
             if (pass.length < 6) return toast('Mật khẩu tối thiểu 6 ký tự!');
-            if (c.students.some(s => s.sbd === sbd)) return toast('SBD đã có trong lớp này!');
+            const duplicateClass=state.classes.find(cl=>cl.students.some(s=>String(s.sbd||'').trim().toUpperCase()===sbd.toUpperCase()));if(duplicateClass)return toast('SBD đã được sử dụng ở lớp '+duplicateClass.name+'. Mỗi học sinh phải có SBD riêng trên toàn trung tâm.');
             const profile=newStudent(sbd,name,pass);try{profile.dob=normalizeRosterDOB($('stu-dob')?.value||'')}catch(e){return toast(e.message)}Object.assign(profile,{address:$('stu-address')?.value.trim()||'',parentName:$('stu-parent-name')?.value.trim()||'',parentPhone:$('stu-parent-phone')?.value.trim()||'',school:$('stu-school')?.value.trim()||''});c.students.push(profile); save(c); closeModal('modal-add-student');
             ['stu-sbd','stu-name','stu-dob','stu-address','stu-parent-name','stu-parent-phone','stu-school'].forEach(i => $(i).value = ''); refreshUI(); toast(`Đã thêm ${name}`);
         }
