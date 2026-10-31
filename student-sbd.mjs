@@ -44,7 +44,7 @@ export function studentSbdHighWater(d,classId){
  for(const a of d.enrollmentApplications||[])if(!classId||a.classId===classId||a.ownerClassId===classId||a.proposedClassId===classId)visitSbdValues(a,a.classId||a.ownerClassId||a.proposedClassId,see);
  for(const b of d._rosterImportHistory||[])if(!classId||b.classId===classId)visitSbdValues(b,b.classId,see);
  for(const key of ['gradeBook','learningSubmissions','learningAttempts','learningReports','lessonProgress','teacherSubmissions','teacherExams','notifications','assignments','timetable','centerLessons','_tuitionResets','_attendanceSessions','admissionAccounts']){
-  for(const row of d[key]||[])if(!classId||row.classId===classId||row.ownerClassId===classId||row.proposedClassId===classId)visitSbdValues(row,row.classId||row.ownerClassId||row.proposedClassId,see);
+  const collection=d[key];const rows=Array.isArray(collection)?collection:collection&&typeof collection==='object'?Object.values(collection):[];for(const row of rows)if(row&&typeof row==='object'&&(!classId||row.classId===classId||row.ownerClassId===classId||row.proposedClassId===classId))visitSbdValues(row,row.classId||row.ownerClassId||row.proposedClassId,see);
  }
  for(const role of ['student','parent'])for(const key of Object.keys(d._auth||{})){const m=new RegExp('^'+role+':([^:]+):(.+)$').exec(key);if(m&&(!classId||m[1]===classId))see(m[1],m[2]);}
  for(const collection of ['_familyAccounts','_familyPasswordVault'])for(const key of Object.keys(d[collection]||{})){const m=/^(student|parent):([^:]+):(.+)$/.exec(key);if(m&&(!classId||m[2]===classId))see(m[2],m[3]);}
