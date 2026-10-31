@@ -25,6 +25,7 @@ test('teacher reservations and administrator additions allocate independently fo
  approveEnrollments(d,admin,d.enrollmentApplications.map(x=>({id:x.id,classId:'b'})));assert.equal(d.classes[1].students.at(-1).sbd,'K8B06');
  importCenterRoster(d,teacher,input('b','Teacher next'));assert.equal(d.enrollmentApplications.at(-1).proposedSbd,'K8B07');
 });
+test('SBD high-water scan accepts object-shaped attendance session storage',()=>{const d=fixture();d._attendanceSessions={morning:{classId:'a',entries:[{sbd:'K8A22'}]},afternoon:{classId:'b',entries:[{sbd:'K8B17'}]}};assert.equal(studentSbdHighWater(d),22);assert.equal(studentSbdHighWater(d,'a'),22);});
 test('deleted, archived, pending and historical SBDs reserve only their own class sequence',()=>{
  const d=fixture();d.archivedStudents=[{classId:'a',student:{sbd:'K8A20'}}];d.enrollmentApplications=[{id:'pending',classId:'b',proposedSbd:'K8B30'}];d._rosterImportHistory=[{classId:'a',students:[{sbd:'K8A40'}]}];
  assert.equal(studentSbdHighWater(d,'a'),40);assert.equal(studentSbdHighWater(d,'b'),30);
