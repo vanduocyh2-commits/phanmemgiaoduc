@@ -30,7 +30,7 @@ export function resolvePortalPupil(d,{role,sbd,password,className}={}){
  if(!['student','parent'].includes(role)||typeof sbd!=='string'||!sbd.trim()||sbd.length>80||typeof password!=='string'||password.length>200)return null;
  const code=sbd.trim(),hasClass=className!==undefined&&className!==null&&className!=='';
  if(hasClass&&typeof className!=='string')return null;
- const matches=d.classes.flatMap(c=>(!hasClass||c.name===className)?(c.students||[]).filter(s=>(s.sbd===code||familyAccountMeta(d,role,c.id,s.sbd).username===code)&&familyAccountActive(d,role,c.id,s.sbd)&&verify(password,d._auth[familyCredentialKey(d,role,c.id,s.sbd)])).map(s=>({c,s})):[]);
+ const matches=d.classes.flatMap(c=>(!hasClass||c.name===className)?(c.students||[]).filter(s=>s.sbd===code&&familyAccountActive(d,role,c.id,s.sbd)&&verify(password,d._auth[familyCredentialKey(d,role,c.id,s.sbd)])).map(s=>({c,s})):[]);
  if(matches.length>1)return {ambiguous:true};if(!matches.length)return null;const {c,s}=matches[0];
  return {who:{role,cid:c.id,sbd:s.sbd,portalVersion:familyAccountMeta(d,role,c.id,s.sbd).version||null},key:familyCredentialKey(d,role,c.id,s.sbd)};
 }
@@ -207,7 +207,7 @@ export function undoCenterRoster(d,m,{classId,batchId}={}){
 }
 export function updateOwnProfile(d,m,input){
  const family=['student','parent'].includes(m.role),key=family?m.role==='parent'?'parent:'+m.cid+':'+m.sbd:skey(m.cid,m.sbd):m.username;if(!verify(String(input.currentPassword||''),d._auth[family?familyCredentialKey(d,m.role,m.cid,m.sbd):key]))throw Error('Mật khẩu hiện tại không đúng.');const target=['student','parent'].includes(m.role)?student(d,m.cid,m.sbd):d.accounts.find(a=>a.username===m.username);if(!target)throw Error('Không tìm thấy tài khoản.');
- if(family){const login=familyAccountMeta(d,m.role,m.cid,m.sbd).username||m.sbd;const changedName=input.name!==undefined&&String(input.name).trim()!==String(target.name||'').trim(),changedLogin=['username','newUsername'].some(k=>input[k]!==undefined&&String(input[k]).trim()!==login),changedSbd=['sbd','newSbd'].some(k=>input[k]!==undefined&&String(input[k]).trim()!==m.sbd);if(changedName||changedLogin||changedSbd)throw Error('Học sinh và phụ huynh chỉ được đổi mật khẩu. Liên hệ giáo viên hoặc quản trị để sửa thông tin tài khoản.');}
+ if(family){const login=m.sbd;const changedName=input.name!==undefined&&String(input.name).trim()!==String(target.name||'').trim(),changedLogin=['username','newUsername'].some(k=>input[k]!==undefined&&String(input[k]).trim()!==login),changedSbd=['sbd','newSbd'].some(k=>input[k]!==undefined&&String(input[k]).trim()!==m.sbd);if(changedName||changedLogin||changedSbd)throw Error('Học sinh và phụ huynh chỉ được đổi mật khẩu. Liên hệ giáo viên hoặc quản trị để sửa thông tin tài khoản.');}
  if(input.name!==undefined&&!family){const name=String(input.name).trim();if(!name||name.length>200)throw Error('Họ tên cần 1–200 ký tự.');target.name=name;if(m.role==='teacher')d.classes.filter(c=>c.teacherId===target.id).forEach(c=>c.teacher=name);}
  if(input.newPassword){if(typeof input.newPassword!=='string'||input.newPassword.length<6||input.newPassword.length>200)throw Error('Mật khẩu mới cần 6–200 ký tự.');savePassword(d,key,input.newPassword);if(['student','parent'].includes(m.role))for(const account of d.admissionAccounts||[])if(account.classId===m.cid&&account.sbd===m.sbd)d._auth['applicant:'+account.id]=d._auth[key];}d._revision++;return d;
 }
