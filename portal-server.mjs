@@ -127,7 +127,7 @@ export function deleteClassAttendance(d,m,{classId,date,session}={}){
 }
 function attendanceMonthLabel(date){return 'Tháng '+Number(String(date).slice(5,7))+'/'+String(date).slice(0,4);}
 function effectiveAttendanceMonth(record){if(record?.billingMonth){try{return 'Tháng '+(monthIndex(record.billingMonth)%12+1)+'/'+Math.floor(monthIndex(record.billingMonth)/12);}catch{}}return attendanceMonthLabel(record?.date||'2000-01-01');}
-function validAttendanceDate(date){if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(String(date)))return false;const parsed=new Date(date+'T00:00:00Z');return Number.isFinite(parsed.getTime())&&parsed.toISOString().slice(0,10)===date;}
+function validAttendanceDate(date){if(!/^\d{4}-\d{2}-\d{2}$/.test(String(date)))return false;const parsed=new Date(date+'T00:00:00Z');return Number.isFinite(parsed.getTime())&&parsed.toISOString().slice(0,10)===date;}
 export function studentTuitionHistory(d,m,{classId,sbd}={}){
  if(m?.role!=='admin')throw Error('Chỉ quản trị được xem toàn bộ học phí học sinh.');
  const c=d.classes.find(row=>row.id===classId),s=c?.students?.find(row=>row.sbd===sbd);if(!c||!s)throw Error('Không tìm thấy học sinh trong lớp đã chọn.');
