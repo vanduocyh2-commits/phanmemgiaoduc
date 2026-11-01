@@ -28,7 +28,7 @@ test('daily attendance lock blocks edits and deletion until explicitly unlocked'
  saveClassAttendance(d,teacher,{...body,marks:[{sbd:'S1',status:'Vắng'},{sbd:'S2',status:'Có mặt'}]});
  assert.equal(d.classes[0].students[0].attendanceRecords.find(r=>r.date===body.date).status,'Vắng');
  assert.equal(attendanceHistory(d,teacher,['a'],{classId:'a'}).sessions[0].locked,false);
- assert.throws(()=>setAttendanceLock(d,teacher,['b'],{classId:'b',date:body.date,locked:true}),/Không có quyền/);
+ assert.throws(()=>setAttendanceLock(d,teacher,['a'],{classId:'b',date:body.date,locked:true}),/Không có quyền/);
 });
 test('saved class session remains selectable after pupil archival/removal and invalid updates do not affect history',()=>{
  const d=fixture();saveClassAttendance(d,teacher,body);const before=structuredClone(d);assert.throws(()=>saveClassAttendance(d,teacher,{...body,date:'2026-02-30'}),/không hợp lệ/);assert.deepEqual(d,before);d.classes[0].students=[];const h=attendanceHistory(d,teacher,['a'],{classId:'a'});assert.equal(h.sessions[0].date,'2026-10-31');assert.equal(h.sessions[0].marked,0);assert.equal(h.sessions[0].total,0);
