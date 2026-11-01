@@ -659,13 +659,11 @@ import {createTeacherScanUI} from "/teacher-scan-ui.mjs";
             }
             // Old flat feeAmount values were displayed as monthly bills without applying the attendance formula.
             // Keep historical paid receipts, but remove matching uncalculated flat defaults from unpaid invoices.
-            const legacyAmount = Math.max(0, Number(s.feeAmount) || 0);
-            if (legacyAmount > 0) for (const record of Object.values(s.fees)) {
-                if (record && record.calculation?.version !== 2 && !record.transferredTo && record.status !== 'Đã đóng' && Tuition.received(record) === 0 && Number(record.amount) === legacyAmount) {
-                    record.legacyUncalculatedAmount = record.legacyUncalculatedAmount ?? legacyAmount;
-                    record.amount = 0;
-                    if (record.status === 'Quá hạn') record.status = 'Chưa đóng';
-                }
+            const legacyAmount = Math.max(0, Number(s.feeAmount) || 0), legacyMonthKey = s.feeMonth || CUR, legacyRecord = s.fees[legacyMonthKey];
+            if (legacyAmount > 0 && legacyRecord && legacyRecord.calculation?.version !== 2 && !legacyRecord.transferredTo && legacyRecord.status !== 'Đã đóng' && Tuition.received(legacyRecord) === 0 && Number(legacyRecord.amount) === legacyAmount) {
+                legacyRecord.legacyUncalculatedAmount = legacyRecord.legacyUncalculatedAmount ?? legacyAmount;
+                legacyRecord.amount = 0;
+                if (legacyRecord.status === 'Quá hạn') legacyRecord.status = 'Chưa đóng';
             }
             return s.fees[m];
         }
