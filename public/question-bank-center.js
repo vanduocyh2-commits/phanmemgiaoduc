@@ -74,6 +74,36 @@
     details.appendChild(controls);
     const status = document.createElement('p'); status.className = 'ts-help';
     const list = document.createElement('div'); list.className = 'question-bank-center-list';
+    const selected = new Map();
+    const selectedBar = document.createElement('div'); selectedBar.className = 'toolbar';
+    const selectVisible = document.createElement('button'); selectVisible.type = 'button'; selectVisible.className = 'ts-btn'; selectVisible.textContent = 'Chọn tất cả câu đang lọc';
+    const addSelected = document.createElement('button'); addSelected.type = 'button'; addSelected.className = 'ts-btn'; addSelected.textContent = '＋ Đưa 0 câu đã chọn vào đề'; addSelected.disabled = true;
+    selectedBar.append(selectVisible, addSelected); details.appendChild(selectedBar);
+    selectVisible.addEventListener('click', () => {
+      const current = window.TS.getQuestionBank() || [];
+      const matches = current.filter(q => {
+        const grade = text(q.grade), type = TYPES[q.type] || q.type;
+        return (!filters.grade.value || grade === filters.grade.value.replace(/^Lớp /, '')) &&
+          (!filters.subject.value || text(q.subject) === filters.subject.value) &&
+          (!filters.chapter.value || text(q.chapter) === filters.chapter.value) &&
+          (!filters.lesson.value || text(q.lesson) === filters.lesson.value) &&
+          (!filters.level.value || (q.level === filters.level.value || LEVEL_LABELS[LEVELS.indexOf(q.level)] === filters.level.value)) &&
+          (!filters.type.value || type === filters.type.value) &&
+          (!search.value || norm([q.text,q.topic,q.outcome,q.chapter,q.lesson].join(' ')).includes(norm(search.value)));
+      }).slice(0,100);
+      const allSelected = matches.length > 0 && matches.every(q => selected.has(String(q.id || q.bankId)));
+      matches.forEach(q => { const id = String(q.id || q.bankId); if (allSelected) selected.delete(id); else selected.set(id,q); });
+      selectVisible.textContent = allSelected ? 'Chọn tất cả câu đang lọc' : 'Bỏ chọn các câu đang lọc';
+      addSelected.textContent = '＋ Đưa ' + selected.size + ' câu đã chọn vào đề'; addSelected.disabled = !selected.size;
+      render();
+    });
+    addSelected.addEventListener('click', () => {
+      const values = Array.from(selected.values());
+      if (!values.length) return;
+      values.forEach(q => window.TS.addQuestionFromBank(q));
+      selected.clear(); addSelected.textContent = '＋ Đưa 0 câu đã chọn vào đề'; addSelected.disabled = true;
+      render();
+    });
     details.appendChild(status); details.appendChild(list); panel.appendChild(details);
     const style = document.createElement('style');
     style.textContent = '#question-bank-center-panel{margin:12px 0;padding:12px;border:1px solid #cbd5e1;border-radius:14px;background:#f8fafc}#question-bank-center-panel summary{cursor:pointer;font-weight:800;color:#334155;padding:5px}#question-bank-center-panel .question-bank-center-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:10px;margin:7px 0}#question-bank-center-panel .question-bank-center-row small{display:block;color:#64748b;margin-top:3px}#question-bank-center-panel .question-bank-center-row p{margin:5px 0;white-space:pre-wrap;overflow-wrap:anywhere}#question-bank-center-panel .question-bank-center-row button{white-space:nowrap}@media(max-width:650px){#question-bank-center-panel .question-bank-center-row{grid-template-columns:1fr}}';
@@ -92,11 +122,15 @@
       }).slice(0, 100);
       status.textContent = filtered.length + ' câu phù hợp · Tổng ngân hàng: ' + current.length + ' câu'; list.replaceChildren();
       filtered.forEach(q => {
+        const id = String(q.id || q.bankId);
+        const pick = document.createElement('input'); pick.type = 'checkbox'; pick.checked = selected.has(id); pick.setAttribute('aria-label','Chọn câu hỏi');
+        pick.addEventListener('change', () => { if (pick.checked) selected.set(id,q); else selected.delete(id); addSelected.textContent = '＋ Đưa ' + selected.size + ' câu đã chọn vào đề'; addSelected.disabled = !selected.size; });
+        const pickLabel = document.createElement('label'); pickLabel.append(pick, document.createTextNode(' Chọn'));
         const row = document.createElement('article'); row.className = 'question-bank-center-row';
         const info = document.createElement('div'), title = document.createElement('b'), meta = document.createElement('small'), body = document.createElement('p');
         title.textContent = (TYPES[q.type] || q.type) + ' · ' + (q.level || 'Chưa phân mức') + ' · ' + (Number(q.points) || 0) + ' điểm';
         meta.textContent = ['Lớp ' + (q.grade || ''),q.subject,q.textbook,q.chapter,q.lesson].filter(Boolean).join(' · ');
-        body.textContent = q.text || ''; info.append(title, meta, body);
+        body.textContent = q.text || ''; info.append(title, meta, body, pickLabel);
         const button = document.createElement('button'); button.type = 'button'; button.className = 'ts-btn'; button.textContent = '＋ Đưa vào đề';
         button.addEventListener('click', () => window.TS.addQuestionFromBank(q)); row.append(info, button); list.appendChild(row);
       });
