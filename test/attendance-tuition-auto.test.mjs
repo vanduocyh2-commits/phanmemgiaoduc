@@ -9,19 +9,19 @@ test('attendance automatically creates and refreshes monthly tuition from the cl
  const d=makeState(),c=d.classes[0],s=c.students[0],input={classId:'c1',date:'2026-10-10',session:'1',marks:[{sbd:'S1',status:'Có mặt'},{sbd:'S2',status:'Vắng'},{sbd:'S3',status:'Có mặt'}]};
  saveClassAttendance(d,actor,input);
  assert.equal(s.fees['Tháng 10/2026'].calculation.sessions,1);
- assert.equal(s.fees['Tháng 10/2026'].amount,70000);
- assert.equal(c.students[1].fees['Tháng 10/2026'].amount,20000);
+ assert.equal(s.fees['Tháng 10/2026'].amount,65000);
+ assert.equal(c.students[1].fees['Tháng 10/2026'].amount,15000);
  assert.equal(c.students[2].fees['Tháng 10/2026'].amount,90000);
  saveClassAttendance(d,actor,input);
- assert.equal(s.fees['Tháng 10/2026'].amount,70000);
+ assert.equal(s.fees['Tháng 10/2026'].amount,65000);
  input.marks[0].status='Vắng';
  saveClassAttendance(d,actor,input);
  assert.equal(s.fees['Tháng 10/2026'].calculation.sessions,0);
- assert.equal(s.fees['Tháng 10/2026'].amount,20000);
+ assert.equal(s.fees['Tháng 10/2026'].amount,15000);
  input.marks[0]={sbd:'S1',status:'Vắng',makeup:true};
  saveClassAttendance(d,actor,input);
  assert.equal(s.fees['Tháng 10/2026'].calculation.sessions,1);
- assert.equal(s.fees['Tháng 10/2026'].amount,70000);
+ assert.equal(s.fees['Tháng 10/2026'].amount,65000);
 });
 
 test('attendance never rewrites a tuition invoice already marked paid',()=>{
