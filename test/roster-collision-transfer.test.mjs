@@ -1,5 +1,5 @@
 import {test} from 'node:test';import assert from 'node:assert/strict';
-import {emptyState,passwordHash,importCenterRoster,transferCenterStudent,approveEnrollments,undoCenterRoster,createPortalServer} from '../portal-server.mjs';
+import {emptyState,passwordHash,importCenterRoster,transferCenterStudent,requestStudentTransfer,reviewStudentTransfer,approveEnrollments,undoCenterRoster,createPortalServer} from '../portal-server.mjs';
 import {listFamilyAccounts,manageFamilyAccount,revealFamilyPassword} from '../family-accounts.mjs';
 const admin={role:'admin',username:'admin'},teacher={role:'teacher',username:'teacher',account:{id:'t1'}},secret='x'.repeat(64);
 function fixture(){const d=emptyState('admin123456');d.classes=[{id:'a',name:'8A',grade:'8',teacherId:'t1',students:[{sbd:'K8A02',name:'Old pupil',dob:'01/01/2013',fees:{},attendanceRecords:[]}]},{id:'b',name:'9B',grade:'9',teacherId:'t1',students:[{sbd:'K9B01',name:'Other class',fees:{},attendanceRecords:[]}]}];d.accounts.push({id:'t1',role:'teacher',username:'teacher'});d._auth.teacher=passwordHash('teacher123');d._auth['student:a:K8A02']=passwordHash('original123');return d;}
@@ -29,4 +29,25 @@ test('HTTP transfer uses current transaction revision and original student crede
  let d=fixture();const server=createPortalServer({env:{SESSION_SECRET:secret},store:{read:async()=>structuredClone(d),mutate:async fn=>{const next=fn(structuredClone(d));d=next;return structuredClone(d);}}});await new Promise(r=>server.listen(0,'127.0.0.1',r));const base='http://127.0.0.1:'+server.address().port;
  const post=(path,body,cookie)=>fetch(base+path,{method:'POST',headers:{'Content-Type':'application/json',...(cookie?{Cookie:cookie}:{})},body:JSON.stringify(body)});
  try{const login=await post('/api/login',{role:'admin',username:'admin',password:'admin123456'});const cookie=login.headers.get('set-cookie').split(';')[0],input={classId:'a',sbd:'K8A02',targetClassId:'b',name:'Old pupil',expectedRevision:d._revision};assert.equal((await post('/api/students/transfer',input)).status,403);assert.equal((await post('/api/students/transfer',input,cookie)).status,200);const pupil=await post('/api/login',{role:'student',sbd:'K9B02',password:'original123'});assert.equal(pupil.status,200);assert.equal((await pupil.json()).member.cid,'b');}finally{server.closeAllConnections();await new Promise(r=>server.close(r));}
+});
+
+test('teacher class transfer requests wait for director approval; cross-grade approval changes SBD prefix and preserves student data',()=>{
+ const d=fixture();d.classes.push({id:'six',name:'6A',grade:'6',teacherId:'other',students:[{sbd:'K6A01',name:'Already there',fees:{},attendanceRecords:[]}]});
+ const actor={...teacher,account:{id:'t1'}},input={classId:'a',sbd:'K8A02',targetClassId:'six',name:'Old pupil'};
+ const before=structuredClone(d),request=requestStudentTransfer(d,actor,input);
+ assert.equal(request.status,'pending');assert.equal(d.classes[0].students.length,1);assert.equal(d.classes[2].students.length,1);
+ assert.throws(()=>requestStudentTransfer(d,actor,input),/đang chờ/);
+ assert.throws(()=>reviewStudentTransfer(d,teacher,{requestId:request.id,action:'approve'},secret),/Chỉ quản trị/);
+ d.classes[0].students[0].fees={'10/2026':{amount:500}};d.gradeBook=[{id:'g',classId:'a',sbd:'K8A02',score:8}];
+ reviewStudentTransfer(d,admin,{requestId:request.id,action:'approve'},secret);
+ assert.equal(d.classes[0].students.length,0);
+ const moved=d.classes[2].students.find(p=>p.name==='Old pupil');assert.equal(moved.sbd,'K6A02');assert.equal(moved.fees['10/2026'].amount,500);
+ assert.deepEqual(d.gradeBook[0],{id:'g',classId:'six',sbd:'K6A02',score:8});
+ assert.equal(d.classTransferRequests[0].status,'approved');
+ assert.equal(before.classes[0].students.length,1);
+});
+test('director can reject teacher transfer requests without moving the student',()=>{
+ const d=fixture(),actor={...teacher,account:{id:'t1'}},request=requestStudentTransfer(d,actor,{classId:'a',sbd:'K8A02',targetClassId:'b',name:'Old pupil'});
+ reviewStudentTransfer(d,admin,{requestId:request.id,action:'reject'},secret);
+ assert.equal(d.classTransferRequests[0].status,'rejected');assert.equal(d.classes[0].students[0].sbd,'K8A02');assert.equal(d.classes[1].students.length,1);
 });
