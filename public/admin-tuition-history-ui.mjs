@@ -25,7 +25,7 @@ function renderHistory(panel,data){
  for(const record of fees){
   const paid=record.paidAmount!==undefined?Number(record.paidAmount)||0:record.status==='Đã đóng'?Math.max(0,(Number(record.amount)||0)-(Number(record.creditApplied)||0)):0;
   const amount=Number(record.amount)||0,remaining=Math.max(0,amount-(Number(record.creditApplied)||0)-paid),calc=record.calculation||{};
-  const cells=[record.month,calc.sessions??attendance.filter(a=>a.effectiveMonth===record.month&&a.billable).length,money(calc.tuition||0),money((Number(calc.photo)||0)+(Number(calc.otherFee)||0),money(amount),money(paid),money(remaining),record.transferredTo?'Chuyển nợ → '+record.transferredTo:record.status||'Chưa đóng'];
+  const cells=[record.month,calc.sessions??attendance.filter(a=>a.effectiveMonth===record.month&&a.billable).length,money(calc.tuition||0),money((Number(calc.photo)||0)+(Number(calc.otherFee)||0)),money(amount),money(paid),money(remaining),record.transferredTo?'Chuyển nợ → '+record.transferredTo:record.status||'Chưa đóng'];
   feeRows+='<tr style="border-top:1px solid #e2e8f0">'+cells.map((v,i)=>'<td style="padding:9px;'+([1].includes(i)?'text-align:center;':'')+([2,3,4,5,6].includes(i)?'text-align:right;':'')+'">'+(i===4?'<b>'+esc(v)+'</b>':esc(v))+'</td>').join('')+'<td style="padding:9px"><button class="ts-btn ts-secondary" data-edit-fee-month="'+esc(record.month)+'">Sửa tháng này</button></td></tr>';
  }
  if(!feeRows)feeRows='<tr><td colspan="9" style="padding:14px;text-align:center;color:#64748b">Học sinh chưa có bản ghi học phí theo tháng.</td></tr>';
