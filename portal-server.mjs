@@ -149,6 +149,7 @@ export function moveAttendanceBillingMonth(d,m,{classId,sbd,date,session,targetM
  const savedCalculations=Object.entries(s.fees||{}).filter(([month,row])=>{try{monthIndex(month);return row.calculation?.version===2&&!row.resetToDefault}catch{return false}}).sort(([a],[b])=>monthIndex(a)-monthIndex(b)).map(([month,row])=>[month,{...row.calculation}]);
  for(const [month,options] of savedCalculations){delete s.fees[month].transferredTo;setTuition(s,month,options,{allowPaid:true});}
  if(!s.fees?.[normalizedMonth]?.calculation?.version||s.fees[normalizedMonth].calculation.version!==2){
+  if(s.fees?.[normalizedMonth])delete s.fees[normalizedMonth].transferredTo;
   const sourceOptions=s.fees?.[previousMonth]?.calculation||savedCalculations.at(-1)?.[1]||{};
   if(Number.isFinite(c.tuitionRate)||Number.isFinite(sourceOptions.rate))setTuition(s,normalizedMonth,tuitionOptionsFor(c,s,normalizedMonth,sourceOptions),{allowPaid:true});
  }
