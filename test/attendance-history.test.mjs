@@ -23,8 +23,10 @@ test('daily attendance lock blocks edits and deletion until explicitly unlocked'
  assert.equal(d.classes[0].students[0].attendanceRecords.find(r=>r.date===body.date).status,'Có mặt');
  const opened=setAttendanceLock(d,teacher,['a'],{classId:'a',date:body.date,locked:false});
  assert.equal(opened.locked,false);
+ assert.deepEqual(d._attendanceSessions[JSON.stringify(['a',body.date,'1'])].lockHistory.map(e=>[e.action,e.by,e.role]),[['locked','teacher','teacher'],['unlocked','teacher','teacher']]);
  h=attendanceHistory(d,teacher,['a'],{classId:'a'});
  assert.equal(h.sessions[0].locked,false);
+ assert.equal(h.sessions[0].lockHistory.length,2);
  saveClassAttendance(d,teacher,{...body,marks:[{sbd:'S1',status:'Vắng'},{sbd:'S2',status:'Có mặt'}]});
  assert.equal(d.classes[0].students[0].attendanceRecords.find(r=>r.date===body.date).status,'Vắng');
  assert.equal(attendanceHistory(d,teacher,['a'],{classId:'a'}).sessions[0].locked,false);
