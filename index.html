@@ -811,7 +811,7 @@ import {createTeacherScanUI} from "/teacher-scan-ui.mjs";
         function saveTuitionPayment(cid,sbd,button){if(state.sessionRole!=='admin')return;const {c,s}=find(cid,sbd),row=button.closest('tr');if(!s||!row)return;const amount=row.querySelector('[data-payment-amount]').value,note=row.querySelector('[data-payment-note]').value;if(amount==='')return toast('Nhập tổng số tiền phụ huynh đã nộp trong tháng.');try{Tuition.setPayment(s,$('admin-fee-month').value,Number(amount),note,row.querySelector('[data-payment-date]')?.value||localDay());tuitionNoteDrafts.delete(tuitionExtraKey(c,s));save(c);refreshUI();toast('Đã lưu tiền nộp và cập nhật dư / thiếu các tháng.');}catch(e){toast(e.message)}}
         async function publishMonthlyTuition(){
             if(state.sessionRole!=='admin')return toast('Chỉ quản lí mới được chốt học phí.');
-            const month=$('admin-fee-month').value, classes=state.classes.filter(c=>$('admin-fee-class').value==='ALL'||c.id===$('admin-fee-class').value);
+            const month=$('admin-fee-month').value, classes=state.classes.filter(c=>$('admin-fee-class').value==='ALL'||c.name===$('admin-fee-class').value);
             const students=classes.flatMap(c=>(c.students||[]).map(s=>({c,s,x:fee(s,month)})));
             const pending=students.filter(({x})=>x.publishedToParents!==true);
             if(!pending.length)return toast('Học phí tháng '+month+' đã được gửi tới phụ huynh.');
