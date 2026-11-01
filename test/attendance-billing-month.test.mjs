@@ -15,11 +15,11 @@ function fixture(){
 function save(d,date,session='1',status='Có mặt'){
  return saveClassAttendance(d,teacher,{classId:'c1',date,session,marks:[{sbd:'S1',status}]});
 }
-test('attendance sessions receive a continuous class-wide sequence across dates and ca values',()=>{
- const d=fixture();save(d,'2026-10-03','1');save(d,'2026-10-03','2');save(d,'2026-10-10','1');
+test('attendance history assigns one lesson number per date, without ca splits',()=>{
+ const d=fixture();save(d,'2026-10-03','1');save(d,'2026-10-10','1');
  const history=attendanceHistory(d,teacher,['c1'],{classId:'c1'});
  assert.deepEqual(history.sessions.map(r=>[r.date,r.session,r.lessonNo]),[
-  ['2026-10-10','1',3],['2026-10-03','2',2],['2026-10-03','1',1]
+  ['2026-10-10','1',2],['2026-10-03','1',1]
  ]);
 });
 test('moving a teacher-recorded session changes its billing month without changing its real date',()=>{
