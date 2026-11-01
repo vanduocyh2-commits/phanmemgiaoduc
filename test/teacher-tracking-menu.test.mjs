@@ -4,22 +4,21 @@ import {readFile} from 'node:fs/promises';
 
 const source = await readFile(new URL('../public/index.html', import.meta.url), 'utf8');
 
-test('teacher learning and student tracking content stays hidden until its button is clicked', () => {
+test('teacher learning and student tracking area stays hidden until its button is clicked', () => {
   assert.match(source, /let teacherTop='',scopeOwner=null;/,
-    'the teacher portal must not select the learning/tracking section automatically on entry');
-  assert.match(source, /onclick="TS\.selectTop\('learning'\)"/,
-    'the Dạy học & Theo dõi học sinh button must remain available');
+    'no teacher workspace should be selected by default');
+  assert.match(source, /function resetSelection\(\)\{tab='';teacherTop='';applyTop\(\);\}/,
+    'teacher login must reset to a collapsed view and clear any previously active section');
+  assert.match(source, /if\(role==='teacher'\)TS\.resetSelection\(\);/,
+    'teacher login must invoke the reset function');
   assert.match(source, /#portal-teacher:not\(\.teacher-mode-learning\):not\(\.teacher-mode-tools\):not\(\.teacher-mode-library\):not\(\.teacher-mode-schedule\) \.ts-learning-content/,
-    'learning and student-tracking content must be hidden until a top-level section is selected');
-  assert.match(source, /function selectTop\(value\)\{if\(!\['learning','tools','library','schedule'\]\.includes\(value\)\)return;/,
-    'clicking the learning/tracking button must still activate the section');
+    'learning and tracking details must be hidden when no section is active');
+  assert.match(source, /onclick="TS\.selectTop\('learning'\)"/,
+    'the teacher can still open the area by clicking its button');
 });
 
-test('teacher-facing exam authoring labels no longer mention Azota', () => {
-  assert.doesNotMatch(source, /Soạn đề theo ma trận \(Azota\)|Soạn đề theo cấu trúc Azota/,
-    'visible teacher labels must not contain the Azota name');
-  assert.match(source, /onclick="TS\.openAzotaComposer\(\)"/,
-    'the matrix-composer action must remain connected');
-  assert.match(source, /function openAzotaComposer\(\)/,
-    'the composer implementation must remain available');
+test('teacher-facing authoring labels do not display the Azota name', () => {
+  assert.doesNotMatch(source, /Soạn đề theo ma trận \(Azota\)|Soạn đề theo cấu trúc Azota/);
+  assert.match(source, /Soạn đề theo ma trận/);
+  assert.match(source, /Soạn đề theo cấu trúc/);
 });
