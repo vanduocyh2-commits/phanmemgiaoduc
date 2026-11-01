@@ -132,16 +132,16 @@ export function studentTuitionHistory(d,m,{classId,sbd}={}){
  if(m?.role!=='admin')throw Error('Chỉ quản trị được xem toàn bộ học phí học sinh.');
  const c=d.classes.find(row=>row.id===classId),s=c?.students?.find(row=>row.sbd===sbd);if(!c||!s)throw Error('Không tìm thấy học sinh trong lớp đã chọn.');
  const history=attendanceHistory(d,m,[classId],{classId}),numberByDate=new Map(history.sessions.map(row=>[row.date,row.lessonNo]));
- const attendance=(s.attendanceRecords||[]).filter(row=>row.recordedRole==='teacher'||row.recordedBy&&(d.accounts||[]).some(a=>a.username===row.recordedBy&&a.role==='teacher')).map(row=>({...row,lessonNo:numberByDate.get(row.date)||null,effectiveMonth:effectiveAttendanceMonth(row),billable:['Có mặt','Muộn'].includes(row.status)||row.status==='Vắng'&&row.makeup===true})).sort((a,b)=>a.date.localeCompare(b.date)||Number(a.session||1)-Number(b.session||1));
+ const attendanceByDate=new Map();for(const row of s.attendanceRecords||[])if(row.recordedRole==='teacher'||row.recordedBy&&(d.accounts||[]).some(a=>a.username===row.recordedBy&&a.role==='teacher')){const old=attendanceByDate.get(row.date);if(!old||String(row.updatedAt||'')>=String(old.updatedAt||''))attendanceByDate.set(row.date,row);}const attendance=[...attendanceByDate.values()].map(row=>({...row,session:'1',lessonNo:numberByDate.get(row.date)||null,effectiveMonth:effectiveAttendanceMonth(row),billable:['Có mặt','Muộn'].includes(row.status)||row.status==='Vắng'&&row.makeup===true})).sort((a,b)=>a.date.localeCompare(b.date));
  const fees=Object.entries(s.fees||{}).filter(([month])=>{try{monthIndex(month);return true}catch{return false}}).sort(([a],[b])=>monthIndex(a)-monthIndex(b)).map(([month,record])=>({month,...clone(record)}));
  return {classId:c.id,className:c.name,student:{name:s.name,sbd:s.sbd,enrolledAt:s.enrolledAt||''},fees,attendance};
 }
 export function moveAttendanceBillingMonth(d,m,{classId,sbd,date,session,targetMonth}={}){
  if(m?.role!=='admin')throw Error('Chỉ quản trị được chuyển buổi tính học phí.');
- if(!validAttendanceDate(date)||!['1','2','3'].includes(String(session)))throw Error('Ngày hoặc ca điểm danh không hợp lệ.');
+ if(!validAttendanceDate(date)||String(session||'1')!=='1')throw Error('Ngày điểm danh không hợp lệ.');
  const targetIndex=monthIndex(targetMonth),normalizedMonth='Tháng '+(targetIndex%12+1)+'/'+Math.floor(targetIndex/12);
  const c=d.classes.find(row=>row.id===classId),s=c?.students?.find(row=>row.sbd===sbd);if(!c||!s)throw Error('Không tìm thấy học sinh trong lớp đã chọn.');
- const record=(s.attendanceRecords||[]).find(row=>row.date===date&&String(row.session||'1')===String(session));if(!record)throw Error('Không tìm thấy buổi điểm danh này.');
+ const record=(s.attendanceRecords||[]).filter(row=>row.date===date).sort((a,b)=>String(b.updatedAt||'').localeCompare(String(a.updatedAt||'')))[0];if(!record)throw Error('Không tìm thấy buổi điểm danh này.');
  const recordedRole=record.recordedRole||(d.accounts||[]).find(a=>a.username===record.recordedBy)?.role;if(recordedRole!=='teacher')throw Error('Chỉ chuyển được buổi do giáo viên điểm danh.');record.recordedRole='teacher';
  if(!(['Có mặt','Muộn'].includes(record.status)||record.status==='Vắng'&&record.makeup===true))throw Error('Buổi vắng không học bù không được tính học phí nên không cần chuyển tháng.');
  const previousMonth=effectiveAttendanceMonth(record);if(previousMonth===normalizedMonth)return {changed:false,from:previousMonth,to:normalizedMonth};
