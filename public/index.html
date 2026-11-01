@@ -1141,10 +1141,10 @@ const TS = (() => {
  const types={mcq:'Trắc nghiệm 4 lựa chọn',tf:'Đúng / Sai (4 ý)',short:'Trả lời ngắn',essay:'Tự luận'};
 
  function questionCurriculumFields(q,i){
-  const grade=String(q.grade||draft.grade||''),subject=q.subject||draft.subject||'',book=q.textbook||draft.textbook||'Kết nối tri thức với cuộc sống';
+  const grade=String(q.grade||draft.grade||''),subject=q.subject||draft.subject||'',curriculum=q.curriculum||draft.curriculum||'GDPT 2018',book=q.textbook||draft.textbook||'Kết nối tri thức với cuộc sống';
   return '<details class="qcard-curriculum" open><summary>Phân loại chương trình · chương · bài</summary><div class="ts-grid">'+
    '<label>Khối<select id="qg-'+i+'" class="ts-input"><option value="">— Chọn khối —</option>'+Array.from({length:12},(_,n)=>String(n+1)).map(v=>'<option value="'+v+'" '+(grade===v?'selected':'')+'>Khối '+v+'</option>').join('')+'</select></label>'+
-   '<label>Môn học<input id="qs-'+i+'" class="ts-input" value="'+esc(subject)+'" placeholder="Ví dụ: Toán" oninput="TS.capture()"></label>'+
+   '<label>Môn học<input id="qs-'+i+'" class="ts-input" value="'+esc(subject)+'" placeholder="Ví dụ: Toán" oninput="TS.capture()"></label>'+'<label>Chương trình<input id="qcur-'+i+'" class="ts-input" value="'+esc(curriculum)+'" placeholder="GDPT 2018" oninput="TS.capture()"></label>'+
    '<label>Bộ sách<input id="qb-'+i+'" class="ts-input" value="'+esc(book)+'" placeholder="Tên bộ sách" oninput="TS.capture()"></label>'+
    '<label>Chương / chủ đề<input id="qc-'+i+'" class="ts-input" value="'+esc(q.chapter||draft.chapter||'')+'" placeholder="Tên chương" oninput="TS.capture()"></label>'+
    '<label>Thứ tự chương<input id="qco-'+i+'" type="number" min="1" max="999" class="ts-input" value="'+(Number(q.chapterOrder||draft.chapterOrder)||1)+'" onchange="TS.capture()"></label>'+
@@ -1152,35 +1152,36 @@ const TS = (() => {
    '<label>Thứ tự bài<input id="qlo-'+i+'" type="number" min="1" max="999" class="ts-input" value="'+(Number(q.lessonOrder||draft.lessonOrder)||1)+'" onchange="TS.capture()"></label>'+
   '</div><p class="ts-help">Mức độ nhận thức được chọn ở đầu thẻ câu hỏi. Khi lưu đề, câu này được đưa vào đúng môn → chương → bài trong ngân hàng câu hỏi.</p></details>';
  }
- let questionBankFilters={grade:'',subject:'',textbook:'',chapter:'',lesson:'',level:'',search:''};
+ let questionBankFilters={grade:'',subject:'',curriculum:'',textbook:'',chapter:'',lesson:'',level:'',search:''};
  function renderQuestionBankContents(){
   const all=(state.questionBank||[]).filter(q=>q&&q.id);
   const values=k=>[...new Set(all.map(q=>String(q[k]||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'vi',{numeric:true}));
   const select=(key,label,opts)=>'<label>'+label+'<select id="qbf-'+key+'" class="ts-input"><option value="">Tất cả</option>'+opts.map(v=>'<option value="'+esc(v)+'" '+(questionBankFilters[key]===v?'selected':'')+'>'+esc(v)+'</option>').join('')+'</select></label>';
   const rows=all.filter(q=>!questionBankFilters.grade||String(q.grade)===questionBankFilters.grade)
    .filter(q=>!questionBankFilters.subject||q.subject===questionBankFilters.subject)
+   .filter(q=>!questionBankFilters.curriculum||q.curriculum===questionBankFilters.curriculum)
    .filter(q=>!questionBankFilters.textbook||q.textbook===questionBankFilters.textbook)
    .filter(q=>!questionBankFilters.chapter||q.chapter===questionBankFilters.chapter)
    .filter(q=>!questionBankFilters.lesson||q.lesson===questionBankFilters.lesson)
    .filter(q=>!questionBankFilters.level||q.level===questionBankFilters.level)
-   .filter(q=>!questionBankFilters.search||[q.text,q.subject,q.textbook,q.chapter,q.lesson,q.sourceExamTitle].join(' ').toLocaleLowerCase('vi').includes(questionBankFilters.search.toLocaleLowerCase('vi')))
+   .filter(q=>!questionBankFilters.search||[q.text,q.subject,q.curriculum,q.textbook,q.chapter,q.lesson,q.sourceExamTitle].join(' ').toLocaleLowerCase('vi').includes(questionBankFilters.search.toLocaleLowerCase('vi')))
    .sort((a,b)=>String(a.grade||'99').localeCompare(String(b.grade||'99'),'vi',{numeric:true})||String(a.subject||'').localeCompare(String(b.subject||''),'vi')||String(a.textbook||'').localeCompare(String(b.textbook||''),'vi')||(Number(a.chapterOrder)||999)-(Number(b.chapterOrder)||999)||(Number(a.lessonOrder)||999)-(Number(b.lessonOrder)||999)||String(a.level||'').localeCompare(String(b.level||'')));
   let group='';
   const entries=rows.slice(0,100).map(q=>{
-   const key=['Khối '+q.grade,q.subject,q.textbook,'Chương '+(Number(q.chapterOrder)||1)+': '+q.chapter,'Bài '+(Number(q.lessonOrder)||1)+': '+q.lesson].join(' · ');
+   const key=['Khối '+q.grade,q.subject,q.curriculum,q.textbook,'Chương '+(Number(q.chapterOrder)||1)+': '+q.chapter,'Bài '+(Number(q.lessonOrder)||1)+': '+q.lesson].join(' · ');
    const heading=key===group?'':'<h4 class="ts-note question-bank-group">'+esc(key)+'</h4>';group=key;
    return heading+'<article class="question-bank-row"><div><div class="ts-row"><b>'+esc((q.type||'').toUpperCase())+' · '+esc(q.level||'NB')+' · '+(Number(q.points)||0)+'đ</b><span class="ts-tag">'+esc(q.owner||'Trung tâm')+'</span></div><div class="question-bank-excerpt">'+MathBridge.inline(q.text||'')+'</div><small>Nguồn đề: '+esc(q.sourceExamTitle||'Ngân hàng câu hỏi')+'</small></div><button type="button" class="ts-btn" onclick="TS.addBankQuestion(\''+esc(q.id)+'\')">＋ Đưa vào đề</button></article>';
   }).join('');
-  return '<section class="ts-box question-bank-section"><div class="ts-row"><div><h3>Ngân hàng câu hỏi</h3><p class="ts-help">Tìm và sử dụng câu hỏi theo Khối → Môn → Bộ sách → Chương → Bài → Mức độ.</p></div><span class="ts-tag">'+all.length+' câu đã lưu</span></div>'+
-   '<div class="ts-grid">'+select('grade','Khối',values('grade'))+select('subject','Môn',values('subject'))+select('textbook','Bộ sách',values('textbook'))+select('chapter','Chương',values('chapter'))+select('lesson','Bài',values('lesson'))+select('level','Mức độ',levels)+'<label>Tìm nội dung<input id="qbf-search" class="ts-input" value="'+esc(questionBankFilters.search)+'" placeholder="Nhập từ khóa câu hỏi…"></label></div>'+
+  return '<section class="ts-box question-bank-section"><div class="ts-row"><div><h3>Ngân hàng câu hỏi</h3><p class="ts-help">Tìm và sử dụng câu hỏi theo Khối → Môn → Chương trình → Bộ sách → Chương → Bài → Mức độ.</p></div><span class="ts-tag">'+all.length+' câu đã lưu</span></div>'+
+   '<div class="ts-grid">'+select('grade','Khối',values('grade'))+select('subject','Môn',values('subject'))+select('curriculum','Chương trình',values('curriculum'))+select('textbook','Bộ sách',values('textbook'))+select('chapter','Chương',values('chapter'))+select('lesson','Bài',values('lesson'))+select('level','Mức độ',levels)+'<label>Tìm nội dung<input id="qbf-search" class="ts-input" value="'+esc(questionBankFilters.search)+'" placeholder="Nhập từ khóa câu hỏi…"></label></div>'+
    '<div class="ts-row"><button type="button" class="ts-btn" onclick="TS.filterQuestionBank()">Lọc câu hỏi</button><button type="button" class="ts-btn ts-secondary" onclick="TS.clearQuestionBankFilter()">Xóa lọc</button><span class="ts-help">'+rows.length+' câu phù hợp</span></div>'+
    '<div class="question-bank-list">'+(entries||'<p class="ts-help">Chưa có câu hỏi phù hợp. Hãy phân loại câu và lưu đề để bổ sung vào ngân hàng.</p>')+(rows.length>100?'<p class="ts-help">Đang hiển thị 100 câu đầu tiên; hãy lọc theo môn, chương hoặc bài.</p>':'')+'</div></section>';
  }
  function filterQuestionBank(){
-  for(const key of ['grade','subject','textbook','chapter','lesson','level','search'])questionBankFilters[key]=$('qbf-'+key)?.value||'';
+  for(const key of ['grade','subject','curriculum','textbook','chapter','lesson','level','search'])questionBankFilters[key]=$('qbf-'+key)?.value||'';
   const host=$('question-bank-panel');if(host)host.innerHTML=renderQuestionBankContents();
  }
- function clearQuestionBankFilter(){questionBankFilters={grade:'',subject:'',textbook:'',chapter:'',lesson:'',level:'',search:''};const host=$('question-bank-panel');if(host)host.innerHTML=renderQuestionBankContents();}
+ function clearQuestionBankFilter(){questionBankFilters={grade:'',subject:'',curriculum:'',textbook:'',chapter:'',lesson:'',level:'',search:''};const host=$('question-bank-panel');if(host)host.innerHTML=renderQuestionBankContents();}
  function addBankQuestion(id){
   readQuestions();const item=(state.questionBank||[]).find(q=>q.id===id);if(!item)return toast('Câu hỏi không còn trong ngân hàng.');
   const owner=activeAccount?.username||onlineMember?.username,own=state.sessionRole==='admin'||item.owner===owner;
@@ -1188,17 +1189,25 @@ const TS = (() => {
   questionDraft.push(q);if(draft.authorMode==='matrix')draft.matrix=matrixForQuestions(questionDraft);
   renderQuestions();capture();toast('Đã đưa câu hỏi vào đề đang soạn.');
  }
+ function questionBankIdentity(q){
+  const norm=v=>String(v??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').toLocaleLowerCase('vi').replace(/\s+/g,' ').trim();
+  return JSON.stringify({grade:norm(q.grade),subject:norm(q.subject),curriculum:norm(q.curriculum||'GDPT 2018'),textbook:norm(q.textbook),chapter:norm(q.chapter),lesson:norm(q.lesson),type:norm(q.type),text:norm(q.text),options:(q.options||q.statements||[]).map(norm),answer:norm(q.answer),tfAnswers:(q.tfAnswers||[]).map(norm)});
+ }
  function saveQuestionDraftsToBank(examId,examTitle){
   state.questionBank=Array.isArray(state.questionBank)?state.questionBank:[];
   const owner=activeAccount?.username||onlineMember?.username||'admin',now=new Date().toISOString();
   for(const q of questionDraft){
-   q.grade=String(q.grade||draft.grade||'').trim();q.subject=String(q.subject||draft.subject||'').trim();
+   q.grade=String(q.grade||draft.grade||'').trim();q.subject=String(q.subject||draft.subject||'').trim();q.curriculum=String(q.curriculum||draft.curriculum||'GDPT 2018').trim();
    q.textbook=String(q.textbook||draft.textbook||'Kết nối tri thức với cuộc sống').trim();
    q.chapter=String(q.chapter||draft.chapter||'').trim();q.chapterOrder=Math.max(1,Math.min(999,Number(q.chapterOrder||draft.chapterOrder)||1));
    q.lesson=String(q.lesson||draft.lesson||'').trim();q.lessonOrder=Math.max(1,Math.min(999,Number(q.lessonOrder||draft.lessonOrder)||1));
-   const old=(state.questionBank||[]).find(x=>x.id===q.bankId),canUpdate=old&&(state.sessionRole==='admin'||old.owner===owner);
-   const id=canUpdate?old.id:uid('qb');
-   const entry={...copy(q),id,owner:canUpdate?old.owner:owner,sourceExamId:examId,sourceExamTitle:examTitle,createdAt:canUpdate?old.createdAt||now:now,updatedAt:now};
+   const linked=(state.questionBank||[]).find(x=>x.id===q.bankId),canUpdate=linked&&(state.sessionRole==='admin'||linked.owner===owner);
+   const key=questionBankIdentity(q);
+   const duplicate=canUpdate?linked:(state.questionBank||[]).find(x=>(x._bankKey||questionBankIdentity(x))===key);
+   const mayEdit=duplicate&&(state.sessionRole==='admin'||duplicate.owner===owner);
+   const id=duplicate?duplicate.id:uid('qb');
+   if(duplicate&&!mayEdit){q.bankId=id;continue;}
+   const entry={...copy(q),id,owner:mayEdit?duplicate.owner:owner,_bankKey:key,sourceExamId:examId,sourceExamTitle:examTitle,createdAt:mayEdit?duplicate.createdAt||now:now,updatedAt:now};
    const index=state.questionBank.findIndex(x=>x.id===id);if(index>=0)state.questionBank[index]=entry;else state.questionBank.push(entry);
    q.bankId=id;
   }
@@ -1252,7 +1261,7 @@ const TS = (() => {
  function buildTeacherPrompt(d){const summary=matrixSummary(d.matrix);if(Math.abs(summary.total-10)>.001)throw Error('Điều chỉnh ma trận về tổng 10 điểm trước khi tạo prompt.');if(!String(d.grade||'').trim())throw Error('Nhập lớp / khối trước khi tạo prompt.');const grade=String(d.grade).trim(),scope=String(d.scope||'').trim()||'Toàn bộ chương trình '+(d.subject||'Toán')+' lớp '+grade,fmt=v=>Number.isInteger(v)?String(v):String(Math.round(v*1000)/1000).replace('.',','),matrix=d.matrix.filter(r=>matrixCount(r)>0).map(r=>'- '+types[r.type]+' ('+fmt(r.points)+'đ/câu): '+levels.map((level,i)=>level+' '+Number(r.levels[i]||0)).join(', ')+' = '+matrixCount(r)+' câu, '+fmt(matrixCount(r)*r.points)+'đ').join('\n');let prompt=teacherPromptTemplate.replace('GDPT 2018 (Kết nối tri thức)','GDPT 2018 ('+(d.textbook||'Kết nối tri thức')+')');prompt=prompt.replace(/^ĐỀ:.*$/m,'ĐỀ: Môn '+(d.subject||'Toán')+' — Lớp '+grade+' — Phạm vi: '+scope+' — Thời gian: '+d.duration+' phút — Tên đề: '+(d.title||'kiểm tra'));const start=prompt.indexOf('MA TRẬN (dạng câu:'),end=prompt.indexOf('NỘI DUNG:',start);prompt=prompt.slice(0,start)+'MA TRẬN (dạng câu: số câu theo mức độ):\n'+matrix+'\nMỗi bộ đề: '+summary.questions+' câu, '+fmt(summary.total)+' điểm.\n'+prompt.slice(end);if(d.promptNotes?.trim())prompt=prompt.replace('CÔNG THỨC:','GHI CHÚ / YÊU CẦU THÊM CỦA GIÁO VIÊN: '+d.promptNotes.trim()+'\nCÔNG THỨC:');if(d.matrix.some(r=>r.type==='essay'&&matrixCount(r)>0)){prompt=prompt.replace('TLN-VD | TLN-VDC. Hàng =','TLN-VD | TLN-VDC | TL-NB | TL-TH | TL-VD | TL-VDC. Hàng =');}return prompt;}
  function promptAI(){capture();try{const p=buildTeacherPrompt(draft);$('ts-prompt').value=p;$('ts-prompt').select();toast('Đã tạo lệnh theo mẫu: nội dung đề + ma trận + đặc tả. Sao chép sang Gemini.');return p;}catch(err){toast(err.message);return '';}}
 
- function readQuestions(){if(!$('ts-questions'))return;questionDraft.forEach((q,i)=>{const visual=$('qv-'+i);if(visual?.childNodes&&draft.questionEditor!=='raw'){$('qt-'+i).value=serializeCard(visual);if(q.type==='mcq')for(let j=0;j<4;j++){const option=$(`qvo-${i}-${j}`);if(option)$(`qo-${i}-${j}`).value=serializeCard(option);}}q.level=qsel('ql-'+i)||q.level||'NB';q.text=qsel('qt-'+i);q.answer=qsel('qa-'+i);q.points=Number(qsel('qp-'+i));q.type=qsel('qy-'+i)||q.type;q.grade=qsel('qg-'+i)||q.grade||draft.grade||'';q.subject=qsel('qs-'+i)||q.subject||draft.subject||'';q.textbook=qsel('qb-'+i)||q.textbook||draft.textbook||'Kết nối tri thức với cuộc sống';q.chapter=qsel('qc-'+i)||q.chapter||draft.chapter||'';q.chapterOrder=Number(qsel('qco-'+i)||q.chapterOrder||draft.chapterOrder||1);q.lesson=qsel('qls-'+i)||q.lesson||draft.lesson||'';q.lessonOrder=Number(qsel('qlo-'+i)||q.lessonOrder||draft.lessonOrder||1);if(q.type==='mcq')q.options=[0,1,2,3].map(j=>qsel(`qo-${i}-${j}`));if(q.type==='tf')readTfFields(q,i);});}
+ function readQuestions(){if(!$('ts-questions'))return;questionDraft.forEach((q,i)=>{const visual=$('qv-'+i);if(visual?.childNodes&&draft.questionEditor!=='raw'){$('qt-'+i).value=serializeCard(visual);if(q.type==='mcq')for(let j=0;j<4;j++){const option=$(`qvo-${i}-${j}`);if(option)$(`qo-${i}-${j}`).value=serializeCard(option);}}q.level=qsel('ql-'+i)||q.level||'NB';q.text=qsel('qt-'+i);q.curriculum=qsel('qcur-'+i)||q.curriculum||draft.curriculum||'GDPT 2018';q.answer=qsel('qa-'+i);q.points=Number(qsel('qp-'+i));q.type=qsel('qy-'+i)||q.type;q.grade=qsel('qg-'+i)||q.grade||draft.grade||'';q.subject=qsel('qs-'+i)||q.subject||draft.subject||'';q.textbook=qsel('qb-'+i)||q.textbook||draft.textbook||'Kết nối tri thức với cuộc sống';q.chapter=qsel('qc-'+i)||q.chapter||draft.chapter||'';q.chapterOrder=Number(qsel('qco-'+i)||q.chapterOrder||draft.chapterOrder||1);q.lesson=qsel('qls-'+i)||q.lesson||draft.lesson||'';q.lessonOrder=Number(qsel('qlo-'+i)||q.lessonOrder||draft.lessonOrder||1);if(q.type==='mcq')q.options=[0,1,2,3].map(j=>qsel(`qo-${i}-${j}`));if(q.type==='tf')readTfFields(q,i);});}
  function renderQuestions(){if($('question-card-count'))$('question-card-count').textContent=questionDraft.length+' câu';if(draft.questionEditor!=='raw'){$('ts-questions').innerHTML=questionDraft.map(visualQuestionCard).join('');return;}$('ts-questions').innerHTML=questionDraft.map((q,i)=>`<div class="ts-question"><div class="ts-row"><b>Câu ${i+1}</b><select id="qy-${i}" class="${input}" onchange="TS.changeType(${i},this.value)">${Object.entries(types).map(([k,v])=>`<option value="${k}" ${q.type===k?'selected':''}>${v}</option>`).join('')}</select><label>Mức độ<select id="ql-${i}" class="${input}">${levels.map(v=>`<option ${q.level===v?'selected':''}>${v}</option>`).join('')}</select></label><label>Điểm<input id="qp-${i}" type="number" class="${input}" min="0.01" step="0.01" value="${q.points}"></label>${btn('Xóa',`removeQuestion(${i})`,'danger')}</div><textarea id="qt-${i}" class="${input}" rows="2" placeholder="Nội dung câu hỏi" oninput="TS.capture()">${esc(q.text)}</textarea>${q.type==='mcq'?`<div class="ts-grid">${[0,1,2,3].map(j=>`<label>${'ABCD'[j]}<input id="qo-${i}-${j}" class="${input}" value="${esc(q.options?.[j]||'')}" oninput="TS.capture()"></label>`).join('')}</div>`:''}${q.type==='tf'?tfAuthorFields(q,i,false):''}<label>${q.type==='essay'?'Hướng dẫn / rubric chấm (chỉ giáo viên xem)':'Đáp án đúng'}${q.type==='tf'?`<input id="qa-${i}" type="hidden" value="${esc(q.answer||'')}">`:q.type==='mcq'?`<select id="qa-${i}" class="${input}"><option value="" ${!q.answer?'selected':''}>— Chọn đáp án đúng —</option>${(q.type==='mcq'?['A','B','C','D']:['Đúng','Sai']).map(v=>`<option ${q.answer===v?'selected':''}>${v}</option>`).join('')}</select>`:`<textarea id="qa-${i}" class="${input}" rows="2">${esc(q.answer||'')}</textarea>`}</label>${questionCurriculumFields(q,i)}</div>`).join('');}
  function addQuestion(){readQuestions();questionDraft.push({id:uid('q'),type:'mcq',level:'NB',points:1,text:'',options:['','','',''],answer:'A'});renderQuestions();capture();}
  function changeType(i,v){readQuestions();questionDraft[i].type=v;questionDraft[i].answer=v==='mcq'?'A':'';if(v==='tf'){questionDraft[i].statements=questionDraft[i].statements||['','','',''];questionDraft[i].tfAnswers=tfAnswersFrom(questionDraft[i].tfAnswers||questionDraft[i].answer);}renderQuestions();capture();}
