@@ -266,8 +266,8 @@ export function transferCenterStudent(d,m,{classId,sbd,targetClassId,name,passwo
  const source=d.classes.find(c=>c.id===classId),target=d.classes.find(c=>c.id===targetClassId),pupil=source?.students.find(s=>s.sbd===sbd);
  if(!pupil||!target)throw Error('Chọn đúng học sinh và lớp chuyển đến.');
  if(typeof name!=='string'||!name.trim()||name.length>500||typeof password!=='string'||password&& (password.length<6||password.length>200))throw Error('Họ tên hoặc mật khẩu chưa hợp lệ.');
- const targetSbd=target!==source?studentSbdForTransfer(d,classId,target.id,sbd):sbd;
- if(target!==source&&target.students.some(s=>s.sbd.toUpperCase()===targetSbd.toUpperCase()))throw Error('SBD '+targetSbd+' đã có ở lớp nhận. Theo quy tắc giữ nguyên số thứ tự, chưa thể chuyển học sinh này để tránh trùng tài khoản.');
+ let targetSbd=target!==source?studentSbdForTransfer(d,classId,target.id,sbd):sbd;
+ if(target!==source&&target.students.some(s=>s.sbd.toUpperCase()===targetSbd.toUpperCase())){const sequence=createStudentSbdSequence(d,target.id);targetSbd=sequence.next();sequence.commit();}
  if(target!==source){
   moveFamilyCredentials(d,secret,classId,target.id,sbd,targetSbd);
   source.students=source.students.filter(s=>s!==pupil);pupil.sbd=targetSbd;target.students.push(pupil);
