@@ -183,7 +183,7 @@
         {
           "id": "6-2-c1",
           "title": "Phân số",
-          "order": 1,
+          "order": 6,
           "lessons": [
             {
               "id": "6-2-c1-l1",
@@ -215,7 +215,7 @@
         {
           "id": "6-2-c2",
           "title": "Số thập phân",
-          "order": 2,
+          "order": 7,
           "lessons": [
             {
               "id": "6-2-c2-l1",
@@ -242,7 +242,7 @@
         {
           "id": "6-2-c3",
           "title": "Những hình hình học cơ bản",
-          "order": 3,
+          "order": 8,
           "lessons": [
             {
               "id": "6-2-c3-l1",
@@ -279,7 +279,7 @@
         {
           "id": "6-2-c4",
           "title": "Dữ liệu và xác suất thực nghiệm",
-          "order": 4,
+          "order": 9,
           "lessons": [
             {
               "id": "6-2-c4-l1",
@@ -470,7 +470,7 @@
         {
           "id": "7-2-c1",
           "title": "Tỉ lệ thức và đại lượng tỉ lệ",
-          "order": 1,
+          "order": 6,
           "lessons": [
             {
               "id": "7-2-c1-l1",
@@ -497,7 +497,7 @@
         {
           "id": "7-2-c2",
           "title": "Biểu thức đại số và đa thức một biến",
-          "order": 2,
+          "order": 7,
           "lessons": [
             {
               "id": "7-2-c2-l1",
@@ -529,7 +529,7 @@
         {
           "id": "7-2-c3",
           "title": "Làm quen với biến cố và xác suất của biến cố",
-          "order": 3,
+          "order": 8,
           "lessons": [
             {
               "id": "7-2-c3-l1",
@@ -546,7 +546,7 @@
         {
           "id": "7-2-c4",
           "title": "Quan hệ giữa các yếu tố trong một tam giác",
-          "order": 4,
+          "order": 9,
           "lessons": [
             {
               "id": "7-2-c4-l1",
@@ -578,7 +578,7 @@
         {
           "id": "7-2-c5",
           "title": "Một số hình khối trong thực tiễn",
-          "order": 5,
+          "order": 10,
           "lessons": [
             {
               "id": "7-2-c5-l1",
@@ -754,7 +754,7 @@
         {
           "id": "8-2-c1",
           "title": "Phân thức đại số",
-          "order": 1,
+          "order": 6,
           "lessons": [
             {
               "id": "8-2-c1-l1",
@@ -781,7 +781,7 @@
         {
           "id": "8-2-c2",
           "title": "Phương trình bậc nhất và hàm số bậc nhất",
-          "order": 2,
+          "order": 7,
           "lessons": [
             {
               "id": "8-2-c2-l1",
@@ -813,7 +813,7 @@
         {
           "id": "8-2-c3",
           "title": "Mở đầu về xác suất",
-          "order": 3,
+          "order": 8,
           "lessons": [
             {
               "id": "8-2-c3-l1",
@@ -835,7 +835,7 @@
         {
           "id": "8-2-c4",
           "title": "Tam giác đồng dạng",
-          "order": 4,
+          "order": 9,
           "lessons": [
             {
               "id": "8-2-c4-l1",
@@ -867,7 +867,7 @@
         {
           "id": "8-2-c5",
           "title": "Một số hình khối trong thực tiễn",
-          "order": 5,
+          "order": 10,
           "lessons": [
             {
               "id": "8-2-c5-l1",
@@ -1028,7 +1028,7 @@
         {
           "id": "9-2-c1",
           "title": "Hàm số y = ax² (a ≠ 0). Phương trình bậc hai một ẩn",
-          "order": 1,
+          "order": 6,
           "lessons": [
             {
               "id": "9-2-c1-l1",
@@ -1055,7 +1055,7 @@
         {
           "id": "9-2-c2",
           "title": "Tần số và tần số tương đối",
-          "order": 2,
+          "order": 7,
           "lessons": [
             {
               "id": "9-2-c2-l1",
@@ -1077,7 +1077,7 @@
         {
           "id": "9-2-c3",
           "title": "Xác suất của biến cố trong một số mô hình xác suất đơn giản",
-          "order": 3,
+          "order": 8,
           "lessons": [
             {
               "id": "9-2-c3-l1",
@@ -1094,7 +1094,7 @@
         {
           "id": "9-2-c4",
           "title": "Đường tròn ngoại tiếp và đường tròn nội tiếp",
-          "order": 4,
+          "order": 9,
           "lessons": [
             {
               "id": "9-2-c4-l1",
@@ -1121,7 +1121,7 @@
         {
           "id": "9-2-c5",
           "title": "Một số hình khối trong thực tiễn",
-          "order": 5,
+          "order": 10,
           "lessons": [
             {
               "id": "9-2-c5-l1",
@@ -1267,7 +1267,7 @@
         {
           "id": "10-2-c1",
           "title": "Hàm số, đồ thị và ứng dụng",
-          "order": 1,
+          "order": 6,
           "lessons": [
             {
               "id": "10-2-c1-l1",
@@ -1294,7 +1294,7 @@
         {
           "id": "10-2-c2",
           "title": "Phương pháp tọa độ trong mặt phẳng",
-          "order": 2,
+          "order": 7,
           "lessons": [
             {
               "id": "10-2-c2-l1",
@@ -1321,7 +1321,7 @@
         {
           "id": "10-2-c3",
           "title": "Đại số tổ hợp",
-          "order": 3,
+          "order": 8,
           "lessons": [
             {
               "id": "10-2-c3-l1",
@@ -1343,7 +1343,7 @@
         {
           "id": "10-2-c4",
           "title": "Tính xác suất theo định nghĩa cổ điển",
-          "order": 4,
+          "order": 9,
           "lessons": [
             {
               "id": "10-2-c4-l1",
@@ -1504,7 +1504,7 @@
         {
           "id": "11-2-c1",
           "title": "Hàm số mũ và hàm số lôgarit",
-          "order": 1,
+          "order": 6,
           "lessons": [
             {
               "id": "11-2-c1-l1",
@@ -1531,7 +1531,7 @@
         {
           "id": "11-2-c2",
           "title": "Quan hệ vuông góc trong không gian",
-          "order": 2,
+          "order": 7,
           "lessons": [
             {
               "id": "11-2-c2-l1",
@@ -1568,7 +1568,7 @@
         {
           "id": "11-2-c3",
           "title": "Các quy tắc tính xác suất",
-          "order": 3,
+          "order": 8,
           "lessons": [
             {
               "id": "11-2-c3-l1",
@@ -1590,7 +1590,7 @@
         {
           "id": "11-2-c4",
           "title": "Đạo hàm",
-          "order": 4,
+          "order": 9,
           "lessons": [
             {
               "id": "11-2-c4-l1",
@@ -1707,7 +1707,7 @@
         {
           "id": "12-2-c1",
           "title": "Nguyên hàm và tích phân",
-          "order": 1,
+          "order": 4,
           "lessons": [
             {
               "id": "12-2-c1-l1",
@@ -1729,7 +1729,7 @@
         {
           "id": "12-2-c2",
           "title": "Phương pháp tọa độ trong không gian",
-          "order": 2,
+          "order": 5,
           "lessons": [
             {
               "id": "12-2-c2-l1",
@@ -1756,7 +1756,7 @@
         {
           "id": "12-2-c3",
           "title": "Xác suất có điều kiện",
-          "order": 3,
+          "order": 6,
           "lessons": [
             {
               "id": "12-2-c3-l1",
