@@ -830,11 +830,11 @@ import {createTeacherScanUI} from "/teacher-scan-ui.mjs";
         async function deleteClass(id){if(!['admin','teacher'].includes(state.sessionRole)||!canManageClass(id))return;const c=state.classes.find(c=>c.id===id);if(!c||!confirm('Xóa toàn bộ lớp '+c.name+' và '+c.students.length+' học sinh? Tài khoản, học phí, bài nộp, điểm và thời khóa biểu liên quan sẽ bị xóa trên tất cả các cổng.'))return;let busy=false;try{if(hosted){await onlineFlush();if(onlineDirty||onlineBusy)throw Error('Đang lưu dữ liệu, thử lại sau.');onlineBusy=true;busy=true;const data=await onlineRequest('/api/classes/delete',{method:'POST',body:JSON.stringify({classId:id})});onlineAdopt(data.view);}else {state.classes=state.classes.filter(c=>c.id!==id);for(const k of ['timetable','gradeBook','assignments','learningSubmissions','learningAttempts','learningReports','lessonProgress','notifications'])state[k]=state[k].filter(r=>r.classId!==id);persist();}refreshUI();toast('Đã xóa lớp và đồng bộ toàn hệ thống.');}catch(e){toast(e.message)}finally{if(busy)onlineBusy=false;}}
         const newStudent = (sbd, name, pass) => ({ sbd, name, password: pass || '123456', fees: {}, attendance: 'Có mặt' });
         function nextStudentSbd(c) {
-            const normalized=String(c?.name||'').normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').toUpperCase().replace(/^(LOP|CLASS)/,'').replace(/[^A-Z0-9]/g,'');
-            const match=/^(1[0-2]|[1-9])([A-Z]?\\d*)$/.exec(normalized), prefix=match?'K'+match[1]+match[2]:null;
+            const normalized=String(c?.name||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/^(LOP|CLASS)/,'').replace(/[^A-Z0-9]/g,'');
+            const match=/^(1[0-2]|[1-9])([A-Z]?\d*)$/.exec(normalized), prefix=match?'K'+match[1]+match[2]:null;
             const rows=[...(c?.students||[]),...(state.archivedStudents||[]).filter(x=>x.classId===c?.id),...(state.enrollmentApplications||[]).filter(x=>x.classId===c?.id||x.proposedClassId===c?.id)];
             let max=0;
-            for(const row of rows){const value=String(row?.sbd||row?.proposedSbd||'');const suffix=prefix&&value.startsWith(prefix)?value.slice(prefix.length):(!prefix&&/^HS\\d+$/i.test(value)?value.slice(2):'');if(/^\\d+$/.test(suffix))max=Math.max(max,Number(suffix));}
+            for(const row of rows){const value=String(row?.sbd||row?.proposedSbd||'');const suffix=prefix&&value.startsWith(prefix)?value.slice(prefix.length):(!prefix&&/^HS\d+$/i.test(value)?value.slice(2):'');if(/^\d+$/.test(suffix))max=Math.max(max,Number(suffix));}
             const base=prefix||'HS', width=prefix?2:5;
             let candidate;do{max++;candidate=base+String(max).padStart(width,'0');}while((c?.students||[]).some(s=>String(s.sbd).toUpperCase()===candidate.toUpperCase()));
             return candidate;
