@@ -20,7 +20,7 @@ import {buildTaxWorkbook,taxRows} from './tax-export.mjs';
 import {recalculateTuition,setTuition,monthIndex,tuitionOptionsFor} from './tuition.mjs';
 import http from 'node:http';import {readFile} from 'node:fs/promises';import {fileURLToPath} from 'node:url';import {createHmac,randomUUID,randomBytes,pbkdf2Sync,timingSafeEqual} from 'node:crypto';import path from 'node:path';
 export function findStudentDuplicates(d){
- const normalize=value=>String(value||'').normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').replace(/[đĐ]/g,'d').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+ const normalize=value=>String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[đĐ]/g,'d').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
  const rows=(d.classes||[]).flatMap(c=>(c.students||[]).map(s=>({name:String(s.name||'').trim(),sbd:String(s.sbd||'').trim(),classId:c.id,className:c.name,dob:s.dob||'',parentPhone:s.parentPhone||''})));
  const groups=keyOf=>{const map=new Map();for(const row of rows){const key=keyOf(row);if(!key)continue;const list=map.get(key)||[];list.push(row);map.set(key,list);}return [...map.entries()].filter(([,list])=>list.length>1).map(([value,students])=>({value,students})).sort((a,b)=>b.students.length-a.students.length||a.value.localeCompare(b.value,'vi'));};
  return {duplicateSbd:groups(row=>row.sbd),duplicateNames:groups(row=>normalize(row.name))};
