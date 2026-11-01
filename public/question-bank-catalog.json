@@ -859,7 +859,7 @@
             },
             {
               "id": "8-2-c4-l5",
-              "title": "Bài 37. Ứng dụng thực tiễn của tam giác đồng dạng",
+              "title": "Bài 37. Hình đồng dạng",
               "order": 5
             }
           ]
@@ -917,23 +917,23 @@
         },
         {
           "id": "9-1-c2",
-          "title": "Bất đẳng thức và bất phương trình bậc nhất một ẩn",
+          "title": "Phương trình và bất phương trình bậc nhất một ẩn",
           "order": 2,
           "lessons": [
             {
               "id": "9-1-c2-l1",
-              "title": "Bài 4. Bất đẳng thức",
-              "order": 1
+              "order": 1,
+              "title": "Bài 4. Phương trình quy về phương trình bậc nhất một ẩn"
             },
             {
               "id": "9-1-c2-l2",
-              "title": "Bài 5. Bất phương trình bậc nhất một ẩn",
-              "order": 2
+              "order": 2,
+              "title": "Bài 5. Bất đẳng thức và tính chất"
             },
             {
               "id": "9-1-c2-l3",
-              "title": "Bài 6. Giải bất phương trình bậc nhất một ẩn",
-              "order": 3
+              "order": 3,
+              "title": "Bài 6. Bất phương trình bậc nhất một ẩn"
             }
           ]
         },
