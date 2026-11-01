@@ -1,19 +1,49 @@
 import {test} from 'node:test';import assert from 'node:assert/strict';
-import {emptyState,passwordHash,saveClassAttendance,deleteClassAttendance,createPortalServer} from '../portal-server.mjs';
+import {emptyState,passwordHash,saveClassAttendance,deleteClassAttendance,createPortalServer,transferCenterStudent} from '../portal-server.mjs';
 import {attendanceHistory} from '../attendance-history.mjs';
 import {attendanceDayLabel} from '../public/attendance-history-ui.mjs';
 const teacher={role:'teacher',username:'teacher',account:{id:'t1'}};
 function fixture(){const d=emptyState('admin123456');d.accounts.push({id:'t1',username:'teacher',role:'teacher'});d._auth.teacher=passwordHash('teacher123');d.classes=[{id:'a',name:'8A',teacherId:'t1',students:[{sbd:'S1',name:'An',fees:{},attendanceRecords:[{date:'2026-10-30',status:'Vắng'}]},{sbd:'S2',name:'Bình',fees:{},attendanceRecords:[]}]},{id:'b',name:'8B',students:[{sbd:'SECRET',name:'Other class',attendanceRecords:[{date:'2026-01-01',session:'1',status:'Có mặt'}]}]}];d._auth['student:a:S1']=passwordHash('student123');d.timetable=[{classId:'a',day:'Thứ 7',time:'19:30 - 21:30',subject:'Toán',room:'1'},{classId:'b',day:'Thứ 2',time:'08:00',subject:'Private'}];return d;}
 const body={classId:'a',date:'2026-10-31',session:'2',marks:[{sbd:'S1',status:'Có mặt'},{sbd:'S2',status:'Muộn'}]};
 test('history includes legacy and archived sessions, sorts days/sessions and deduplicates pupil records',()=>{
- const d=fixture();d.archivedStudents=[{classId:'a',student:{sbd:'OLD',attendanceRecords:[{date:'2026-10-29',session:'3',status:'Có mặt'}]}},{classId:'b',student:{sbd:'OTHER',attendanceRecords:[{date:'2026-01-01',session:'1',status:'Có mặt'}]}}];d.classes[0].students[0].attendanceRecords.push({date:'2026-10-30',session:'1',status:'Muộn',updatedAt:'2026-10-30T12:00:00Z'},{date:'2026-02-30',session:'1',status:'Có mặt'});const before=structuredClone(d),h=attendanceHistory(d,teacher,['a'],{className:'8A'});assert.deepEqual(h.sessions.map(r=>[r.date,r.session]),[['2026-10-30','1'],['2026-10-29','3']]);assert.equal(h.sessions[0].marked,1);assert.equal(h.sessions[0].late,1);assert.equal(h.schedule.length,1);assert(!JSON.stringify(h).includes('SECRET'));assert(!JSON.stringify(h).includes('An'));assert.deepEqual(d,before);
+ const d=fixture();d.archivedStudents=[{classId:'a',student:{sbd:'OLD',attendanceRecords:[{date:'2026-10-29',session:'3',status:'Có mặt'}]}},{classId:'b',student:{sbd:'OTHER',attendanceRecords:[{date:'2026-01-01',session:'1',status:'Có mặt'}]}}];d.classes[0].students[0].attendanceRecords.push({date:'2026-10-30',session:'1',status:'Muộn',updatedAt:'2026-10-30T12:00:00Z'},{date:'2026-02-30',session:'1',status:'Có mặt'});const before=structuredClone(d),h=attendanceHistory(d,teacher,['a'],{className:'8A'});assert.deepEqual(h.sessions.map(r=>[r.date,r.session]),[['2026-10-30','1'],['2026-10-29','3']]);assert.equal(h.sessions[0].marked,1);assert.equal(h.sessions[0].late,1);assert.equal(h.sessions[0].total,2);assert.equal(h.sessions[1].marked,0);assert.equal(h.sessions[1].total,2);assert.equal(h.schedule.length,1);assert(!JSON.stringify(h).includes('SECRET'));assert(!JSON.stringify(h).includes('An'));assert.deepEqual(d,before);
 });
 test('saving and redoing the same class session updates one history entry and one pupil attendance record',()=>{
  const d=fixture();saveClassAttendance(d,teacher,body);let h=attendanceHistory(d,teacher,['a'],{classId:'a'});assert.equal(Object.keys(d._attendanceSessions).length,1);assert.equal(h.sessions[0].date,'2026-10-31');assert.equal(h.sessions[0].session,'2');assert.equal(h.sessions[0].present,1);assert.equal(h.sessions[0].late,1);saveClassAttendance(d,teacher,{...body,marks:[{sbd:'S1',status:'Vắng'},{sbd:'S2',status:'Có mặt'}]});h=attendanceHistory(d,teacher,['a'],{classId:'a'});assert.equal(Object.keys(d._attendanceSessions).length,1);assert.equal(h.sessions[0].absent,1);assert.equal(h.sessions[0].present,1);assert.equal(h.sessions[0].late,0);for(const s of d.classes[0].students)assert.equal(s.attendanceRecords.filter(r=>r.date===body.date&&r.session==='2').length,1);saveClassAttendance(d,teacher,{...body,session:'3'});h=attendanceHistory(d,teacher,['a'],{classId:'a'});assert.deepEqual(h.sessions.slice(0,2).map(r=>r.session),['3','2']);
 });
 test('saved class session remains selectable after pupil archival/removal and invalid updates do not affect history',()=>{
- const d=fixture();saveClassAttendance(d,teacher,body);const before=structuredClone(d);assert.throws(()=>saveClassAttendance(d,teacher,{...body,date:'2026-02-30'}),/không hợp lệ/);assert.deepEqual(d,before);d.classes[0].students=[];const h=attendanceHistory(d,teacher,['a'],{classId:'a'});assert.equal(h.sessions[0].date,'2026-10-31');assert.equal(h.sessions[0].marked,2);assert.equal(h.sessions[0].total,2);
+ const d=fixture();saveClassAttendance(d,teacher,body);const before=structuredClone(d);assert.throws(()=>saveClassAttendance(d,teacher,{...body,date:'2026-02-30'}),/không hợp lệ/);assert.deepEqual(d,before);d.classes[0].students=[];const h=attendanceHistory(d,teacher,['a'],{classId:'a'});assert.equal(h.sessions[0].date,'2026-10-31');assert.equal(h.sessions[0].marked,0);assert.equal(h.sessions[0].total,0);
 });
+
+test('class attendance history recomputes total and counts from current rosters after a student transfer',()=>{
+ const d=emptyState('admin123456'),date='2026-10-31';
+ const moved={sbd:'K8A01',name:'An',fees:{},attendanceRecords:[{date,session:'1',status:'Có mặt',updatedAt:'2026-10-31T10:00:00Z'}]};
+ const sourceRemaining={sbd:'K8A02',name:'Bình',fees:{},attendanceRecords:[{date,session:'1',status:'Vắng',updatedAt:'2026-10-31T10:01:00Z'}]};
+ const targetExisting={sbd:'K6A01',name:'Chi',fees:{},attendanceRecords:[{date,session:'1',status:'Vắng',updatedAt:'2026-10-31T10:02:00Z'}]};
+ d.classes=[
+  {id:'source',name:'8A',teacherId:'t1',students:[moved,sourceRemaining]},
+  {id:'target',name:'6A',teacherId:'t1',students:[targetExisting]}
+ ];
+ d._attendanceSessions={
+  [JSON.stringify(['source',date,'1'])]:{classId:'source',date,session:'1',total:2,marked:2,present:1,absent:1,late:0,makeup:0},
+  [JSON.stringify(['target',date,'1'])]:{classId:'target',date,session:'1',total:4,marked:1,present:0,absent:1,late:0,makeup:0}
+ };
+ transferCenterStudent(d,{role:'admin',username:'admin'},{classId:'source',sbd:'K8A01',targetClassId:'target',name:'An',expectedRevision:d._revision},'test-secret');
+ const sourceHistory=attendanceHistory(d,teacher,['source'],{classId:'source'}).sessions[0];
+ const targetHistory=attendanceHistory(d,teacher,['target'],{classId:'target'}).sessions[0];
+ assert.equal(d.classes[0].students.length,1);
+ assert.equal(d.classes[1].students.length,2);
+ assert.equal(sourceHistory.total,1);
+ assert.equal(sourceHistory.marked,1);
+ assert.equal(sourceHistory.present,0);
+ assert.equal(sourceHistory.absent,1);
+ assert.equal(targetHistory.total,2);
+ assert.equal(targetHistory.marked,2);
+ assert.equal(targetHistory.present,1);
+ assert.equal(targetHistory.absent,1);
+ assert.equal(d.classes[1].students.find(s=>s.name==='An').attendanceRecords[0].status,'Có mặt');
+});
+
 test('history permissions reject other classes and nonstaff while calendar labels preserve day/month and weekday',()=>{
  const d=fixture();assert.throws(()=>attendanceHistory(d,teacher,['a'],{classId:'b'}),/được phân công/);assert.throws(()=>attendanceHistory(d,{role:'parent'},['a'],{classId:'a'}),/Chỉ giáo viên/);assert.equal(attendanceDayLabel('2026-10-31'),'Thứ 7, 31/10/2026');assert.equal(attendanceDayLabel('2026-11-01'),'Chủ nhật, 01/11/2026');assert.equal(attendanceDayLabel('2024-02-29'),'Thứ 5, 29/02/2024');assert.equal(attendanceDayLabel('2026-02-30'),'');assert.equal(attendanceDayLabel('11/02/2013'),'');
 });
