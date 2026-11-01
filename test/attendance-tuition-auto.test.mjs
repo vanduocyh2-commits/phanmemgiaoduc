@@ -8,6 +8,7 @@ const makeState=()=>{const d=emptyState('admin-test-123456');d.classes=[{id:'c1'
 test('attendance automatically creates and refreshes monthly tuition from the class rate',()=>{
  const d=makeState(),c=d.classes[0],s=c.students[0],input={classId:'c1',date:'2026-10-10',session:'1',marks:[{sbd:'S1',status:'Có mặt'},{sbd:'S2',status:'Vắng'},{sbd:'S3',status:'Có mặt'}]};
  saveClassAttendance(d,actor,input);
+ assert.equal(s.attendanceRecords[0].recordedRole,'teacher');
  assert.equal(s.fees['Tháng 10/2026'].calculation.sessions,1);
  assert.equal(s.fees['Tháng 10/2026'].amount,65000);
  assert.equal(c.students[1].fees['Tháng 10/2026'].amount,15000);
