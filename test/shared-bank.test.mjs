@@ -9,7 +9,7 @@ test('author update synchronizes other teachers classes, preserves essay points,
 test('class grade accepts explicit settings and metadata, with legacy unclassified exams compatible',()=>{assert.equal(classGrade({name:'Lớp 10A1'}),'10');assert.equal(classGrade({name:'Lớp A',grade:'8'}),'8');assert.equal(classGrade({name:'Lớp A',students:[{schoolClass:'9B'},{schoolClass:'9C'}]}),'9');assert.equal(examMatchesClass({grade:'10'},{name:'11C'}),false);assert.equal(examMatchesClass({},{name:'10A'}),true);});
 
 test('question bank is shared across teachers but each teacher can only edit and delete their own curriculum questions',()=>{
- const d=seed();
+ const d=seed();delete d.questionBank;
  const question={id:'qb-t1',grade:'10',subject:'Toán',textbook:'Kết nối tri thức với cuộc sống',chapter:'Chương I',chapterOrder:1,lesson:'Bài 1',lessonOrder:1,type:'mcq',level:'NB',points:1,text:'Giá trị của 1 + 1?',options:['1','2','3','4'],answer:'B'};
  applyChanges(d,actor('t1'),{questionBank:{upsert:[question],remove:[]}});
  assert.equal(d.questionBank.length,1);
