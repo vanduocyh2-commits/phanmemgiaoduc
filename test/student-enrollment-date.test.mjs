@@ -12,13 +12,13 @@ const marks=[
  {date:'2026-10-11',session:'1',status:'Vắng',makeup:true,recordedRole:'teacher'}
 ];
 
-test('a student is billed only for teacher-marked sessions on or after the enrollment date',()=>{
+test('a student is billed only for teacher-marked sessions on or after enrollment, once per day',()=>{
  const student={enrolledAt:'2026-10-10',attendanceRecords:structuredClone(marks)};
- assert.equal(rawSessionsInMonth(student,'Tháng 10/2026'),3);
+ assert.equal(rawSessionsInMonth(student,'Tháng 10/2026'),2,'two billable dates count as two buổi even when one date has multiple records');
  const quote=quoteTuition(student,'Tháng 10/2026',{rate:50000,photo:0,carry:false});
- assert.equal(quote.sessions,3);
- assert.equal(quote.tuition,150000);
- assert.equal(rawSessionsInMonth({attendanceRecords:structuredClone(marks)},'Tháng 10/2026'),4,'legacy student records without an enrollment date keep their existing full-month history');
+ assert.equal(quote.sessions,2);
+ assert.equal(quote.tuition,100000);
+ assert.equal(rawSessionsInMonth({attendanceRecords:structuredClone(marks)},'Tháng 10/2026'),3,'legacy student records without an enrollment date keep their existing full-month history, once per day');
 });
 
 test('admin class updates stamp new students on entry and never allow changing an existing enrollment date',()=>{
