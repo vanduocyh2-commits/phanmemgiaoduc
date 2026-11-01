@@ -1,0 +1,1781 @@
+{
+  "version": 1,
+  "subject": "Toán",
+  "curriculum": "GDPT 2018",
+  "series": "Kết nối tri thức với cuộc sống",
+  "grades": [
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12
+  ],
+  "books": [
+    {
+      "id": "toan-6-tap-1",
+      "grade": 6,
+      "subject": "Toán",
+      "curriculum": "GDPT 2018",
+      "series": "Kết nối tri thức với cuộc sống",
+      "volume": 1,
+      "textbook": "Kết nối tri thức với cuộc sống — Toán 6 — Tập 1",
+      "label": "Toán 6 · Kết nối tri thức · Tập 1",
+      "chapters": [
+        {
+          "id": "6-1-c1",
+          "title": "Tập hợp các số tự nhiên",
+          "order": 1,
+          "lessons": [
+            {
+              "id": "6-1-c1-l1",
+              "title": "Bài 1. Tập hợp",
+              "order": 1
+            },
+            {
+              "id": "6-1-c1-l2",
+              "title": "Bài 2. Cách ghi số tự nhiên",
+              "order": 2
+            },
+            {
+              "id": "6-1-c1-l3",
+              "title": "Bài 3. Thứ tự trong tập hợp các số tự nhiên",
+              "order": 3
+            },
+            {
+              "id": "6-1-c1-l4",
+              "title": "Bài 4. Phép cộng và phép trừ số tự nhiên",
+              "order": 4
+            },
+            {
+              "id": "6-1-c1-l5",
+              "title": "Bài 5. Phép nhân và phép chia số tự nhiên",
+              "order": 5
+            },
+            {
+              "id": "6-1-c1-l6",
+              "title": "Bài 6. Lũy thừa với số mũ tự nhiên",
+              "order": 6
+            },
+            {
+              "id": "6-1-c1-l7",
+              "title": "Bài 7. Thứ tự thực hiện các phép tính",
+              "order": 7
+            }
+          ]
+        },
+        {
+          "id": "6-1-c2",
+          "title": "Tính chia hết trong tập hợp các số tự nhiên",
+          "order": 2,
+          "lessons": [
+            {
+              "id": "6-1-c2-l1",
+              "title": "Bài 8. Quan hệ chia hết và tính chất",
+              "order": 1
+            },
+            {
+              "id": "6-1-c2-l2",
+              "title": "Bài 9. Dấu hiệu chia hết",
+              "order": 2
+            },
+            {
+              "id": "6-1-c2-l3",
+              "title": "Bài 10. Số nguyên tố",
+              "order": 3
+            },
+            {
+              "id": "6-1-c2-l4",
+              "title": "Bài 11. Ước chung. Ước chung lớn nhất",
+              "order": 4
+            },
+            {
+              "id": "6-1-c2-l5",
+              "title": "Bài 12. Bội chung. Bội chung nhỏ nhất",
+              "order": 5
+            }
+          ]
+        },
+        {
+          "id": "6-1-c3",
+          "title": "Số nguyên",
+          "order": 3,
+          "lessons": [
+            {
+              "id": "6-1-c3-l1",
+              "title": "Bài 13. Tập hợp các số nguyên",
+              "order": 1
+            },
+            {
+              "id": "6-1-c3-l2",
+              "title": "Bài 14. Phép cộng và phép trừ số nguyên",
+              "order": 2
+            },
+            {
+              "id": "6-1-c3-l3",
+              "title": "Bài 15. Quy tắc dấu ngoặc",
+              "order": 3
+            },
+            {
+              "id": "6-1-c3-l4",
+              "title": "Bài 16. Phép nhân số nguyên",
+              "order": 4
+            },
+            {
+              "id": "6-1-c3-l5",
+              "title": "Bài 17. Phép chia hết. Ước và bội của một số nguyên",
+              "order": 5
+            }
+          ]
+        },
+        {
+          "id": "6-1-c4",
+          "title": "Một số hình phẳng trong thực tiễn",
+          "order": 4,
+          "lessons": [
+            {
+              "id": "6-1-c4-l1",
+              "title": "Bài 18. Hình tam giác đều. Hình vuông. Hình lục giác đều",
+              "order": 1
+            },
+            {
+              "id": "6-1-c4-l2",
+              "title": "Bài 19. Hình chữ nhật. Hình thoi. Hình bình hành. Hình thang cân",
+              "order": 2
+            },
+            {
+              "id": "6-1-c4-l3",
+              "title": "Bài 20. Chu vi và diện tích của một số tứ giác đã học",
+              "order": 3
+            }
+          ]
+        },
+        {
+          "id": "6-1-c5",
+          "title": "Tính đối xứng của hình phẳng trong tự nhiên",
+          "order": 5,
+          "lessons": [
+            {
+              "id": "6-1-c5-l1",
+              "title": "Bài 21. Hình có trục đối xứng",
+              "order": 1
+            },
+            {
+              "id": "6-1-c5-l2",
+              "title": "Bài 22. Hình có tâm đối xứng",
+              "order": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "toan-6-tap-2",
+      "grade": 6,
+      "subject": "Toán",
+      "curriculum": "GDPT 2018",
+      "series": "Kết nối tri thức với cuộc sống",
+      "volume": 2,
+      "textbook": "Kết nối tri thức với cuộc sống — Toán 6 — Tập 2",
+      "label": "Toán 6 · Kết nối tri thức · Tập 2",
+      "chapters": [
+        {
+          "id": "6-2-c1",
+          "title": "Phân số",
+          "order": 6,
+          "lessons": [
+            {
+              "id": "6-2-c1-l1",
+              "title": "Bài 23. Mở rộng phân số. Phân số bằng nhau",
+              "order": 1
+            },
+            {
+              "id": "6-2-c1-l2",
+              "title": "Bài 24. So sánh phân số. Hỗn số dương",
+              "order": 2
+            },
+            {
+              "id": "6-2-c1-l3",
+              "title": "Bài 25. Phép cộng và phép trừ phân số",
+              "order": 3
+            },
+            {
+              "id": "6-2-c1-l4",
+              "title": "Bài 26. Phép nhân và phép chia phân số",
+              "order": 4
+            },
+            {
+              "id": "6-2-c1-l5",
+              "title": "Bài 27. Hai bài toán về phân số",
+              "order": 5
+            }
+          ]
+        },
+        {
+          "id": "6-2-c2",
+          "title": "Số thập phân",
+          "order": 7,
+          "lessons": [
+            {
+              "id": "6-2-c2-l1",
+              "title": "Bài 28. Số thập phân",
+              "order": 1
+            },
+            {
+              "id": "6-2-c2-l2",
+              "title": "Bài 29. Tính toán với số thập phân",
+              "order": 2
+            },
+            {
+              "id": "6-2-c2-l3",
+              "title": "Bài 30. Làm tròn và ước lượng",
+              "order": 3
+            },
+            {
+              "id": "6-2-c2-l4",
+              "title": "Bài 31. Một số bài toán về tỉ số và tỉ số phần trăm",
+              "order": 4
+            }
+          ]
+        },
+        {
+          "id": "6-2-c3",
+          "title": "Những hình hình học cơ bản",
+          "order": 8,
+          "lessons": [
+            {
+              "id": "6-2-c3-l1",
+              "title": "Bài 32. Điểm và đường thẳng",
+              "order": 1
+            },
+            {
+              "id": "6-2-c3-l2",
+              "title": "Bài 33. Điểm nằm giữa hai điểm. Tia",
+              "order": 2
+            },
+            {
+              "id": "6-2-c3-l3",
+              "title": "Bài 34. Đoạn thẳng. Độ dài đoạn thẳng",
+              "order": 3
+            },
+            {
+              "id": "6-2-c3-l4",
+              "title": "Bài 35. Trung điểm của đoạn thẳng",
+              "order": 4
+            },
+            {
+              "id": "6-2-c3-l5",
+              "title": "Bài 36. Góc",
+              "order": 5
+            },
+            {
+              "id": "6-2-c3-l6",
+              "title": "Bài 37. Số đo góc",
+              "order": 6
+            }
+          ]
+        },
+        {
+          "id": "6-2-c4",
+          "title": "Dữ liệu và xác suất thực nghiệm",
+          "order": 9,
+          "lessons": [
+            {
+              "id": "6-2-c4-l1",
+              "title": "Bài 38. Dữ liệu và thu thập dữ liệu",
+              "order": 1
+            },
+            {
+              "id": "6-2-c4-l2",
+              "title": "Bài 39. Bảng thống kê và biểu đồ tranh",
+              "order": 2
+            },
+            {
+              "id": "6-2-c4-l3",
+              "title": "Bài 40. Biểu đồ cột",
+              "order": 3
+            },
+            {
+              "id": "6-2-c4-l4",
+              "title": "Bài 41. Biểu đồ cột kép",
+              "order": 4
+            },
+            {
+              "id": "6-2-c4-l5",
+              "title": "Bài 42. Kết quả có thể và sự kiện trong trò chơi, thí nghiệm",
+              "order": 5
+            },
+            {
+              "id": "6-2-c4-l6",
+              "title": "Bài 43. Xác suất thực nghiệm",
+              "order": 6
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "toan-7-tap-1",
+      "grade": 7,
+      "subject": "Toán",
+      "curriculum": "GDPT 2018",
+      "series": "Kết nối tri thức với cuộc sống",
+      "volume": 1,
+      "textbook": "Kết nối tri thức với cuộc sống — Toán 7 — Tập 1",
+      "label": "Toán 7 · Kết nối tri thức · Tập 1",
+      "chapters": [
+        {
+          "id": "7-1-c1",
+          "title": "Số hữu tỉ",
+          "order": 1,
+          "lessons": [
+            {
+              "id": "7-1-c1-l1",
+              "title": "Bài 1. Tập hợp các số hữu tỉ",
+              "order": 1
+            },
+            {
+              "id": "7-1-c1-l2",
+              "title": "Bài 2. Cộng, trừ, nhân, chia số hữu tỉ",
+              "order": 2
+            },
+            {
+              "id": "7-1-c1-l3",
+              "title": "Bài 3. Lũy thừa của một số hữu tỉ",
+              "order": 3
+            },
+            {
+              "id": "7-1-c1-l4",
+              "title": "Bài 4. Thứ tự thực hiện các phép tính. Quy tắc chuyển vế",
+              "order": 4
+            }
+          ]
+        },
+        {
+          "id": "7-1-c2",
+          "title": "Số thực",
+          "order": 2,
+          "lessons": [
+            {
+              "id": "7-1-c2-l1",
+              "title": "Bài 5. Làm quen với số thập phân vô hạn tuần hoàn",
+              "order": 1
+            },
+            {
+              "id": "7-1-c2-l2",
+              "title": "Bài 6. Số vô tỉ. Căn bậc hai số học",
+              "order": 2
+            },
+            {
+              "id": "7-1-c2-l3",
+              "title": "Bài 7. Tập hợp các số thực",
+              "order": 3
+            }
+          ]
+        },
+        {
+          "id": "7-1-c3",
+          "title": "Góc và đường thẳng song song",
+          "order": 3,
+          "lessons": [
+            {
+              "id": "7-1-c3-l1",
+              "title": "Bài 8. Góc ở vị trí đặc biệt. Tia phân giác của một góc",
+              "order": 1
+            },
+            {
+              "id": "7-1-c3-l2",
+              "title": "Bài 9. Hai đường thẳng song song và dấu hiệu nhận biết",
+              "order": 2
+            },
+            {
+              "id": "7-1-c3-l3",
+              "title": "Bài 10. Tiên đề Euclid. Tính chất của hai đường thẳng song song",
+              "order": 3
+            },
+            {
+              "id": "7-1-c3-l4",
+              "title": "Bài 11. Định lí và chứng minh định lí",
+              "order": 4
+            }
+          ]
+        },
+        {
+          "id": "7-1-c4",
+          "title": "Tam giác bằng nhau",
+          "order": 4,
+          "lessons": [
+            {
+              "id": "7-1-c4-l1",
+              "title": "Bài 12. Tổng các góc trong một tam giác",
+              "order": 1
+            },
+            {
+              "id": "7-1-c4-l2",
+              "title": "Bài 13. Hai tam giác bằng nhau. Trường hợp bằng nhau thứ nhất của tam giác",
+              "order": 2
+            },
+            {
+              "id": "7-1-c4-l3",
+              "title": "Bài 14. Trường hợp bằng nhau thứ hai và thứ ba của tam giác",
+              "order": 3
+            },
+            {
+              "id": "7-1-c4-l4",
+              "title": "Bài 15. Các trường hợp bằng nhau của tam giác vuông",
+              "order": 4
+            },
+            {
+              "id": "7-1-c4-l5",
+              "title": "Bài 16. Tam giác cân. Đường trung trực của đoạn thẳng",
+              "order": 5
+            }
+          ]
+        },
+        {
+          "id": "7-1-c5",
+          "title": "Thu thập và biểu diễn dữ liệu",
+          "order": 5,
+          "lessons": [
+            {
+              "id": "7-1-c5-l1",
+              "title": "Bài 17. Thu thập và phân loại dữ liệu",
+              "order": 1
+            },
+            {
+              "id": "7-1-c5-l2",
+              "title": "Bài 18. Biểu đồ hình quạt tròn",
+              "order": 2
+            },
+            {
+              "id": "7-1-c5-l3",
+              "title": "Bài 19. Biểu đồ đoạn thẳng",
+              "order": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "toan-7-tap-2",
+      "grade": 7,
+      "subject": "Toán",
+      "curriculum": "GDPT 2018",
+      "series": "Kết nối tri thức với cuộc sống",
+      "volume": 2,
+      "textbook": "Kết nối tri thức với cuộc sống — Toán 7 — Tập 2",
+      "label": "Toán 7 · Kết nối tri thức · Tập 2",
+      "chapters": [
+        {
+          "id": "7-2-c1",
+          "title": "Tỉ lệ thức và đại lượng tỉ lệ",
+          "order": 6,
+          "lessons": [
+            {
+              "id": "7-2-c1-l1",
+              "title": "Bài 20. Tỉ lệ thức",
+              "order": 1
+            },
+            {
+              "id": "7-2-c1-l2",
+              "title": "Bài 21. Tính chất của dãy tỉ số bằng nhau",
+              "order": 2
+            },
+            {
+              "id": "7-2-c1-l3",
+              "title": "Bài 22. Đại lượng tỉ lệ thuận",
+              "order": 3
+            },
+            {
+              "id": "7-2-c1-l4",
+              "title": "Bài 23. Đại lượng tỉ lệ nghịch",
+              "order": 4
+            }
+          ]
+        },
+        {
+          "id": "7-2-c2",
+          "title": "Biểu thức đại số và đa thức một biến",
+          "order": 7,
+          "lessons": [
+            {
+              "id": "7-2-c2-l1",
+              "title": "Bài 24. Biểu thức đại số",
+              "order": 1
+            },
+            {
+              "id": "7-2-c2-l2",
+              "title": "Bài 25. Đa thức một biến",
+              "order": 2
+            },
+            {
+              "id": "7-2-c2-l3",
+              "title": "Bài 26. Cộng, trừ đa thức một biến",
+              "order": 3
+            },
+            {
+              "id": "7-2-c2-l4",
+              "title": "Bài 27. Phép nhân đa thức một biến",
+              "order": 4
+            },
+            {
+              "id": "7-2-c2-l5",
+              "title": "Bài 28. Phép chia đa thức một biến",
+              "order": 5
+            }
+          ]
+        },
+        {
+          "id": "7-2-c3",
+          "title": "Làm quen với biến cố và xác suất của biến cố",
+          "order": 8,
+          "lessons": [
+            {
+              "id": "7-2-c3-l1",
+              "title": "Bài 29. Làm quen với biến cố",
+              "order": 1
+            },
+            {
+              "id": "7-2-c3-l2",
+              "title": "Bài 30. Làm quen với xác suất của biến cố",
+              "order": 2
+            }
+          ]
+        },
+        {
+          "id": "7-2-c4",
+          "title": "Quan hệ giữa các yếu tố trong một tam giác",
+          "order": 9,
+          "lessons": [
+            {
+              "id": "7-2-c4-l1",
+              "title": "Bài 31. Quan hệ giữa góc và cạnh đối diện trong một tam giác",
+              "order": 1
+            },
+            {
+              "id": "7-2-c4-l2",
+              "title": "Bài 32. Quan hệ giữa đường vuông góc và đường xiên",
+              "order": 2
+            },
+            {
+              "id": "7-2-c4-l3",
+              "title": "Bài 33. Quan hệ giữa ba cạnh của một tam giác",
+              "order": 3
+            },
+            {
+              "id": "7-2-c4-l4",
+              "title": "Bài 34. Sự đồng quy của ba đường trung tuyến. Ba đường phân giác",
+              "order": 4
+            },
+            {
+              "id": "7-2-c4-l5",
+              "title": "Bài 35. Sự đồng quy của ba đường trung trực. Ba đường cao",
+              "order": 5
+            }
+          ]
+        },
+        {
+          "id": "7-2-c5",
+          "title": "Một số hình khối trong thực tiễn",
+          "order": 10,
+          "lessons": [
+            {
+              "id": "7-2-c5-l1",
+              "title": "Bài 36. Hình hộp chữ nhật và hình lập phương",
+              "order": 1
+            },
+            {
+              "id": "7-2-c5-l2",
+              "title": "Bài 37. Hình lăng trụ đứng tam giác và hình lăng trụ đứng tứ giác",
+              "order": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "toan-8-tap-1",
+      "grade": 8,
+      "subject": "Toán",
+      "curriculum": "GDPT 2018",
+      "series": "Kết nối tri thức với cuộc sống",
+      "volume": 1,
+      "textbook": "Kết nối tri thức với cuộc sống — Toán 8 — Tập 1",
+      "label": "Toán 8 · Kết nối tri thức · Tập 1",
+      "chapters": [
+        {
+          "id": "8-1-c1",
+          "title": "Đa thức",
+          "order": 1,
+          "lessons": [
+            {
+              "id": "8-1-c1-l1",
+              "title": "Bài 1. Đơn thức",
+              "order": 1
+            },
+            {
+              "id": "8-1-c1-l2",
+              "title": "Bài 2. Đa thức",
+              "order": 2
+            },
+            {
+              "id": "8-1-c1-l3",
+              "title": "Bài 3. Phép cộng và phép trừ đa thức",
+              "order": 3
+            },
+            {
+              "id": "8-1-c1-l4",
+              "title": "Bài 4. Phép nhân đa thức",
+              "order": 4
+            },
+            {
+              "id": "8-1-c1-l5",
+              "title": "Bài 5. Phép chia đa thức cho đơn thức",
+              "order": 5
+            }
+          ]
+        },
+        {
+          "id": "8-1-c2",
+          "title": "Hằng đẳng thức đáng nhớ và ứng dụng",
+          "order": 2,
+          "lessons": [
+            {
+              "id": "8-1-c2-l1",
+              "title": "Bài 6. Hiệu hai bình phương. Bình phương của một tổng hay một hiệu",
+              "order": 1
+            },
+            {
+              "id": "8-1-c2-l2",
+              "title": "Bài 7. Lập phương của một tổng hay một hiệu",
+              "order": 2
+            },
+            {
+              "id": "8-1-c2-l3",
+              "title": "Bài 8. Tổng và hiệu hai lập phương",
+              "order": 3
+            },
+            {
+              "id": "8-1-c2-l4",
+              "title": "Bài 9. Phân tích đa thức thành nhân tử",
+              "order": 4
+            }
+          ]
+        },
+        {
+          "id": "8-1-c3",
+          "title": "Tứ giác",
+          "order": 3,
+          "lessons": [
+            {
+              "id": "8-1-c3-l1",
+              "title": "Bài 10. Tứ giác",
+              "order": 1
+            },
+            {
+              "id": "8-1-c3-l2",
+              "title": "Bài 11. Hình thang cân",
+              "order": 2
+            },
+            {
+              "id": "8-1-c3-l3",
+              "title": "Bài 12. Hình bình hành",
+              "order": 3
+            },
+            {
+              "id": "8-1-c3-l4",
+              "title": "Bài 13. Hình chữ nhật",
+              "order": 4
+            },
+            {
+              "id": "8-1-c3-l5",
+              "title": "Bài 14. Hình thoi và hình vuông",
+              "order": 5
+            }
+          ]
+        },
+        {
+          "id": "8-1-c4",
+          "title": "Định lí Thalès",
+          "order": 4,
+          "lessons": [
+            {
+              "id": "8-1-c4-l1",
+              "title": "Bài 15. Định lí Thalès trong tam giác",
+              "order": 1
+            },
+            {
+              "id": "8-1-c4-l2",
+              "title": "Bài 16. Đường trung bình của tam giác",
+              "order": 2
+            },
+            {
+              "id": "8-1-c4-l3",
+              "title": "Bài 17. Tính chất đường phân giác của tam giác",
+              "order": 3
+            }
+          ]
+        },
+        {
+          "id": "8-1-c5",
+          "title": "Dữ liệu và biểu đồ",
+          "order": 5,
+          "lessons": [
+            {
+              "id": "8-1-c5-l1",
+              "title": "Bài 18. Thu thập và phân loại dữ liệu",
+              "order": 1
+            },
+            {
+              "id": "8-1-c5-l2",
+              "title": "Bài 19. Biểu diễn dữ liệu bằng bảng, biểu đồ",
+              "order": 2
+            },
+            {
+              "id": "8-1-c5-l3",
+              "title": "Bài 20. Phân tích số liệu thống kê dựa vào biểu đồ",
+              "order": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "toan-8-tap-2",
+      "grade": 8,
+      "subject": "Toán",
+      "curriculum": "GDPT 2018",
+      "series": "Kết nối tri thức với cuộc sống",
+      "volume": 2,
+      "textbook": "Kết nối tri thức với cuộc sống — Toán 8 — Tập 2",
+      "label": "Toán 8 · Kết nối tri thức · Tập 2",
+      "chapters": [
+        {
+          "id": "8-2-c1",
+          "title": "Phân thức đại số",
+          "order": 6,
+          "lessons": [
+            {
+              "id": "8-2-c1-l1",
+              "title": "Bài 21. Phân thức đại số",
+              "order": 1
+            },
+            {
+              "id": "8-2-c1-l2",
+              "title": "Bài 22. Tính chất cơ bản của phân thức đại số",
+              "order": 2
+            },
+            {
+              "id": "8-2-c1-l3",
+              "title": "Bài 23. Phép cộng và phép trừ phân thức đại số",
+              "order": 3
+            },
+            {
+              "id": "8-2-c1-l4",
+              "title": "Bài 24. Phép nhân và phép chia phân thức đại số",
+              "order": 4
+            }
+          ]
+        },
+        {
+          "id": "8-2-c2",
+          "title": "Phương trình bậc nhất và hàm số bậc nhất",
+          "order": 7,
+          "lessons": [
+            {
+              "id": "8-2-c2-l1",
+              "title": "Bài 25. Phương trình bậc nhất một ẩn",
+              "order": 1
+            },
+            {
+              "id": "8-2-c2-l2",
+              "title": "Bài 26. Giải bài toán bằng cách lập phương trình",
+              "order": 2
+            },
+            {
+              "id": "8-2-c2-l3",
+              "title": "Bài 27. Khái niệm hàm số và đồ thị của hàm số",
+              "order": 3
+            },
+            {
+              "id": "8-2-c2-l4",
+              "title": "Bài 28. Hàm số bậc nhất và đồ thị của hàm số bậc nhất",
+              "order": 4
+            },
+            {
+              "id": "8-2-c2-l5",
+              "title": "Bài 29. Hệ số góc của đường thẳng",
+              "order": 5
+            }
+          ]
+        },
+        {
+          "id": "8-2-c3",
+          "title": "Mở đầu về xác suất",
+          "order": 8,
+          "lessons": [
+            {
+              "id": "8-2-c3-l1",
+              "title": "Bài 30. Kết quả có thể và kết quả thuận lợi",
+              "order": 1
+            },
+            {
+              "id": "8-2-c3-l2",
+              "title": "Bài 31. Cách tính xác suất của biến cố bằng tỉ số",
+              "order": 2
+            },
+            {
+              "id": "8-2-c3-l3",
+              "title": "Bài 32. Mối liên hệ giữa xác suất thực nghiệm và xác suất",
+              "order": 3
+            }
+          ]
+        },
+        {
+          "id": "8-2-c4",
+          "title": "Tam giác đồng dạng",
+          "order": 9,
+          "lessons": [
+            {
+              "id": "8-2-c4-l1",
+              "title": "Bài 33. Hai tam giác đồng dạng",
+              "order": 1
+            },
+            {
+              "id": "8-2-c4-l2",
+              "title": "Bài 34. Ba trường hợp đồng dạng của hai tam giác",
+              "order": 2
+            },
+            {
+              "id": "8-2-c4-l3",
+              "title": "Bài 35. Định lí Pythagore",
+              "order": 3
+            },
+            {
+              "id": "8-2-c4-l4",
+              "title": "Bài 36. Các trường hợp đồng dạng của hai tam giác vuông",
+              "order": 4
+            },
+            {
+              "id": "8-2-c4-l5",
+              "title": "Bài 37. Hình đồng dạng",
+              "order": 5
+            }
+          ]
+        },
+        {
+          "id": "8-2-c5",
+          "title": "Một số hình khối trong thực tiễn",
+          "order": 10,
+          "lessons": [
+            {
+              "id": "8-2-c5-l1",
+              "title": "Bài 38. Hình chóp tam giác đều",
+              "order": 1
+            },
+            {
+              "id": "8-2-c5-l2",
+              "title": "Bài 39. Hình chóp tứ giác đều",
+              "order": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "toan-9-tap-1",
+      "grade": 9,
+      "subject": "Toán",
+      "curriculum": "GDPT 2018",
+      "series": "Kết nối tri thức với cuộc sống",
+      "volume": 1,
+      "textbook": "Kết nối tri thức với cuộc sống — Toán 9 — Tập 1",
+      "label": "Toán 9 · Kết nối tri thức · Tập 1",
+      "chapters": [
+        {
+          "id": "9-1-c1",
+          "title": "Phương trình và hệ hai phương trình bậc nhất hai ẩn",
+          "order": 1,
+          "lessons": [
+            {
+              "id": "9-1-c1-l1",
+              "title": "Bài 1. Khái niệm phương trình và hệ hai phương trình bậc nhất hai ẩn",
+              "order": 1
+            },
+            {
+              "id": "9-1-c1-l2",
+              "title": "Bài 2. Giải hệ hai phương trình bậc nhất hai ẩn",
+              "order": 2
+            },
+            {
+              "id": "9-1-c1-l3",
+              "title": "Bài 3. Giải bài toán bằng cách lập hệ phương trình",
+              "order": 3
+            }
+          ]
+        },
+        {
+          "id": "9-1-c2",
+          "title": "Phương trình và bất phương trình bậc nhất một ẩn",
+          "order": 2,
+          "lessons": [
+            {
+              "id": "9-1-c2-l1",
+              "order": 1,
+              "title": "Bài 4. Phương trình quy về phương trình bậc nhất một ẩn"
+            },
+            {
+              "id": "9-1-c2-l2",
+              "order": 2,
+              "title": "Bài 5. Bất đẳng thức và tính chất"
+            },
+            {
+              "id": "9-1-c2-l3",
+              "order": 3,
+              "title": "Bài 6. Bất phương trình bậc nhất một ẩn"
+            }
+          ]
+        },
+        {
+          "id": "9-1-c3",
+          "title": "Căn bậc hai và căn bậc ba",
+          "order": 3,
+          "lessons": [
+            {
+              "id": "9-1-c3-l1",
+              "title": "Bài 7. Căn bậc hai và căn thức bậc hai",
+              "order": 1
+            },
+            {
+              "id": "9-1-c3-l2",
+              "title": "Bài 8. Khai căn bậc hai với phép nhân và phép chia",
+              "order": 2
+            },
+            {
+              "id": "9-1-c3-l3",
+              "title": "Bài 9. Biến đổi đơn giản và rút gọn biểu thức chứa căn thức bậc hai",
+              "order": 3
+            },
+            {
+              "id": "9-1-c3-l4",
+              "title": "Bài 10. Căn bậc ba và căn thức bậc ba",
+              "order": 4
+            }
+          ]
+        },
+        {
+          "id": "9-1-c4",
+          "title": "Hệ thức lượng trong tam giác vuông",
+          "order": 4,
+          "lessons": [
+            {
+              "id": "9-1-c4-l1",
+              "title": "Bài 11. Tỉ số lượng giác của góc nhọn",
+              "order": 1
+            },
+            {
+              "id": "9-1-c4-l2",
+              "title": "Bài 12. Một số hệ thức giữa cạnh, góc trong tam giác vuông",
+              "order": 2
+            }
+          ]
+        },
+        {
+          "id": "9-1-c5",
+          "title": "Đường tròn",
+          "order": 5,
+          "lessons": [
+            {
+              "id": "9-1-c5-l1",
+              "title": "Bài 13. Mở đầu về đường tròn",
+              "order": 1
+            },
+            {
+              "id": "9-1-c5-l2",
+              "title": "Bài 14. Cung và dây của một đường tròn",
+              "order": 2
+            },
+            {
+              "id": "9-1-c5-l3",
+              "title": "Bài 15. Độ dài cung tròn. Diện tích hình quạt tròn và hình vành khuyên",
+              "order": 3
+            },
+            {
+              "id": "9-1-c5-l4",
+              "title": "Bài 16. Vị trí tương đối của đường thẳng và đường tròn",
+              "order": 4
+            },
+            {
+              "id": "9-1-c5-l5",
+              "title": "Bài 17. Vị trí tương đối của hai đường tròn",
+              "order": 5
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "toan-9-tap-2",
+      "grade": 9,
+      "subject": "Toán",
+      "curriculum": "GDPT 2018",
+      "series": "Kết nối tri thức với cuộc sống",
+      "volume": 2,
+      "textbook": "Kết nối tri thức với cuộc sống — Toán 9 — Tập 2",
+      "label": "Toán 9 · Kết nối tri thức · Tập 2",
+      "chapters": [
+        {
+          "id": "9-2-c1",
+          "title": "Hàm số y = ax² (a ≠ 0). Phương trình bậc hai một ẩn",
+          "order": 6,
+          "lessons": [
+            {
+              "id": "9-2-c1-l1",
+              "title": "Bài 18. Hàm số y = ax² (a ≠ 0)",
+              "order": 1
+            },
+            {
+              "id": "9-2-c1-l2",
+              "title": "Bài 19. Phương trình bậc hai một ẩn",
+              "order": 2
+            },
+            {
+              "id": "9-2-c1-l3",
+              "title": "Bài 20. Định lí Viète và ứng dụng",
+              "order": 3
+            },
+            {
+              "id": "9-2-c1-l4",
+              "title": "Bài 21. Giải bài toán bằng cách lập phương trình",
+              "order": 4
+            }
+          ]
+        },
+        {
+          "id": "9-2-c2",
+          "title": "Tần số và tần số tương đối",
+          "order": 7,
+          "lessons": [
+            {
+              "id": "9-2-c2-l1",
+              "title": "Bài 22. Bảng tần số và biểu đồ tần số",
+              "order": 1
+            },
+            {
+              "id": "9-2-c2-l2",
+              "title": "Bài 23. Bảng tần số tương đối và biểu đồ tần số tương đối",
+              "order": 2
+            },
+            {
+              "id": "9-2-c2-l3",
+              "title": "Bài 24. Bảng tần số, tần số tương đối ghép nhóm và biểu đồ",
+              "order": 3
+            }
+          ]
+        },
+        {
+          "id": "9-2-c3",
+          "title": "Xác suất của biến cố trong một số mô hình xác suất đơn giản",
+          "order": 8,
+          "lessons": [
+            {
+              "id": "9-2-c3-l1",
+              "title": "Bài 25. Phép thử ngẫu nhiên và không gian mẫu",
+              "order": 1
+            },
+            {
+              "id": "9-2-c3-l2",
+              "title": "Bài 26. Xác suất của biến cố liên quan tới phép thử",
+              "order": 2
+            }
+          ]
+        },
+        {
+          "id": "9-2-c4",
+          "title": "Đường tròn ngoại tiếp và đường tròn nội tiếp",
+          "order": 9,
+          "lessons": [
+            {
+              "id": "9-2-c4-l1",
+              "title": "Bài 27. Góc nội tiếp",
+              "order": 1
+            },
+            {
+              "id": "9-2-c4-l2",
+              "title": "Bài 28. Đường tròn ngoại tiếp và đường tròn nội tiếp của một tam giác",
+              "order": 2
+            },
+            {
+              "id": "9-2-c4-l3",
+              "title": "Bài 29. Tứ giác nội tiếp",
+              "order": 3
+            },
+            {
+              "id": "9-2-c4-l4",
+              "title": "Bài 30. Đa giác đều",
+              "order": 4
+            }
+          ]
+        },
+        {
+          "id": "9-2-c5",
+          "title": "Một số hình khối trong thực tiễn",
+          "order": 10,
+          "lessons": [
+            {
+              "id": "9-2-c5-l1",
+              "title": "Bài 31. Hình trụ và hình nón",
+              "order": 1
+            },
+            {
+              "id": "9-2-c5-l2",
+              "title": "Bài 32. Hình cầu",
+              "order": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "toan-10-tap-1",
+      "grade": 10,
+      "subject": "Toán",
+      "curriculum": "GDPT 2018",
+      "series": "Kết nối tri thức với cuộc sống",
+      "volume": 1,
+      "textbook": "Kết nối tri thức với cuộc sống — Toán 10 — Tập 1",
+      "label": "Toán 10 · Kết nối tri thức · Tập 1",
+      "chapters": [
+        {
+          "id": "10-1-c1",
+          "title": "Mệnh đề và tập hợp",
+          "order": 1,
+          "lessons": [
+            {
+              "id": "10-1-c1-l1",
+              "title": "Bài 1. Mệnh đề",
+              "order": 1
+            },
+            {
+              "id": "10-1-c1-l2",
+              "title": "Bài 2. Tập hợp và các phép toán trên tập hợp",
+              "order": 2
+            }
+          ]
+        },
+        {
+          "id": "10-1-c2",
+          "title": "Bất phương trình và hệ bất phương trình bậc nhất hai ẩn",
+          "order": 2,
+          "lessons": [
+            {
+              "id": "10-1-c2-l1",
+              "title": "Bài 3. Bất phương trình bậc nhất hai ẩn",
+              "order": 1
+            },
+            {
+              "id": "10-1-c2-l2",
+              "title": "Bài 4. Hệ bất phương trình bậc nhất hai ẩn",
+              "order": 2
+            }
+          ]
+        },
+        {
+          "id": "10-1-c3",
+          "title": "Hệ thức lượng trong tam giác",
+          "order": 3,
+          "lessons": [
+            {
+              "id": "10-1-c3-l1",
+              "title": "Bài 5. Giá trị lượng giác của một góc từ 0° đến 180°",
+              "order": 1
+            },
+            {
+              "id": "10-1-c3-l2",
+              "title": "Bài 6. Hệ thức lượng trong tam giác",
+              "order": 2
+            }
+          ]
+        },
+        {
+          "id": "10-1-c4",
+          "title": "Vectơ",
+          "order": 4,
+          "lessons": [
+            {
+              "id": "10-1-c4-l1",
+              "title": "Bài 7. Các khái niệm mở đầu",
+              "order": 1
+            },
+            {
+              "id": "10-1-c4-l2",
+              "title": "Bài 8. Tổng và hiệu của hai vectơ",
+              "order": 2
+            },
+            {
+              "id": "10-1-c4-l3",
+              "title": "Bài 9. Tích của một vectơ với một số",
+              "order": 3
+            },
+            {
+              "id": "10-1-c4-l4",
+              "title": "Bài 10. Vectơ trong mặt phẳng tọa độ",
+              "order": 4
+            },
+            {
+              "id": "10-1-c4-l5",
+              "title": "Bài 11. Tích vô hướng của hai vectơ",
+              "order": 5
+            }
+          ]
+        },
+        {
+          "id": "10-1-c5",
+          "title": "Các số đặc trưng của mẫu số liệu không ghép nhóm",
+          "order": 5,
+          "lessons": [
+            {
+              "id": "10-1-c5-l1",
+              "title": "Bài 12. Số gần đúng và sai số",
+              "order": 1
+            },
+            {
+              "id": "10-1-c5-l2",
+              "title": "Bài 13. Các số đặc trưng đo xu thế trung tâm",
+              "order": 2
+            },
+            {
+              "id": "10-1-c5-l3",
+              "title": "Bài 14. Các số đặc trưng đo mức độ phân tán",
+              "order": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "toan-10-tap-2",
+      "grade": 10,
+      "subject": "Toán",
+      "curriculum": "GDPT 2018",
+      "series": "Kết nối tri thức với cuộc sống",
+      "volume": 2,
+      "textbook": "Kết nối tri thức với cuộc sống — Toán 10 — Tập 2",
+      "label": "Toán 10 · Kết nối tri thức · Tập 2",
+      "chapters": [
+        {
+          "id": "10-2-c1",
+          "title": "Hàm số, đồ thị và ứng dụng",
+          "order": 6,
+          "lessons": [
+            {
+              "id": "10-2-c1-l1",
+              "title": "Bài 15. Hàm số",
+              "order": 1
+            },
+            {
+              "id": "10-2-c1-l2",
+              "title": "Bài 16. Hàm số bậc hai",
+              "order": 2
+            },
+            {
+              "id": "10-2-c1-l3",
+              "title": "Bài 17. Dấu của tam thức bậc hai",
+              "order": 3
+            },
+            {
+              "id": "10-2-c1-l4",
+              "title": "Bài 18. Phương trình quy về phương trình bậc hai",
+              "order": 4
+            }
+          ]
+        },
+        {
+          "id": "10-2-c2",
+          "title": "Phương pháp tọa độ trong mặt phẳng",
+          "order": 7,
+          "lessons": [
+            {
+              "id": "10-2-c2-l1",
+              "title": "Bài 19. Phương trình đường thẳng",
+              "order": 1
+            },
+            {
+              "id": "10-2-c2-l2",
+              "title": "Bài 20. Vị trí tương đối giữa hai đường thẳng. Góc và khoảng cách",
+              "order": 2
+            },
+            {
+              "id": "10-2-c2-l3",
+              "title": "Bài 21. Đường tròn trong mặt phẳng tọa độ",
+              "order": 3
+            },
+            {
+              "id": "10-2-c2-l4",
+              "title": "Bài 22. Ba đường conic",
+              "order": 4
+            }
+          ]
+        },
+        {
+          "id": "10-2-c3",
+          "title": "Đại số tổ hợp",
+          "order": 8,
+          "lessons": [
+            {
+              "id": "10-2-c3-l1",
+              "title": "Bài 23. Quy tắc đếm",
+              "order": 1
+            },
+            {
+              "id": "10-2-c3-l2",
+              "title": "Bài 24. Hoán vị, chỉnh hợp và tổ hợp",
+              "order": 2
+            },
+            {
+              "id": "10-2-c3-l3",
+              "title": "Bài 25. Nhị thức Newton",
+              "order": 3
+            }
+          ]
+        },
+        {
+          "id": "10-2-c4",
+          "title": "Tính xác suất theo định nghĩa cổ điển",
+          "order": 9,
+          "lessons": [
+            {
+              "id": "10-2-c4-l1",
+              "title": "Bài 26. Biến cố và định nghĩa cổ điển của xác suất",
+              "order": 1
+            },
+            {
+              "id": "10-2-c4-l2",
+              "title": "Bài 27. Thực hành tính xác suất theo định nghĩa cổ điển",
+              "order": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "toan-11-tap-1",
+      "grade": 11,
+      "subject": "Toán",
+      "curriculum": "GDPT 2018",
+      "series": "Kết nối tri thức với cuộc sống",
+      "volume": 1,
+      "textbook": "Kết nối tri thức với cuộc sống — Toán 11 — Tập 1",
+      "label": "Toán 11 · Kết nối tri thức · Tập 1",
+      "chapters": [
+        {
+          "id": "11-1-c1",
+          "title": "Hàm số lượng giác và phương trình lượng giác",
+          "order": 1,
+          "lessons": [
+            {
+              "id": "11-1-c1-l1",
+              "title": "Bài 1. Giá trị lượng giác của góc lượng giác",
+              "order": 1
+            },
+            {
+              "id": "11-1-c1-l2",
+              "title": "Bài 2. Công thức lượng giác",
+              "order": 2
+            },
+            {
+              "id": "11-1-c1-l3",
+              "title": "Bài 3. Hàm số lượng giác",
+              "order": 3
+            },
+            {
+              "id": "11-1-c1-l4",
+              "title": "Bài 4. Phương trình lượng giác cơ bản",
+              "order": 4
+            }
+          ]
+        },
+        {
+          "id": "11-1-c2",
+          "title": "Dãy số. Cấp số cộng và cấp số nhân",
+          "order": 2,
+          "lessons": [
+            {
+              "id": "11-1-c2-l1",
+              "title": "Bài 5. Dãy số",
+              "order": 1
+            },
+            {
+              "id": "11-1-c2-l2",
+              "title": "Bài 6. Cấp số cộng",
+              "order": 2
+            },
+            {
+              "id": "11-1-c2-l3",
+              "title": "Bài 7. Cấp số nhân",
+              "order": 3
+            }
+          ]
+        },
+        {
+          "id": "11-1-c3",
+          "title": "Các số đặc trưng đo xu thế trung tâm của mẫu số liệu ghép nhóm",
+          "order": 3,
+          "lessons": [
+            {
+              "id": "11-1-c3-l1",
+              "title": "Bài 8. Mẫu số liệu ghép nhóm",
+              "order": 1
+            },
+            {
+              "id": "11-1-c3-l2",
+              "title": "Bài 9. Các số đặc trưng đo xu thế trung tâm",
+              "order": 2
+            }
+          ]
+        },
+        {
+          "id": "11-1-c4",
+          "title": "Quan hệ song song trong không gian",
+          "order": 4,
+          "lessons": [
+            {
+              "id": "11-1-c4-l1",
+              "title": "Bài 10. Đường thẳng và mặt phẳng trong không gian",
+              "order": 1
+            },
+            {
+              "id": "11-1-c4-l2",
+              "title": "Bài 11. Hai đường thẳng song song",
+              "order": 2
+            },
+            {
+              "id": "11-1-c4-l3",
+              "title": "Bài 12. Đường thẳng và mặt phẳng song song",
+              "order": 3
+            },
+            {
+              "id": "11-1-c4-l4",
+              "title": "Bài 13. Hai mặt phẳng song song",
+              "order": 4
+            },
+            {
+              "id": "11-1-c4-l5",
+              "title": "Bài 14. Phép chiếu song song",
+              "order": 5
+            }
+          ]
+        },
+        {
+          "id": "11-1-c5",
+          "title": "Giới hạn. Hàm số liên tục",
+          "order": 5,
+          "lessons": [
+            {
+              "id": "11-1-c5-l1",
+              "title": "Bài 15. Giới hạn của dãy số",
+              "order": 1
+            },
+            {
+              "id": "11-1-c5-l2",
+              "title": "Bài 16. Giới hạn của hàm số",
+              "order": 2
+            },
+            {
+              "id": "11-1-c5-l3",
+              "title": "Bài 17. Hàm số liên tục",
+              "order": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "toan-11-tap-2",
+      "grade": 11,
+      "subject": "Toán",
+      "curriculum": "GDPT 2018",
+      "series": "Kết nối tri thức với cuộc sống",
+      "volume": 2,
+      "textbook": "Kết nối tri thức với cuộc sống — Toán 11 — Tập 2",
+      "label": "Toán 11 · Kết nối tri thức · Tập 2",
+      "chapters": [
+        {
+          "id": "11-2-c1",
+          "title": "Hàm số mũ và hàm số lôgarit",
+          "order": 6,
+          "lessons": [
+            {
+              "id": "11-2-c1-l1",
+              "title": "Bài 18. Lũy thừa với số mũ thực",
+              "order": 1
+            },
+            {
+              "id": "11-2-c1-l2",
+              "title": "Bài 19. Lôgarit",
+              "order": 2
+            },
+            {
+              "id": "11-2-c1-l3",
+              "title": "Bài 20. Hàm số mũ và hàm số lôgarit",
+              "order": 3
+            },
+            {
+              "id": "11-2-c1-l4",
+              "title": "Bài 21. Phương trình, bất phương trình mũ và lôgarit",
+              "order": 4
+            }
+          ]
+        },
+        {
+          "id": "11-2-c2",
+          "title": "Quan hệ vuông góc trong không gian",
+          "order": 7,
+          "lessons": [
+            {
+              "id": "11-2-c2-l1",
+              "title": "Bài 22. Hai đường thẳng vuông góc",
+              "order": 1
+            },
+            {
+              "id": "11-2-c2-l2",
+              "title": "Bài 23. Đường thẳng vuông góc với mặt phẳng",
+              "order": 2
+            },
+            {
+              "id": "11-2-c2-l3",
+              "title": "Bài 24. Phép chiếu vuông góc. Góc giữa đường thẳng và mặt phẳng",
+              "order": 3
+            },
+            {
+              "id": "11-2-c2-l4",
+              "title": "Bài 25. Hai mặt phẳng vuông góc",
+              "order": 4
+            },
+            {
+              "id": "11-2-c2-l5",
+              "title": "Bài 26. Khoảng cách",
+              "order": 5
+            },
+            {
+              "id": "11-2-c2-l6",
+              "title": "Bài 27. Thể tích",
+              "order": 6
+            }
+          ]
+        },
+        {
+          "id": "11-2-c3",
+          "title": "Các quy tắc tính xác suất",
+          "order": 8,
+          "lessons": [
+            {
+              "id": "11-2-c3-l1",
+              "title": "Bài 28. Biến cố hợp và biến cố giao",
+              "order": 1
+            },
+            {
+              "id": "11-2-c3-l2",
+              "title": "Bài 29. Biến cố độc lập",
+              "order": 2
+            },
+            {
+              "id": "11-2-c3-l3",
+              "title": "Bài 30. Các quy tắc tính xác suất",
+              "order": 3
+            }
+          ]
+        },
+        {
+          "id": "11-2-c4",
+          "title": "Đạo hàm",
+          "order": 9,
+          "lessons": [
+            {
+              "id": "11-2-c4-l1",
+              "title": "Bài 31. Định nghĩa và ý nghĩa của đạo hàm",
+              "order": 1
+            },
+            {
+              "id": "11-2-c4-l2",
+              "title": "Bài 32. Các quy tắc tính đạo hàm",
+              "order": 2
+            },
+            {
+              "id": "11-2-c4-l3",
+              "title": "Bài 33. Đạo hàm cấp hai",
+              "order": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "toan-12-tap-1",
+      "grade": 12,
+      "subject": "Toán",
+      "curriculum": "GDPT 2018",
+      "series": "Kết nối tri thức với cuộc sống",
+      "volume": 1,
+      "textbook": "Kết nối tri thức với cuộc sống — Toán 12 — Tập 1",
+      "label": "Toán 12 · Kết nối tri thức · Tập 1",
+      "chapters": [
+        {
+          "id": "12-1-c1",
+          "title": "Ứng dụng đạo hàm để khảo sát và vẽ đồ thị hàm số",
+          "order": 1,
+          "lessons": [
+            {
+              "id": "12-1-c1-l1",
+              "title": "Bài 1. Tính đơn điệu và cực trị của hàm số",
+              "order": 1
+            },
+            {
+              "id": "12-1-c1-l2",
+              "title": "Bài 2. Giá trị lớn nhất và giá trị nhỏ nhất của hàm số",
+              "order": 2
+            },
+            {
+              "id": "12-1-c1-l3",
+              "title": "Bài 3. Đường tiệm cận của đồ thị hàm số",
+              "order": 3
+            },
+            {
+              "id": "12-1-c1-l4",
+              "title": "Bài 4. Khảo sát sự biến thiên và vẽ đồ thị của hàm số",
+              "order": 4
+            },
+            {
+              "id": "12-1-c1-l5",
+              "title": "Bài 5. Ứng dụng đạo hàm để giải quyết một số vấn đề liên quan đến thực tiễn",
+              "order": 5
+            }
+          ]
+        },
+        {
+          "id": "12-1-c2",
+          "title": "Vectơ và hệ trục tọa độ trong không gian",
+          "order": 2,
+          "lessons": [
+            {
+              "id": "12-1-c2-l1",
+              "title": "Bài 6. Vectơ trong không gian",
+              "order": 1
+            },
+            {
+              "id": "12-1-c2-l2",
+              "title": "Bài 7. Hệ trục tọa độ trong không gian",
+              "order": 2
+            },
+            {
+              "id": "12-1-c2-l3",
+              "title": "Bài 8. Biểu thức tọa độ của các phép toán vectơ",
+              "order": 3
+            }
+          ]
+        },
+        {
+          "id": "12-1-c3",
+          "title": "Các số đặc trưng đo mức độ phân tán của mẫu số liệu ghép nhóm",
+          "order": 3,
+          "lessons": [
+            {
+              "id": "12-1-c3-l1",
+              "title": "Bài 9. Khoảng biến thiên và khoảng tứ phân vị",
+              "order": 1
+            },
+            {
+              "id": "12-1-c3-l2",
+              "title": "Bài 10. Phương sai và độ lệch chuẩn",
+              "order": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "toan-12-tap-2",
+      "grade": 12,
+      "subject": "Toán",
+      "curriculum": "GDPT 2018",
+      "series": "Kết nối tri thức với cuộc sống",
+      "volume": 2,
+      "textbook": "Kết nối tri thức với cuộc sống — Toán 12 — Tập 2",
+      "label": "Toán 12 · Kết nối tri thức · Tập 2",
+      "chapters": [
+        {
+          "id": "12-2-c1",
+          "title": "Nguyên hàm và tích phân",
+          "order": 4,
+          "lessons": [
+            {
+              "id": "12-2-c1-l1",
+              "title": "Bài 11. Nguyên hàm",
+              "order": 1
+            },
+            {
+              "id": "12-2-c1-l2",
+              "title": "Bài 12. Tích phân",
+              "order": 2
+            },
+            {
+              "id": "12-2-c1-l3",
+              "title": "Bài 13. Ứng dụng hình học của tích phân",
+              "order": 3
+            }
+          ]
+        },
+        {
+          "id": "12-2-c2",
+          "title": "Phương pháp tọa độ trong không gian",
+          "order": 5,
+          "lessons": [
+            {
+              "id": "12-2-c2-l1",
+              "title": "Bài 14. Phương trình mặt phẳng",
+              "order": 1
+            },
+            {
+              "id": "12-2-c2-l2",
+              "title": "Bài 15. Phương trình đường thẳng trong không gian",
+              "order": 2
+            },
+            {
+              "id": "12-2-c2-l3",
+              "title": "Bài 16. Công thức tính góc trong không gian",
+              "order": 3
+            },
+            {
+              "id": "12-2-c2-l4",
+              "title": "Bài 17. Phương trình mặt cầu",
+              "order": 4
+            }
+          ]
+        },
+        {
+          "id": "12-2-c3",
+          "title": "Xác suất có điều kiện",
+          "order": 6,
+          "lessons": [
+            {
+              "id": "12-2-c3-l1",
+              "title": "Bài 18. Xác suất có điều kiện",
+              "order": 1
+            },
+            {
+              "id": "12-2-c3-l2",
+              "title": "Bài 19. Công thức xác suất toàn phần và công thức Bayes",
+              "order": 2
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "schoolGrades": [
+    10,
+    11,
+    12
+  ]
+}
