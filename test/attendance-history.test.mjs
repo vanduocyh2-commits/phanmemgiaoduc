@@ -72,7 +72,7 @@ test('attendance lock API persists lock state and requires opening before edits'
  await new Promise(r=>server.listen(0,'127.0.0.1',r));const base='http://127.0.0.1:'+server.address().port;
  const login=async()=>{const r=await fetch(base+'/api/login',{method:'POST',body:JSON.stringify({role:'teacher',username:'teacher',password:'teacher123'})});assert.equal(r.status,200);return r.headers.get('set-cookie').split(';')[0];};
  try{
-  const cookie=await login(),headers:{Cookie:cookie};
+  const cookie=await login(),headers={Cookie:cookie};
   const save=await fetch(base+'/api/attendance',{method:'POST',headers:{...headers,'Content-Type':'application/json'},body:JSON.stringify(body)});
   assert.equal(save.status,200);
   const lock=await fetch(base+'/api/attendance/lock',{method:'POST',headers:{...headers,'Content-Type':'application/json'},body:JSON.stringify({classId:'a',date:body.date,locked:true})});
