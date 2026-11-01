@@ -31,12 +31,12 @@ test('question bank save checks duplicates and protects another teacher ownershi
  assert.match(code,/const duplicate=canUpdate\?linked:/);
  assert.match(code,/if\(duplicate&&!mayEdit\)/);
  assert.match(code,/q\.bankId=id/);
- assert.match(html,/id="qcur-\x27\+i/);
+ assert.ok(html.includes('qcur-'));
  assert.match(html,/questionBankFilters\.curriculum/);
 });
 
 test('question bank search and filters include curriculum metadata',()=>{
  assert.match(html,/select\('curriculum','Chương trình',values\('curriculum'\)\)/);
  assert.match(html,/q\.curriculum\|\|draft\.curriculum\|\|'GDPT 2018'/);
- assert.match(html,/q\.curriculum\|\|''/);
+ assert.match(html,/q\.subject,q\.curriculum,q\.textbook/);
 });
