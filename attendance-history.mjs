@@ -23,5 +23,5 @@ export function attendanceHistory(d,actor,allowedClassIds,{classId,className}={}
   Object.assign(data,{marked:records.length,total:c.students.length,present:records.filter(r=>r.status==='Có mặt'||r.status==='Vắng'&&r.makeup===true).length,absent:records.filter(r=>r.status==='Vắng'&&r.makeup!==true).length,late:records.filter(r=>r.status==='Muộn').length,makeup:records.filter(r=>r.status==='Vắng'&&r.makeup===true).length});
   const times=records.map(r=>r.updatedAt||'').filter(Boolean).sort();if(times.at(-1)>String(data.savedAt||''))data.savedAt=times.at(-1);
  }
- return {classId:c.id,className:c.name,sessions:[...sessions.values()].sort((a,b)=>b.date.localeCompare(a.date)||Number(b.session)-Number(a.session)),schedule:(d.timetable||[]).filter(t=>t.classId===c.id).map(t=>({day:t.day,time:t.time,subject:t.subject||'',room:t.room||''}))};
+ const ordered=[...sessions.values()].sort((a,b)=>a.date.localeCompare(b.date)||Number(a.session)-Number(b.session));ordered.forEach((row,index)=>{row.lessonNo=index+1;});return {classId:c.id,className:c.name,sessions:ordered.sort((a,b)=>b.date.localeCompare(a.date)||Number(b.session)-Number(a.session)),schedule:(d.timetable||[]).filter(t=>t.classId===c.id).map(t=>({day:t.day,time:t.time,subject:t.subject||'',room:t.room||''}))};
 }
