@@ -142,7 +142,7 @@ export function moveAttendanceBillingMonth(d,m,{classId,sbd,date,session,targetM
  const targetIndex=monthIndex(targetMonth),normalizedMonth='Tháng '+(targetIndex%12+1)+'/'+Math.floor(targetIndex/12);
  const c=d.classes.find(row=>row.id===classId),s=c?.students?.find(row=>row.sbd===sbd);if(!c||!s)throw Error('Không tìm thấy học sinh trong lớp đã chọn.');
  const record=(s.attendanceRecords||[]).find(row=>row.date===date&&String(row.session||'1')===String(session));if(!record)throw Error('Không tìm thấy buổi điểm danh này.');
- const recordedRole=record.recordedRole||(d.accounts||[]).find(a=>a.username===record.recordedBy)?.role;if(recordedRole!=='teacher')throw Error('Chỉ chuyển được buổi do giáo viên điểm danh.');
+ const recordedRole=record.recordedRole||(d.accounts||[]).find(a=>a.username===record.recordedBy)?.role;if(recordedRole!=='teacher')throw Error('Chỉ chuyển được buổi do giáo viên điểm danh.');record.recordedRole='teacher';
  if(!(['Có mặt','Muộn'].includes(record.status)||record.status==='Vắng'&&record.makeup===true))throw Error('Buổi vắng không học bù không được tính học phí nên không cần chuyển tháng.');
  const previousMonth=effectiveAttendanceMonth(record);if(previousMonth===normalizedMonth)return {changed:false,from:previousMonth,to:normalizedMonth};
  record.billingMonth=normalizedMonth;
