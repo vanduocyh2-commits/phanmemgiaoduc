@@ -61,7 +61,7 @@ function addHistoryButtons(){
   const checkbox=row.querySelector('input[data-fee-student]');if(!checkbox)continue;let identity;try{identity=JSON.parse(checkbox.dataset.feeStudent);}catch{continue;}
   if(!Array.isArray(identity)||identity.length!==2)continue;
   const cells=[...row.cells],cell=cells.length>=10?cells[1]:cells[2];if(!cell||cell.querySelector('[data-open-student-fee-history]'))continue;
-  const button=document.createElement('button');button.type='button';button.dataset.openStudentFeeHistory='1';button.className='ts-btn ts-secondary';button.style.cssText='display:block;margin-top:6px;font-size:11px;padding:5px 8px';button.textContent='Xem toàn bộ học phí';button.addEventListener('click',event=>{event.stopPropagation();void openHistory(identity[0],identity[1]);});cell.append(button);
+  const button=document.createElement('button');button.type='button';button.dataset.openStudentFeeHistory='1';button.className='ts-btn ts-secondary';button.style.cssText='display:block;margin-top:6px;font-size:11px;padding:5px 8px';button.textContent='Xem toàn bộ học phí';button.addEventListener('click',event=>{event.stopPropagation();void openHistory(identity[0],identity[1]);});cell.style.cursor='pointer';cell.title='Bấm để xem toàn bộ học phí của học sinh';cell.addEventListener('click',event=>{if(event.target.closest('button,input,select,a,textarea'))return;void openHistory(identity[0],identity[1]);});cell.append(button);
  }
 }
 function init(){addHistoryButtons();const Observer=window.MutationObserver;if(Observer)new Observer(addHistoryButtons).observe(document.body,{childList:true,subtree:true});}
