@@ -11,14 +11,14 @@ test('attendance automatically creates and refreshes monthly tuition from the cl
  assert.equal(s.attendanceRecords[0].recordedRole,'teacher');
  assert.equal(s.fees['Tháng 10/2026'].calculation.sessions,1);
  assert.equal(s.fees['Tháng 10/2026'].amount,65000);
- assert.equal(c.students[1].fees['Tháng 10/2026'].amount,15000);
+ assert.equal(c.students[1].fees['Tháng 10/2026'].amount,5000,'an absent student pays only the separate other fee, not photocopy');
  assert.equal(c.students[2].fees['Tháng 10/2026'].amount,90000);
  saveClassAttendance(d,actor,input);
  assert.equal(s.fees['Tháng 10/2026'].amount,65000);
  input.marks[0].status='Vắng';
  saveClassAttendance(d,actor,input);
  assert.equal(s.fees['Tháng 10/2026'].calculation.sessions,0);
- assert.equal(s.fees['Tháng 10/2026'].amount,15000);
+ assert.equal(s.fees['Tháng 10/2026'].amount,5000,'photocopy is removed when the student has no billable attendance day');
  input.marks[0]={sbd:'S1',status:'Vắng',makeup:true};
  saveClassAttendance(d,actor,input);
  assert.equal(s.fees['Tháng 10/2026'].calculation.sessions,1);
