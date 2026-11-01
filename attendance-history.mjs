@@ -1,4 +1,4 @@
-const validDate=value=>{if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(String(value)))return false;const d=new Date(value+'T00:00:00Z');return Number.isFinite(d.getTime())&&d.toISOString().slice(0,10)===value;};
+const validDate=value=>{if(!/^\d{4}-\d{2}-\d{2}$/.test(String(value)))return false;const d=new Date(value+'T00:00:00Z');return Number.isFinite(d.getTime())&&d.toISOString().slice(0,10)===value;};
 export function recordAttendanceSession(d,c,date,session,actor){
  const rows=c.students.map(s=>(s.attendanceRecords||[]).filter(r=>r.date===date).sort((a,b)=>String(b.updatedAt||'').localeCompare(String(a.updatedAt||'')))[0]).filter(Boolean);
  d._attendanceSessions=d._attendanceSessions||{};
