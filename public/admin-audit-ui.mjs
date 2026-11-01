@@ -9,12 +9,12 @@ function addTuitionSendButton(){
   const students=[];for(const el of selected){try{const [classId,sbd]=JSON.parse(el.dataset.feeStudent);students.push({classId,sbd});}catch{}}
   if(!students.length){alert('Không đọc được danh sách học sinh đã chọn.');return;}
   const month=$('admin-fee-month')?.value||'';
-  if(!confirm('Gửi thông báo học phí tháng '+month+' đến phụ huynh của '+students.length+' học sinh đã chọn?'))return;
+  if(!confirm('Gửi thông báo học phí tháng '+month+' đến cả phụ huynh và học sinh của '+students.length+' học sinh đã chọn?'))return;
   b.disabled=true;b.textContent='Đang gửi…';
   try{
-   const response=await fetch('/api/tuition-reminders',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({month,students,recipient:'parent'})});
+   const response=await fetch('/api/tuition-reminders',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({month,students,recipient:'both'})});
    const data=await response.json();if(!response.ok)throw Error(data.error||'Không gửi được thông báo học phí.');
-   const summary=data.summary||{};alert('Đã gửi đến phụ huynh: '+(summary.sent||0)+' học sinh. Bỏ qua: '+(summary.skipped||0)+' (đã đóng hoặc không còn khoản phải thu).');
+   const summary=data.summary||{};alert('Đã gửi đến cả phụ huynh và học sinh: '+(summary.sent||0)+' học sinh. Bỏ qua: '+(summary.skipped||0)+' (đã đóng hoặc không còn khoản phải thu).');
    window.location.reload();
   }catch(e){alert(e.message||'Có lỗi khi gửi học phí.');b.disabled=false;b.textContent='Gửi học phí đến phụ huynh';}
  });
