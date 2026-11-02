@@ -1,0 +1,13 @@
+(()=>{
+const api='/api/tuition/publications';
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+async function refresh(){const res=await fetch(api,{credentials:'same-origin'});if(!res.ok){document.getElementById('tuition-publish-widget')?.remove();return;}const data=await res.json();let el=document.getElementById('tuition-publish-widget');if(!el){el=document.createElement('aside');el.id='tuition-publish-widget';el.style.cssText='position:fixed;bottom:16px;right:16px;z-index:99999;background:white;color:#172554;border:1px solid #bfdbfe;border-radius:12px;padding:12px;box-shadow:0 5px 24px #0003;max-width:340px;font:14px system-ui';document.body.append(el)}
+const month='Tháng '+(new Date().getMonth()+1)+'/'+new Date().getFullYear();
+el.innerHTML='<strong>Duyệt công bố học phí</strong><button id="tuition-close" style="float:right" aria-label="Ẩn">×</button><p>Chỉ quản lí trung tâm có quyền công bố học phí.</p><label>Lớp <select id="tuition-class">'+data.classes.map(c=>'<option value="'+esc(c.classId)+'">'+esc(c.className)+'</option>').join('')+'</select></label><p><label>Tháng <input id="tuition-month" value="'+month+'" placeholder="Tháng 11/2026" style="width:130px"></label></p><p id="tuition-status"></p><button id="tuition-publish" style="padding:8px 12px;background:#166534;color:white;border:0;border-radius:8px">Duyệt và công bố</button>';
+el.querySelector('#tuition-close').onclick=()=>el.remove();
+const status=()=>{const c=data.classes.find(c=>c.classId===el.querySelector('#tuition-class').value),m=el.querySelector('#tuition-month').value;const row=c?.months.find(x=>x.month===m);el.querySelector('#tuition-status').textContent=row?.published?'Đã công bố':row?'Cần duyệt lại':'Chưa công bố';};
+el.querySelector('#tuition-class').onchange=status;el.querySelector('#tuition-month').oninput=status;status();
+el.querySelector('#tuition-publish').onclick=async()=>{const classId=el.querySelector('#tuition-class').value,month=el.querySelector('#tuition-month').value;if(!confirm('Xác nhận công bố học phí '+month+' cho lớp đã chọn?'))return;const res=await fetch(api,{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({classId,month})});if(!res.ok){const error=await res.json().catch(()=>({}));alert(error.error||'Không thể công bố học phí');return;}alert('Đã công bố học phí.');await refresh();};
+}
+window.addEventListener('load',()=>{refresh().catch(()=>{});document.addEventListener('click',e=>{if(e.target.closest('button')&&/đăng nhập|login/i.test(e.target.textContent||''))setTimeout(()=>refresh().catch(()=>{}),1500)})});
+})();
