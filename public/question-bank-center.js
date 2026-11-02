@@ -138,7 +138,24 @@
     }
     render();
   }
-  function refresh() { mountBank(); decorateCards(); }
+  // Keep the bank action visible even if a legacy matrix toolbar is rendered.
+  // The canonical index.html already provides this action; never add duplicates.
+  function mountMatrixBankAction() {
+    if (typeof window.TS?.fromBankMatrix !== 'function') return;
+    for (const toolbar of document.querySelectorAll('.matrix-ratios')) {
+      const buttons = [...toolbar.querySelectorAll('button')];
+      if (buttons.some(button => /Soạn đề từ ngân hàng/i.test(button.textContent || ''))) continue;
+      const allocate = buttons.find(button => /Phân bổ tự động theo %/i.test(button.textContent || ''));
+      if (!allocate) continue;
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = allocate.className;
+      button.textContent = '🎲 Soạn đề từ ngân hàng';
+      button.addEventListener('click', () => window.TS?.fromBankMatrix?.());
+      allocate.insertAdjacentElement('afterend', button);
+    }
+  }
+  function refresh() { mountBank(); decorateCards(); mountMatrixBankAction(); }
   function start() {
     refresh(); if (observer) observer.disconnect();
     observer = new MutationObserver(() => refresh()); observer.observe(document.body, { childList: true, subtree: true });
