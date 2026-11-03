@@ -845,10 +845,15 @@ import {createTeacherScanUI} from "/teacher-scan-ui.mjs";
                     }
                     const now=new Date(),date=now.toLocaleString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh'});
                     state.notifications??=[];
-                    for(const {c,s,x} of rows){
-                        const wasNotified=x.publishedToParents===true;
+                    const liveRows=classes.flatMap(selected=>{
+                        const c=state.classes.find(row=>row.id===selected.id);
+                        return (c?.students||[]).map(s=>({c,s,x:fee(s,month)}));
+                    });
+                    const republished=new Set(needsPublication.map(c=>c.id));
+                    for(const {c,s,x} of liveRows){
+                        const shouldNotify=x.publishedToParents!==true||republished.has(c.id);
                         x.publishedToParents=true;x.publishedAt=now.toISOString();
-                        if(!wasNotified){
+                        if(shouldNotify){
                             for(const role of ['parent','student']){
                                 const id='tuition_publication_'+role+'_'+encodeURIComponent(c.id)+'_'+encodeURIComponent(s.sbd)+'_'+encodeURIComponent(month);
                                 const notice={id,kind:'tuition_publication',target:'TUITION',recipients:[role],classId:c.id,sbd:s.sbd,title:'Thông báo học phí '+month,content:'Trung tâm đã công bố học phí tháng '+month+'. '+(role==='parent'?'Phụ huynh':'Học sinh')+' vui lòng đăng nhập để xem số tiền và chi tiết học phí.',date,owner:'system'};
