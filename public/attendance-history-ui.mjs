@@ -25,30 +25,42 @@ export async function mountAttendanceHistory(){
   if(hint.textContent!==caption)hint.textContent=caption;
  };
  mounts.set(date,{className,root,sync});
+ const installExport=()=>{
+  const app=doc.defaultView?.app;
+  if(!app)return;
+  app.exportAttendanceReport=async mode=>{
+   try{
+    let exportData=data;
+    if(!exportData){
+     const historyResponse=await fetch('/api/attendance/history?className='+encodeURIComponent(className),{credentials:'same-origin',cache:'no-store'});
+     const historyResult=await historyResponse.json();
+     if(!historyResponse.ok)throw Error(historyResult.error||'Không tải được lịch sử điểm danh.');
+     exportData=historyResult;
+    }
+    const payload={classId:exportData.classId,mode};
+    if(mode==='session'){
+     payload.date=date.value;
+     if(!/^\d{4}-\d{2}-\d{2}$/.test(payload.date))throw Error('Hãy chọn ngày điểm danh hợp lệ.');
+    }else if(mode==='month'){
+     payload.month=doc.getElementById('teacher-attendance-month')?.value||'';
+     if(!/^\d{4}-(0[1-9]|1[0-2])$/.test(payload.month))throw Error('Hãy chọn tháng cần xuất.');
+    }else throw Error('Kiểu xuất điểm danh không hợp lệ.');
+    const response=await fetch('/api/attendance/export',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    if(!response.ok){let result={};try{result=await response.json();}catch{}throw Error(result.error||'Không xuất được file điểm danh.');}
+    const blob=await response.blob(),url=URL.createObjectURL(blob),link=element('a');
+    const disposition=response.headers.get('Content-Disposition')||'',match=disposition.match(/filename\*=UTF-8''([^;]+)/);
+    link.href=url;link.download=match?decodeURIComponent(match[1]):'DIEM_DANH_LOP.xlsx';doc.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);
+    hint.textContent=mode==='session'?'Đã xuất file điểm danh buổi '+payload.date+'.':'Đã xuất file điểm danh tháng '+payload.month+'.';
+   }catch(error){hint.textContent=error.message||'Không xuất được file điểm danh.';}
+  };
+ };
+ installExport();
  const reopen=()=>{if(loading||date.disabled)return;const row=data?.sessions.find(row=>row.date===select.value);if(!row)return;date.value=row.date;doc.defaultView.app?.changeAttendanceSession();queueMicrotask(()=>doc.querySelector('[data-attendance-sbd]')?.focus());};
  select.onchange=reopen;button.onclick=reopen;
  remove.onclick=async()=>{const selected=data?.sessions.find(r=>r.date===date.value);if(loading||!selected)return;if(!confirm('Xóa điểm danh lớp '+className+' · '+attendanceDayLabel(selected.date)+' · Buổi học thứ '+selected.lessonNo+'? Học phí sẽ được tính lại theo các ngày còn lại.'))return;loading=true;sync();try{const response=await fetch('/api/attendance/session',{method:'DELETE',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({classId:data.classId,date:selected.date,session:'1'})}),result=await response.json();if(!response.ok)throw Error(result.error||'Không xóa được điểm danh.');for(const storageKey of ['edu_attendance_drafts_v1','edu_makeup_drafts']){try{const drafts=JSON.parse(sessionStorage.getItem(storageKey)||'{}');for(const k of Object.keys(drafts)){const parts=JSON.parse(k);if(parts[1]===data.classId&&parts[2]===selected.date)delete drafts[k];}sessionStorage.setItem(storageKey,JSON.stringify(drafts));}catch{}}doc.defaultView.location.reload();}catch(e){loading=false;error=e.message;sync();}};
  select.append(option('Đang tải lịch sử điểm danh…',''));sync();
  try{const response=await fetch('/api/attendance/history?className='+encodeURIComponent(className),{credentials:'same-origin',cache:'no-store'}),result=await response.json();if(!response.ok)throw Error(result.error||'Không tải được lịch sử điểm danh.');if(!date.isConnected||classes.value!==className||mounts.get(date)?.root!==root)return;data=result;
- const app=doc.defaultView?.app;
- if(app)app.exportAttendanceReport=async mode=>{
-  const payload={classId:data.classId,mode};
-  if(mode==='session'){
-   payload.date=date.value;
-   if(!/^\d{4}-\d{2}-\d{2}$/.test(payload.date)){hint.textContent='Hãy chọn ngày điểm danh hợp lệ.';return;}
-  }else if(mode==='month'){
-   payload.month=doc.getElementById('teacher-attendance-month')?.value||'';
-   if(!/^\d{4}-(0[1-9]|1[0-2])$/.test(payload.month)){hint.textContent='Hãy chọn tháng cần xuất.';return;}
-  }else{hint.textContent='Kiểu xuất điểm danh không hợp lệ.';return;}
-  try{
-   const response=await fetch('/api/attendance/export',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
-   if(!response.ok){let result={};try{result=await response.json();}catch{}throw Error(result.error||'Không xuất được file điểm danh.');}
-   const blob=await response.blob(),url=URL.createObjectURL(blob),link=element('a');
-   const disposition=response.headers.get('Content-Disposition')||'',match=disposition.match(/filename\*=UTF-8''([^;]+)/);
-   link.href=url;link.download=match?decodeURIComponent(match[1]):'DIEM_DANH_LOP.xlsx';doc.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);
-   hint.textContent=mode==='session'?'Đã xuất file điểm danh buổi '+payload.date+'.':'Đã xuất file điểm danh tháng '+payload.month+'.';
-  }catch(error){hint.textContent=error.message||'Không xuất được file điểm danh.';}
- };
+ installExport();
  select.replaceChildren();select.append(option(result.sessions.length?'Chọn ngày đã lưu để xem / điểm danh lại':'Chưa có ngày điểm danh đã lưu',''));for(const row of result.sessions)select.append(option('Buổi học thứ '+row.lessonNo+' · '+attendanceDayLabel(row.date)+' · '+((Number(row.present)||0)+(Number(row.late)||0))+'/'+row.total+' đã học'+(row.absent?' · '+row.absent+' vắng':'')+(row.late?' · '+row.late+' muộn':'')+(row.makeup?' · '+row.makeup+' học bù':'')+(row.locked?' · ĐÃ KHÓA':''),row.date));}
  catch(e){if(!date.isConnected)return;error=e.message;select.replaceChildren(option('Không tải được lịch sử',''));}
  finally{loading=false;if(date.isConnected&&mounts.get(date)?.root===root)sync();}
