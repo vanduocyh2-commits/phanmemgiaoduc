@@ -2,7 +2,7 @@ import { attendanceHistory } from './attendance-history.mjs';
 import { styledWorkbook } from './class-reports.mjs';
 
 const validDate = value => {
-  if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(String(value))) return false;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(value))) return false;
   const date = new Date(String(value) + 'T00:00:00Z');
   return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value;
 };
@@ -39,7 +39,7 @@ const countStatuses = rows => {
 };
 
 const safeName = value => String(value || 'LOP')
-  .normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').replace(/đ/gi, 'd')
+  .normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/gi, 'd')
   .toUpperCase().replace(/[^A-Z0-9]+/g, '_').replace(/^_|_$/g, '').slice(0, 60) || 'LOP';
 
 const dateLabel = value => {
@@ -62,10 +62,10 @@ export function buildAttendanceReport(d, actor, allowedClassIds, input = {}) {
   const history = attendanceHistory(d, actor, allowedClassIds, { classId });
   const sessions = mode === 'session'
     ? (validDate(date) ? history.sessions.filter(row => row.date === date) : [])
-    : (/^\\d{4}-(0[1-9]|1[0-2])$/.test(String(month)) ? history.sessions.filter(row => row.date.startsWith(month + '-')) : []);
+    : (/^\d{4}-(0[1-9]|1[0-2])$/.test(String(month)) ? history.sessions.filter(row => row.date.startsWith(month + '-')) : []);
 
   if (mode === 'session' && !validDate(date)) throw Error('Chọn ngày điểm danh hợp lệ.');
-  if (mode === 'month' && !/^\\d{4}-(0[1-9]|1[0-2])$/.test(String(month))) {
+  if (mode === 'month' && !/^\d{4}-(0[1-9]|1[0-2])$/.test(String(month))) {
     throw Error('Chọn tháng cần xuất hợp lệ.');
   }
   if (!sessions.length) {
@@ -76,7 +76,7 @@ export function buildAttendanceReport(d, actor, allowedClassIds, input = {}) {
 
   const students = (c.students || []).slice();
   const recordsByStudent = new Map(students.map(student => [student.sbd, latestRecords(student)]));
-  const classLabel = String(c.name || 'Lớp').replace(/^lớp\\s*/i, '');
+  const classLabel = String(c.name || 'Lớp').replace(/^lớp\s*/i, '');
 
   if (mode === 'session') {
     const session = sessions[0];
