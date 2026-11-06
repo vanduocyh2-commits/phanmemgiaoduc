@@ -8,8 +8,10 @@ create table if not exists public.portal_file_metadata (
  name text not null,
  type text not null,
  kind text not null,
- owner text not null
+ owner text not null,
+ created_at timestamptz not null default now()
 );
+alter table public.portal_file_metadata add column if not exists created_at timestamptz not null default now();
 alter table public.portal_state enable row level security;
 alter table public.portal_file_metadata enable row level security;
 revoke all on public.portal_state, public.portal_file_metadata from public, anon, authenticated;
