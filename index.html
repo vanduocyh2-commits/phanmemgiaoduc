@@ -43,8 +43,8 @@
 <style>
 header>.max-w-7xl{width:100%;box-sizing:border-box}
 #header-account-controls{margin-left:auto;display:flex;align-items:center;justify-content:flex-end;gap:12px;max-width:100%;flex-wrap:wrap}
-#header-account-controls>*{margin-left:0!important}\n#role-header-toggle{display:none;border:1px solid #a5b4fc;background:#4338ca;color:#fff;border-radius:10px;padding:8px 12px;font-size:12px;font-weight:800;cursor:pointer;white-space:nowrap}
-body.role-header-user #role-header-toggle{display:inline-flex;align-items:center}
+#header-account-controls>*{margin-left:0!important}\n#role-header-toggle{display:none!important;border:1px solid #a5b4fc;background:#4338ca;color:#fff;border-radius:10px;padding:8px 12px;font-size:12px;font-weight:800;cursor:pointer;white-space:nowrap}
+body.role-header-user #role-header-toggle{display:inline-flex!important;align-items:center}
 body.role-header-compact header{min-height:48px}
 body.role-header-compact header>.max-w-7xl{min-height:48px;padding-top:5px;padding-bottom:5px;justify-content:flex-end}
 body.role-header-compact .header-brand,body.role-header-compact #header-account-controls{display:none!important}
@@ -96,7 +96,7 @@ main:has(#ts-attempt .pdf-workspace){max-width:100%!important;width:100%;padding
                 </div>
             </div>
             
-            <button id="role-header-toggle" type="button" aria-expanded="true" onclick="document.body.classList.toggle('role-header-compact');this.setAttribute('aria-expanded',String(!document.body.classList.contains('role-header-compact')));this.textContent=document.body.classList.contains('role-header-compact')?'⌄ Mở thanh tài khoản':'⌃ Thu gọn thanh tài khoản'" class="hidden">⌃ Thu gọn thanh tài khoản</button>
+            <button id="role-header-toggle" type="button" aria-expanded="true" onclick="document.body.classList.toggle('role-header-compact');this.setAttribute('aria-expanded',String(!document.body.classList.contains('role-header-compact')));this.textContent=document.body.classList.contains('role-header-compact')?'⌄ Mở thanh tài khoản':'⌃ Thu gọn thanh tài khoản'" class="role-header-toggle-button">⌃ Thu gọn thanh tài khoản</button>
             <div id="header-account-controls" class="header-account-controls flex items-center space-x-3">
                 <div id="header-user-display" class="hidden items-center space-x-2.5 bg-indigo-900/80 px-3.5 py-1.5 rounded-xl border border-indigo-500/50 text-xs text-indigo-100 shadow-inner relative">
                     <div id="header-avatar-icon" class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-bold shadow-xs">
