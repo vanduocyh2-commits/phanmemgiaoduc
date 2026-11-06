@@ -43,7 +43,13 @@
 <style>
 header>.max-w-7xl{width:100%;box-sizing:border-box}
 #header-account-controls{margin-left:auto;display:flex;align-items:center;justify-content:flex-end;gap:12px;max-width:100%;flex-wrap:wrap}
-#header-account-controls>*{margin-left:0!important}
+#header-account-controls>*{margin-left:0!important}\n#role-header-toggle{display:none;border:1px solid #a5b4fc;background:#4338ca;color:#fff;border-radius:10px;padding:8px 12px;font-size:12px;font-weight:800;cursor:pointer;white-space:nowrap}
+body.role-header-user #role-header-toggle{display:inline-flex;align-items:center}
+body.role-header-compact header{min-height:48px}
+body.role-header-compact header>.max-w-7xl{min-height:48px;padding-top:5px;padding-bottom:5px;justify-content:flex-end}
+body.role-header-compact .header-brand,body.role-header-compact #header-account-controls{display:none!important}
+body.role-header-compact #role-header-toggle{margin-left:auto}
+@media(max-width:640px){body.role-header-compact header>.max-w-7xl{min-height:44px;padding:4px 10px}body.role-header-user #role-header-toggle{font-size:11px;padding:7px 10px}}
 #header-user-display{justify-content:flex-end}
 .header-brand{min-width:0;max-width:100%}
 @media(max-width:1100px){#header-account-controls{width:100%;justify-content:flex-end}}
@@ -90,6 +96,7 @@ main:has(#ts-attempt .pdf-workspace){max-width:100%!important;width:100%;padding
                 </div>
             </div>
             
+            <button id="role-header-toggle" type="button" aria-expanded="true" onclick="document.body.classList.toggle('role-header-compact');this.setAttribute('aria-expanded',String(!document.body.classList.contains('role-header-compact')));this.textContent=document.body.classList.contains('role-header-compact')?'⌄ Mở thanh tài khoản':'⌃ Thu gọn thanh tài khoản'" class="hidden">⌃ Thu gọn thanh tài khoản</button>
             <div id="header-account-controls" class="header-account-controls flex items-center space-x-3">
                 <div id="header-user-display" class="hidden items-center space-x-2.5 bg-indigo-900/80 px-3.5 py-1.5 rounded-xl border border-indigo-500/50 text-xs text-indigo-100 shadow-inner relative">
                     <div id="header-avatar-icon" class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-bold shadow-xs">
@@ -676,6 +683,9 @@ import {createTeacherScanUI} from "/teacher-scan-ui.mjs";
         let cur = null; let activeAccount = null;
         function enter(role, name) {
             state.sessionRole = role;
+            document.body.classList.toggle('role-header-user', ['teacher','student'].includes(role));
+            document.body.classList.remove('role-header-compact');
+            const headerToggle = $('role-header-toggle'); if(headerToggle) { headerToggle.textContent='⌃ Thu gọn thanh tài khoản'; headerToggle.setAttribute('aria-expanded','true'); }
             try { sessionStorage.setItem('edu_session', JSON.stringify({role, cur, username: activeAccount?.username || null})); } catch(e) {}
             $('auth-gateway-screen').classList.add('hidden');
             $('portal-' + role).classList.remove('hidden');
@@ -687,7 +697,7 @@ import {createTeacherScanUI} from "/teacher-scan-ui.mjs";
         function logoutCurrentAccount() {
             if(hosted){onlineMember=null;onlineRequest('/api/logout',{method:'POST',body:'{}'}).then(()=>onlineRequest('/api/session')).then(d=>{onlineAdopt(d.view);refreshUI()}).catch(e=>toast(e.message));}
             const wf=$('teacher-workspace'); if(wf) wf.removeAttribute('srcdoc'); teacherWorkspaceMounted=false;
-            state.sessionRole = null; cur = null; activeAccount = null; sessionStorage.removeItem('edu_session');
+            state.sessionRole = null; document.body.classList.remove('role-header-user','role-header-compact'); cur = null; activeAccount = null; sessionStorage.removeItem('edu_session');
             ['admin', 'teacher', 'student', 'parent'].forEach(r => $('portal-' + r).classList.add('hidden'));
             $('auth-gateway-screen').classList.remove('hidden');
             $('header-user-display').classList.add('hidden'); $('header-user-display').classList.remove('flex');
