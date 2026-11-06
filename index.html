@@ -43,7 +43,8 @@
 <style>
 header>.max-w-7xl{width:100%;box-sizing:border-box}
 #header-account-controls{margin-left:auto;display:flex;align-items:center;justify-content:flex-end;gap:12px;max-width:100%;flex-wrap:wrap}
-#header-account-controls>*{margin-left:0!important}\n#role-header-toggle{display:none!important;border:1px solid #a5b4fc;background:#4338ca;color:#fff;border-radius:10px;padding:8px 12px;font-size:12px;font-weight:800;cursor:pointer;white-space:nowrap}
+#header-account-controls>*{margin-left:0!important}
+#role-header-toggle{display:none!important;border:1px solid #a5b4fc;background:#4338ca;color:#fff;border-radius:10px;padding:8px 12px;font-size:12px;font-weight:800;cursor:pointer;white-space:nowrap}
 body.role-header-user #role-header-toggle{display:inline-flex!important;align-items:center}
 body.role-header-compact header{min-height:48px}
 body.role-header-compact header>.max-w-7xl{min-height:48px;padding-top:5px;padding-bottom:5px;justify-content:flex-end}
@@ -685,7 +686,7 @@ import {createTeacherScanUI} from "/teacher-scan-ui.mjs";
             state.sessionRole = role;
             document.body.classList.toggle('role-header-user', ['teacher','student'].includes(role));
             document.body.classList.remove('role-header-compact');
-            const headerToggle = $('role-header-toggle'); if(headerToggle) { headerToggle.textContent='⌃ Thu gọn thanh tài khoản'; headerToggle.setAttribute('aria-expanded','true'); }
+            const headerToggle = $('role-header-toggle'); if(headerToggle) { headerToggle.textContent='⌃ Thu gọn thanh tài khoản'; headerToggle.setAttribute('aria-expanded','true'); headerToggle.style.display='inline-flex'; headerToggle.style.alignItems='center'; }
             try { sessionStorage.setItem('edu_session', JSON.stringify({role, cur, username: activeAccount?.username || null})); } catch(e) {}
             $('auth-gateway-screen').classList.add('hidden');
             $('portal-' + role).classList.remove('hidden');
@@ -697,7 +698,7 @@ import {createTeacherScanUI} from "/teacher-scan-ui.mjs";
         function logoutCurrentAccount() {
             if(hosted){onlineMember=null;onlineRequest('/api/logout',{method:'POST',body:'{}'}).then(()=>onlineRequest('/api/session')).then(d=>{onlineAdopt(d.view);refreshUI()}).catch(e=>toast(e.message));}
             const wf=$('teacher-workspace'); if(wf) wf.removeAttribute('srcdoc'); teacherWorkspaceMounted=false;
-            state.sessionRole = null; document.body.classList.remove('role-header-user','role-header-compact'); cur = null; activeAccount = null; sessionStorage.removeItem('edu_session');
+            state.sessionRole = null; document.body.classList.remove('role-header-user','role-header-compact'); const headerToggle = $('role-header-toggle'); if(headerToggle) headerToggle.style.display='none'; cur = null; activeAccount = null; sessionStorage.removeItem('edu_session');
             ['admin', 'teacher', 'student', 'parent'].forEach(r => $('portal-' + r).classList.add('hidden'));
             $('auth-gateway-screen').classList.remove('hidden');
             $('header-user-display').classList.add('hidden'); $('header-user-display').classList.remove('flex');
