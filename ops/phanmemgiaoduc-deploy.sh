@@ -32,7 +32,7 @@ fi
 git_as_app fetch origin main
 git_as_app merge --ff-only origin/main
 
-runuser -u centerapp -- bash -c 'cd /opt/phanmemgiaoduc && npm ci --omit=dev'
+runuser -u centerapp -- bash -c 'set -Eeuo pipefail; export HOME="$(mktemp -d /tmp/centerapp-home.XXXXXX)"; trap '\''rm -rf "$HOME"'\'' EXIT; export npm_config_cache="$HOME/.npm"; cd /opt/phanmemgiaoduc; npm ci --omit=dev'
 
 systemctl restart "$SERVICE"
 if ! systemctl is-active --quiet "$SERVICE"; then
