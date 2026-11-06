@@ -686,7 +686,7 @@ import {createTeacherScanUI} from "/teacher-scan-ui.mjs";
             state.sessionRole = role;
             document.body.classList.toggle('role-header-user', ['teacher','student'].includes(role));
             document.body.classList.remove('role-header-compact');
-            const headerToggle = $('role-header-toggle'); if(headerToggle) { headerToggle.textContent='⌃ Thu gọn thanh tài khoản'; headerToggle.setAttribute('aria-expanded','true'); headerToggle.style.display='inline-flex'; headerToggle.style.alignItems='center'; }
+            const headerToggle = $('role-header-toggle'); if(headerToggle) { headerToggle.textContent='⌃ Thu gọn thanh tài khoản'; headerToggle.setAttribute('aria-expanded','true'); headerToggle.style.setProperty('display','inline-flex','important'); headerToggle.style.setProperty('align-items','center'); }
             try { sessionStorage.setItem('edu_session', JSON.stringify({role, cur, username: activeAccount?.username || null})); } catch(e) {}
             $('auth-gateway-screen').classList.add('hidden');
             $('portal-' + role).classList.remove('hidden');
@@ -732,6 +732,15 @@ import {createTeacherScanUI} from "/teacher-scan-ui.mjs";
 
         // ---------- Hiển thị chung ----------
         function refreshUI() {
+            const headerToggle = $('role-header-toggle');
+            const compactHeaderRole = ['teacher','student'].includes(state.sessionRole);
+            document.body.classList.toggle('role-header-user', compactHeaderRole);
+            if (headerToggle) {
+                headerToggle.style.setProperty('display', compactHeaderRole ? 'inline-flex' : 'none', 'important');
+                headerToggle.style.setProperty('align-items', 'center');
+                headerToggle.textContent = document.body.classList.contains('role-header-compact') ? '⌄ Mở thanh tài khoản' : '⌃ Thu gọn thanh tài khoản';
+                headerToggle.setAttribute('aria-expanded', String(!document.body.classList.contains('role-header-compact')));
+            }
             renderRecruitment();
             $('header-profile-button').classList.toggle('hidden',!!onlineMember?.pendingAdmission);
             $('header-enrollment-button').classList.toggle('hidden',!['student','parent'].includes(state.sessionRole));
