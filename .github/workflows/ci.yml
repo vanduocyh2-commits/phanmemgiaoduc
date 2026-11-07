@@ -20,5 +20,6 @@ jobs:
       - run: npm install --omit=dev
       - run: node --check server.mjs
       - run: node --check portal-server.mjs
+      - run: node --check public/student-visual-math-editor.js
       - run: node --check supabase-store.mjs
       - run: npm test
