@@ -1,7 +1,7 @@
 /**
  * Standalone math-formula toolbar for a textarea-based answer editor.
- * The host page supplies the textarea explicitly; this module does not
- * inspect application globals, selectors, or application data.
+ * The host page supplies the textarea explicitly; no app globals or selectors
+ * are inspected. Formula strings are inserted at the current caret position.
  */
 
 const DEFAULT_FORMULAS = [
@@ -18,10 +18,7 @@ const DEFAULT_FORMULAS = [
 ];
 
 /**
- * Mounts a small formula toolbar immediately before the supplied textarea.
- * Formula text is inserted at the current caret and an input event is emitted
- * so existing host-page listeners can update previews or save drafts.
- *
+ * @param {{textarea: HTMLTextAreaElement, formulas?: Array<{label: string, value: string}>, label?: string, wrapInMathDelimiters?: boolean}} options
  * @returns {() => void} cleanup function
  */
 export function mountMathFormulaToolbar({
@@ -44,7 +41,6 @@ export function mountMathFormulaToolbar({
   title.textContent = label;
   toolbar.append(title);
 
-  const buttons = [];
   for (const formula of formulas) {
     if (!formula || typeof formula.value !== 'string') continue;
     const button = document.createElement('button');
@@ -54,7 +50,7 @@ export function mountMathFormulaToolbar({
     button.title = formula.label || formula.value;
     button.addEventListener('click', () => {
       const insertion = wrapInMathDelimiters
-        ? `\\( ${formula.value} \\\\)`
+        ? `\\\\( ${formula.value} \\\\)`
         : formula.value;
       const start = textarea.selectionStart ?? textarea.value.length;
       const end = textarea.selectionEnd ?? start;
@@ -62,14 +58,9 @@ export function mountMathFormulaToolbar({
       textarea.focus();
       textarea.dispatchEvent(new Event('input', { bubbles: true }));
     });
-    buttons.push(button);
     toolbar.append(button);
   }
 
   textarea.insertAdjacentElement('beforebegin', toolbar);
-
-  return () => {
-    for (const button of buttons) button.replaceWith(button.cloneNode(true));
-    toolbar.remove();
-  };
+  return () => toolbar.remove();
 }
