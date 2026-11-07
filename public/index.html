@@ -1394,7 +1394,7 @@ function localSubmittedSolutions(d,m,submissionId){
    if(!field)return;
    const latex=window.prompt('Nhập công thức LaTeX (không cần dấu $). Ví dụ: \\frac{a}{b} hoặc x^2+1');
    if(latex===null||!latex.trim())return;
-   const formula='\\\\('+latex.trim()+'\\\\)';
+   const formula='\\('+latex.trim()+'\\)'
    const start=field.selectionStart??field.value.length,end=field.selectionEnd??start;
    field.setRangeText(formula,start,end,'end');
    field.focus();
