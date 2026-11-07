@@ -104,6 +104,7 @@
       const response = await fetch(CATALOG_URL, {cache: 'no-store'});
       if (!response.ok) throw new Error('Không tải được danh mục sách Toán.');
       catalog = await response.json();
+      window.KNTTQuestionBankCatalog = catalog;
       scan();
       observer = new MutationObserver(records => {
         for (const record of records) {
