@@ -1,0 +1,43 @@
+.essay-image-rotation {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 14px;
+}
+
+.essay-image-rotation__button {
+  min-height: 36px;
+  padding: 7px 12px;
+  border: 1px solid #94a3b8;
+  border-radius: 7px;
+  background: #fff;
+  color: #1e293b;
+  font: inherit;
+  cursor: pointer;
+}
+
+.essay-image-rotation__button:hover:not(:disabled) {
+  background: #e2e8f0;
+}
+
+.essay-image-rotation__button:focus-visible {
+  outline: 3px solid #2563eb;
+  outline-offset: 2px;
+}
+
+.essay-image-rotation__button:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+.essay-image-rotation__status {
+  color: #475569;
+  font-size: 13px;
+}
+
+@media (max-width: 600px) {
+  .essay-image-rotation__button {
+    min-height: 40px;
+  }
+}
