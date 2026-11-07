@@ -1472,25 +1472,32 @@ function localSubmittedSolutions(d,m,submissionId){
  }
  let essayFormulaTarget=null;
  function formatEssayAnswer(qid,command){
-   const field=$('essay-answer-'+qid);if(!field)return;
-   const start=field.selectionStart??field.value.length,end=field.selectionEnd??start;
-   const selected=field.value.slice(start,end);
-   const commands={bold:'\\textbf',italic:'\\textit',underline:'\\underline'};
-   let insertion='',cursorOffset=0;
-   if(command==='subscript'||command==='superscript'){
-     const marker=command==='subscript'?'_':'^';
-     insertion=selected?'\\('+marker+'{'+selected+'}\\)':'\\('+marker+'{}\\)';
-     cursorOffset=selected?insertion.length:insertion.indexOf('{}')+1;
-   }else{
-     const commandTex=commands[command];if(!commandTex)return;
-     insertion='\\('+commandTex+'{'+selected+'}\\)';
-     cursorOffset=selected?insertion.length:insertion.indexOf('{}')+1;
-   }
-   field.setRangeText(insertion,start,end,'end');
-   const caret=start+cursorOffset;field.focus();field.setSelectionRange(caret,caret);
-   field.dispatchEvent(new Event('input',{bubbles:true}));
- }
- function insertEssayFormula(qid){
+    const field=$('essay-answer-'+qid);if(!field)return;
+    const start=field.selectionStart??field.value.length,end=field.selectionEnd??start;
+    const selected=field.value.slice(start,end);
+    const commands={bold:'\textbf',italic:'\textit',underline:'\underline'};
+    // Tránh lồng thêm \(...\) khi con trỏ đang ở bên trong một công thức.
+    function insideMath(position){
+      const delimiters=/\\\(|\\\)/g;let inside=false,match;
+      while((match=delimiters.exec(field.value))&&match.index<position)inside=match[0]==='\\(';
+      return inside;
+    }
+    const inMath=insideMath(start)&&insideMath(end);
+    let body='',insertion='',cursorOffset=0;
+    if(command==='subscript'||command==='superscript'){
+      const marker=command==='subscript'?'_':'^';
+      body=marker+'{'+selected+'}';
+    }else{
+      const commandTex=commands[command];if(!commandTex)return;
+      body=commandTex+'{'+selected+'}';
+    }
+    insertion=inMath?body:'\\('+body+'\\)';
+    cursorOffset=selected?insertion.length:insertion.indexOf('{}')+1;
+    field.setRangeText(insertion,start,end,'end');
+    const caret=start+cursorOffset;field.focus();field.setSelectionRange(caret,caret);
+    field.dispatchEvent(new Event('input',{bubbles:true}));
+  }
+  function insertEssayFormula(qid){
    const field=$('essay-answer-'+qid);if(!field)return;
    essayFormulaTarget={qid,field,start:field.selectionStart??field.value.length,end:field.selectionEnd??field.value.length};
    $('essay-answer-formula-modal')?.remove();
