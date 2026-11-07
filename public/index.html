@@ -1589,7 +1589,8 @@ function localSubmittedSolutions(d,m,submissionId){
  const total=chosen.length;let allocated=0;
  const questions=chosen.map((source,i)=>{const q=copy(source);for(const k of ['owner','_bankKey','sourceExamId','sourceExamTitle','createdAt','updatedAt','bankId','sourceBankId'])delete q[k];q.id=uid('lpq');q.points=i===total-1?Number((10-allocated).toFixed(3)):Number((10/total).toFixed(3));allocated+=q.points;return q;});
  const examId=uid('lex'),title='Luyện tập · '+(lessonDraft.title||lesson)+' · '+c.name;
- const ex={...blank(),id:examId,title,grade,subject,chapter,lesson,duration,authorMode:'direct',scope:'Luyện tập theo bài giảng',questions,updatedAt:new Date().toISOString(),owner:activeAccount?.username};
+ const matrix=['mcq','tf','short','essay'].map(type=>{const rows=questions.filter(q=>q.type===type);return {type,points:rows[0]?.points||1,levels:['NB','TH','VD','VDC'].map(level=>rows.filter(q=>q.level===level).length)};}).filter(row=>row.levels.some(Boolean));
+ const ex={...blank(),id:examId,title,grade,subject,chapter,lesson,duration,authorMode:'direct',scope:'Luyện tập theo bài giảng',matrix,questions,updatedAt:new Date().toISOString(),owner:activeAccount?.username};
  const now=new Date().toISOString(),codes=Object.fromEntries(c.students.map(p=>[p.sbd,'101']));
  const assignment={id:uid('as'),createdBy:activeAccount?.username,examId,examIds:[examId],classId:c.id,students:c.students.map(p=>p.sbd),studentCodes:codes,codePolicy:'fixed',audience:'class',assessmentType:'homework',gradingMode:'auto',maxAttempts:0,allowViewScore:true,allowViewSolutions:true,snapshot:studentExamSnapshot(ex),start:null,end:null,note:'Bài luyện tập theo bài giảng: '+lessonDraft.title,createdAt:now,closed:false,lessonPractice:true,chapter,lesson,practiceLevels:counts};
  state.learningExams.push(ex);state.assignments.push(assignment);
