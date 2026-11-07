@@ -50,7 +50,7 @@ export function mountMathFormulaToolbar({
     button.title = formula.label || formula.value;
     button.addEventListener('click', () => {
       const insertion = wrapInMathDelimiters
-        ? `\\\\( ${formula.value} \\\\)`
+        ? String.raw`\\( ${formula.value} \\\\)`
         : formula.value;
       const start = textarea.selectionStart ?? textarea.value.length;
       const end = textarea.selectionEnd ?? start;
