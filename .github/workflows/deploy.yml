@@ -24,5 +24,4 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
             set -e
-            sudo -n chown -R centerapp:centerapp /opt/phanmemgiaoduc/.git
             sudo -n /usr/local/sbin/phanmemgiaoduc-deploy
