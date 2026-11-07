@@ -61,7 +61,7 @@
     const controls = document.createElement('div'); controls.className = 'ts-grid';
     const filters = {};
     const labels = {grade:'Khối',subject:'Môn học',chapter:'Chương',lesson:'Bài học',level:'Mức độ',type:'Dạng câu'};
-    const placeholders = {grade:'Chọn khối',subject:'Chọn môn',chapter:'Chọn chương',lesson:'Chọn bài',level:'Tất cả mức độ',type:'Tất cả dạng câu'};
+    const placeholders = {grade:'Chọn khối',subject:'Chọn môn',chapter:'Chọn chương',lesson:'Chọn bài',level:'Chọn mức độ',type:'Tất cả dạng câu'};
     ['grade','subject','chapter','lesson','level','type'].forEach(key => {
       const item = makeSelect(labels[key], placeholders[key], () => {
         const order = ['grade','subject','chapter','lesson','level','type'];
@@ -95,6 +95,8 @@
         (!includeSearch || !search.value || norm([q.text,q.topic,q.outcome,q.chapter,q.lesson].join(' ')).includes(norm(search.value)));
     }
     selectVisible.addEventListener('click', () => {
+      const ready = !!(filters.grade.value && filters.subject.value && filters.chapter.value && filters.lesson.value && filters.level.value);
+      if (!ready) return;
       const found = currentRows().filter(q => matches(q, true)).slice(0,100);
       const allSelected = found.length > 0 && found.every(q => selected.has(String(q.id || q.bankId)));
       found.forEach(q => { const id = String(q.id || q.bankId); if (allSelected) selected.delete(id); else selected.set(id,q); });
@@ -130,11 +132,12 @@
       setOptions('level', LEVEL_LABELS.filter(label => byLesson.some(q => q.level === LEVELS[LEVEL_LABELS.indexOf(label)])), placeholders.level, !filters.lesson.value);
       const levelRows = byLesson.filter(q => !filters.level.value || q.level === LEVELS[LEVEL_LABELS.indexOf(filters.level.value)] || q.level === filters.level.value);
       setOptions('type', Object.keys(TYPES).map(k => TYPES[k]).filter(label => levelRows.some(q => (TYPES[q.type] || q.type) === label)), placeholders.type, !filters.lesson.value);
-      const ready = !!(filters.grade.value && filters.subject.value && filters.chapter.value && filters.lesson.value);
+      const ready = !!(filters.grade.value && filters.subject.value && filters.chapter.value && filters.lesson.value && filters.level.value);
       const filtered = ready ? current.filter(q => matches(q,true)).slice(0,100) : [];
+      selectVisible.disabled = !ready;
       status.textContent = ready
         ? filtered.length + ' câu phù hợp · Tổng ngân hàng: ' + current.length + ' câu'
-        : 'Chọn khối → môn → chương → bài để xem câu hỏi. Ngân hàng được thu gọn theo từng nội dung, không tải toàn bộ câu hỏi cùng lúc.';
+        : 'Ngân hàng đang ẩn. Chọn khối → môn → chương → bài → mức độ để xem câu hỏi phù hợp.';
       list.replaceChildren();
       filtered.forEach(q => {
         const id = String(q.id || q.bankId);
