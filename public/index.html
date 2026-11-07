@@ -1593,7 +1593,7 @@ function localSubmittedSolutions(d,m,submissionId){
  const now=new Date().toISOString(),codes=Object.fromEntries(c.students.map(p=>[p.sbd,'101']));
  const assignment={id:uid('as'),createdBy:activeAccount?.username,examId,examIds:[examId],classId:c.id,students:c.students.map(p=>p.sbd),studentCodes:codes,codePolicy:'fixed',audience:'class',assessmentType:'homework',gradingMode:'auto',maxAttempts:0,allowViewScore:true,allowViewSolutions:true,snapshot:studentExamSnapshot(ex),start:null,end:null,note:'Bài luyện tập theo bài giảng: '+lessonDraft.title,createdAt:now,closed:false,lessonPractice:true,chapter,lesson,practiceLevels:counts};
  state.learningExams.push(ex);state.assignments.push(assignment);
- put();notify(assignment.id);assign();
+ put();notify(assignment.id);lessons();
  toast('Đã tạo đề từ '+total+' câu trong ngân hàng và giao cho lớp '+c.name+'. Học sinh có thể luyện tập không giới hạn lượt.');
 }
 async function saveLessonToLibrary(){const id=await saveLesson(false);if(!id)return;const publish=!!lessonDraft.publishToClass;if(publish&&!confirm('Gửi bài giảng “'+lessonDraft.title+'” cho lớp '+(state.classes.find(c=>c.id===lessonDraft.classId)?.name||'đang chọn')+'?'))return;try{if(!hosted)throw Error('Lưu thư viện dùng trên website trực tuyến.');const result=await onlineRequest('/api/lesson-plans/library',{method:'POST',body:JSON.stringify({planId:id,published:publish})});onlineAdopt(result.view);lessons();toast(publish?'Đã lưu thư viện và xuất bản cho học sinh.':'Đã lưu vào thư viện dưới dạng bản nháp.');}catch(e){toast(e.message)}}
