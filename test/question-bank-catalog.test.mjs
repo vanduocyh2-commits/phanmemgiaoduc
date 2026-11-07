@@ -38,3 +38,12 @@ test('portal serves the catalogue files and injects its UI script', async () => 
   assert.ok(source.includes("'/question-bank-catalog-ui.js','/question-bank-catalog.json'"));
   assert.ok(source.includes('<script defer src="/question-bank-catalog-ui.js"></script>'));
 });
+
+test('shared question bank stays hidden until the teacher selects grade, subject, chapter, lesson and difficulty', async () => {
+  const source = await readFile(new URL('../public/question-bank-center.js', import.meta.url), 'utf8');
+  assert.doesNotThrow(() => new vm.Script(source));
+  assert.ok(source.includes("level:'Chọn mức độ'"));
+  assert.ok(source.includes('filters.lesson.value && filters.level.value'));
+  assert.ok(source.includes('Chọn khối → môn → chương → bài → mức độ để xem câu hỏi.'));
+  assert.ok(source.includes("const details = document.createElement('details');"));
+});

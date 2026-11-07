@@ -61,7 +61,7 @@
     const controls = document.createElement('div'); controls.className = 'ts-grid';
     const filters = {};
     const labels = {grade:'Khối',subject:'Môn học',chapter:'Chương',lesson:'Bài học',level:'Mức độ',type:'Dạng câu'};
-    const placeholders = {grade:'Chọn khối',subject:'Chọn môn',chapter:'Chọn chương',lesson:'Chọn bài',level:'Tất cả mức độ',type:'Tất cả dạng câu'};
+    const placeholders = {grade:'Chọn khối',subject:'Chọn môn',chapter:'Chọn chương',lesson:'Chọn bài',level:'Chọn mức độ',type:'Tất cả dạng câu'};
     ['grade','subject','chapter','lesson','level','type'].forEach(key => {
       const item = makeSelect(labels[key], placeholders[key], () => {
         const order = ['grade','subject','chapter','lesson','level','type'];
@@ -130,11 +130,11 @@
       setOptions('level', LEVEL_LABELS.filter(label => byLesson.some(q => q.level === LEVELS[LEVEL_LABELS.indexOf(label)])), placeholders.level, !filters.lesson.value);
       const levelRows = byLesson.filter(q => !filters.level.value || q.level === LEVELS[LEVEL_LABELS.indexOf(filters.level.value)] || q.level === filters.level.value);
       setOptions('type', Object.keys(TYPES).map(k => TYPES[k]).filter(label => levelRows.some(q => (TYPES[q.type] || q.type) === label)), placeholders.type, !filters.lesson.value);
-      const ready = !!(filters.grade.value && filters.subject.value && filters.chapter.value && filters.lesson.value);
+      const ready = !!(filters.grade.value && filters.subject.value && filters.chapter.value && filters.lesson.value && filters.level.value);
       const filtered = ready ? current.filter(q => matches(q,true)).slice(0,100) : [];
       status.textContent = ready
         ? filtered.length + ' câu phù hợp · Tổng ngân hàng: ' + current.length + ' câu'
-        : 'Chọn khối → môn → chương → bài để xem câu hỏi. Ngân hàng được thu gọn theo từng nội dung, không tải toàn bộ câu hỏi cùng lúc.';
+        : 'Chọn khối → môn → chương → bài → mức độ để xem câu hỏi. Ngân hàng được thu gọn theo từng nội dung, không hiển thị câu hỏi trước khi lọc đủ.';
       list.replaceChildren();
       filtered.forEach(q => {
         const id = String(q.id || q.bankId);
