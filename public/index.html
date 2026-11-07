@@ -118,7 +118,22 @@ body:has(#ts-attempt .exam-live-toolbar)>header{display:none!important}
 .admin-sidebar-btn{position:relative!important;padding-right:46px!important}
 .admin-sidebar-badge{position:absolute;right:11px;top:50%;transform:translateY(-50%);display:inline-flex;align-items:center;justify-content:center;min-width:19px;height:19px;padding:0 5px;border-radius:999px;background:#dc2626;color:#fff;font:800 10px/1 Inter,Arial,sans-serif;box-shadow:0 1px 3px #0f172a24;pointer-events:none}
 .admin-sidebar-badge[hidden]{display:none!important}
-</style></head>
+</style><style>
+.role-header-floating-toggle{border:1px solid rgba(255,255,255,.45);background:rgba(49,46,129,.9);color:#fff;border-radius:9px;padding:8px 11px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap}
+.role-header-floating-toggle:hover{background:#4338ca}
+.role-header-floating-toggle[hidden]{display:none!important}
+body.role-header-compact header .header-brand{display:none!important}
+body.role-header-compact header>div{justify-content:flex-end!important;padding-top:7px!important;padding-bottom:7px!important;min-height:54px}
+body.role-header-compact header #header-account-controls{margin-left:auto}
+.essay-answer-toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0}
+.essay-answer-toolbar button{background:#eef2ff;color:#3730a3;border:1px solid #c7d2fe;border-radius:8px;padding:7px 10px;font-size:12px;font-weight:700;cursor:pointer}
+.essay-answer-toolbar button:hover{background:#e0e7ff}
+.essay-answer-toolbar span{font-size:11px;color:#64748b;font-weight:400}
+.essay-answer-preview{min-height:28px;padding:8px 10px;margin:6px 0 10px;border:1px dashed #cbd5e1;border-radius:8px;background:#f8fafc;color:#334155;font-size:13px;font-weight:400;line-height:1.8;overflow-wrap:anywhere}
+.essay-answer-preview math{font-size:1.05em}
+@media(max-width:640px){body.role-header-compact header>div{gap:6px}.role-header-floating-toggle{padding:7px 9px;font-size:11px}.essay-answer-toolbar{gap:6px}}
+</style>
+</head>
 <body class="bg-slate-100 text-slate-800 antialiased flex flex-col min-h-screen selection:bg-indigo-600 selection:text-white">
 
     <!-- TOAST NOTIFICATION CONTAINER -->
@@ -798,7 +813,34 @@ import {createTeacherScanUI} from "/teacher-scan-ui.mjs";
             }
         }
 
+        function ensureLearnerHeaderToggle() {
+            const controls = $('header-account-controls');
+            if (!controls) return;
+            let button = $('role-header-floating-toggle');
+            if (!button) {
+                button = document.createElement('button');
+                button.id = 'role-header-floating-toggle';
+                button.type = 'button';
+                button.className = 'role-header-floating-toggle';
+                button.setAttribute('aria-pressed', 'false');
+                button.addEventListener('click', () => {
+                    const compact = document.body.classList.toggle('role-header-compact');
+                    button.textContent = compact ? '⌄ Mở thanh trên' : '⌃ Thu gọn đầu trang';
+                    button.setAttribute('aria-pressed', String(compact));
+                });
+                controls.appendChild(button);
+            }
+            const visible = ['student','parent'].includes(state.sessionRole);
+            button.hidden = !visible;
+            if (!visible) {
+                document.body.classList.remove('role-header-compact');
+                button.textContent = '⌃ Thu gọn đầu trang';
+                button.setAttribute('aria-pressed', 'false');
+            }
+        }
+
         function refreshUI() {
+            ensureLearnerHeaderToggle();
             renderRecruitment();
             $('header-profile-button').classList.toggle('hidden',!!onlineMember?.pendingAdmission);
             $('header-enrollment-button').classList.toggle('hidden',!['student','parent'].includes(state.sessionRole));
@@ -1347,6 +1389,23 @@ function localSubmittedSolutions(d,m,submissionId){
  function toggleAttemptHeader(){const root=$('ts-attempt'),button=$('exam-heading-toggle');if(!root||!button)return;const shown=root.classList.toggle('exam-show-heading');button.textContent=shown?'Ẩn tiêu đề đề thi':'Hiện tiêu đề đề thi';button.setAttribute('aria-expanded',String(shown));}
  function toggleExamWidth(){const root=$('ts-attempt')?.querySelector('.pdf-workspace'),button=$('exam-width-toggle');if(!root||!button)return;const expanded=root.classList.toggle('exam-document-only');button.textContent=expanded?'Hiện phiếu trả lời':'Xem đề hết chiều rộng';button.setAttribute('aria-expanded',String(expanded));}
  async function start(id){if(state.sessionRole!=='student'||!cur||submitting)return;if(hosted&&(onlineDirty||onlineBusy)){try{await onlineFlush();if(onlineDirty)return toast('Chưa lưu xong bài trước. Vui lòng thử lại.');}catch(e){return toast(e.message)}}const a=state.assignments.find(a=>a.id===id);if(!a||a.archivedAt||a.classId!==cur.cid||!classAssignmentAccess(a,cur.sbd)||(examStatus(a)!=='Đang mở'&&!state.learningAttempts.some(t=>t.assignmentId===id&&t.classId===cur.cid&&t.sbd===cur.sbd))||!canAttempt(state,a,cur.cid,cur.sbd))return toast('Không thể mở bài hoặc đã hết lượt');let t=activeAttempt(state,a,cur.cid,cur.sbd);if(!t){t={id:uid('attempt'),attemptNo:nextAttemptNo(state,a,cur.cid,cur.sbd),assignmentId:id,classId:cur.cid,sbd:cur.sbd,startedAt:Date.now(),answers:{}};state.learningAttempts.push(t);put();}attempt=t;restoreMonitorDraft();monitorAway=false;const e=a.snapshot;$('ts-attempt').classList.remove('exam-show-heading');$('ts-attempt').innerHTML=`<div class="exam-live-toolbar"><b title="${esc(e.title||'')}">Đang làm bài</b><button type="button" id="exam-heading-toggle" class="ts-btn ts-secondary" aria-expanded="false" onclick="TS.toggleAttemptHeader()">Hiện tiêu đề đề thi</button><span id="ts-timer" role="timer"></span>${eIsPdf(a.snapshot)?'<button type="button" id="exam-width-toggle" class="ts-btn ts-secondary" aria-expanded="false" onclick="TS.toggleExamWidth()">Xem đề hết chiều rộng</button>':''}${btn('Nộp bài','submit(false)')}</div>${monitorBanner(a)}<div class="${e.attachment&&(e.attachment.type==='application/pdf'||/\.pdf$/i.test(e.attachment.name||''))?'pdf-workspace':''}">${attachmentView(e.attachment)}<div class="pdf-responses">${e.attachment?compactAnswerSheet(e,t.answers):paperHTML(e,true,t.answers)}</div></div><div class="exam-submit-bar">${btn('Nộp bài','submit(false)')}<p>Câu trả lời được lưu tự động. Hết thời gian bài tự nộp.</p></div>`;mountAttemptEssayFiles(e);updateMonitorUI();if(isMonitored(a)&&monitorCount()>0)flushExamMonitor();clearInterval(timer);timer=setInterval(tick,1000);tick();}
+ function insertEssayFormula(qid){
+   const field=document.getElementById('essay-answer-'+qid);
+   if(!field)return;
+   const latex=window.prompt('Nhập công thức LaTeX (không cần dấu $). Ví dụ: \\frac{a}{b} hoặc x^2+1');
+   if(latex===null||!latex.trim())return;
+   const formula='\\('+latex.trim()+'\\)'
+   const start=field.selectionStart??field.value.length,end=field.selectionEnd??start;
+   field.setRangeText(formula,start,end,'end');
+   field.focus();
+   field.dispatchEvent(new Event('input',{bubbles:true}));
+ }
+ function updateEssayAnswerPreview(qid,value){
+   const preview=document.getElementById('essay-answer-preview-'+qid);
+   if(!preview)return;
+   const text=String(value||'').trim();
+   preview.innerHTML=text?MathBridge.inline(text):'<span>Phần xem trước công thức sẽ hiển thị tại đây.</span>';
+ }
  function answer(id,v){if(!attempt||monitorLocked())return;attempt.answers[id]=v;put();}
  let checkingAssignmentStatus=false,lastAssignmentStatus=0;
  async function verifyLiveAssignment(){if(!hosted||!attempt||checkingAssignmentStatus||Date.now()-lastAssignmentStatus<10000)return;lastAssignmentStatus=Date.now();checkingAssignmentStatus=true;const active=attempt;try{const data=await onlineRequest('/api/assignments/'+encodeURIComponent(active.assignmentId)+'/status');if(data.available===false&&attempt===active){stop();if(data.view)onlineAdopt(data.view);renderPortalView();toast('Giáo viên đã xóa hoặc thu hồi đề. Lượt làm bài đã được đóng.');}}catch{}finally{checkingAssignmentStatus=false;}}
@@ -1543,7 +1602,7 @@ function localSubmittedSolutions(d,m,submissionId){
    else if(q.type==='tf'&&q.statements?.length===4)response=paperTfItems(q,index,interactive,answer,ex);
    else if(q.type==='tf')response=interactive?`<div class="exam-truefalse">${['Đúng','Sai'].map(v=>`<label><input type="radio" name="ans-${q.id}" value="${v}" ${answer===v?'checked':''} onchange="TS.answer('${q.id}',this.value)"> ${v}</label>`).join('')}</div>`:'<p class="exam-response-line">Trả lời: □ Đúng &nbsp;&nbsp; □ Sai</p>';
    else if(q.type==='short')response=interactive?`<label class="exam-response-label">Đáp án: <input class="exam-short-answer" type="text" value="${esc(answer)}" oninput="TS.answer('${q.id}',this.value)" aria-label="Đáp án câu ${number}"></label>`:'<p class="exam-response-line">Đáp án: <span class="exam-answer-box"></span></p>';
-   else response=interactive?`<label class="exam-response-label">Bài làm câu ${number}<textarea class="exam-essay-answer" rows="6" oninput="TS.answer('${q.id}',this.value)">${esc(answer)}</textarea></label>${essayFilesHTML(q.id,attempt?.files?.[q.id]||[],true)}`:'<div class="exam-writing-lines" aria-label="Chỗ trình bày bài giải"></div>';
+   else response=interactive?`<label class="exam-response-label">Bài làm câu ${number}<textarea id="essay-answer-${esc(q.id)}" class="exam-essay-answer" rows="6" oninput="TS.answer('${q.id}',this.value);updateEssayAnswerPreview('${q.id}',this.value)">${esc(answer)}</textarea><div class="essay-answer-toolbar"><button type="button" onclick="insertEssayFormula('${esc(q.id)}')">∑ Chèn công thức toán</button><span>Nhập công thức dạng LaTeX, ví dụ: x^2+1</span></div><div id="essay-answer-preview-${esc(q.id)}" class="essay-answer-preview">${answer?MathBridge.inline(answer):'<span>Phần xem trước công thức sẽ hiển thị tại đây.</span>'}</div></label>${essayFilesHTML(q.id,attempt?.files?.[q.id]||[],true)}`:'<div class="exam-writing-lines" aria-label="Chỗ trình bày bài giải"></div>';
    return `<article class="exam-question"><div class="exam-question-text"><b>Câu ${number}.</b> <span class="exam-question-points">(${points} điểm)</span> ${MathBridge.inline(q.text)}</div>${questionImageHTML(q)}${response}</article>`;
  }
  function compactAnswerSheet(ex,answers={}){const code=ex.code||ex.presentation?.code||'101';return `<section class="compact-answer-sheet"><header><h3>Phiếu trả lời · Mã ${esc(code)}</h3><p>Đọc đề bên trái, chọn hoặc nhập đáp án dưới đây.</p></header>${['mcq','tf','short','essay'].map(type=>{const qs=(ex.questions||[]).filter(q=>q.type===type);if(!qs.length)return '';return `<section class="compact-answer-part"><h4>${{mcq:'I. Trắc nghiệm A/B/C/D',tf:'II. Đúng / Sai',short:'III. Trả lời ngắn',essay:'IV. Tự luận'}[type]}</h4>${qs.map((q,i)=>{const n=q.partNumber||i+1,value=answers[q.id]||'';if(type==='mcq')return `<div class="compact-answer-row"><b>Câu ${n}</b><div class="compact-choices">${['A','B','C','D'].map(v=>`<label><input type="radio" name="ans-${q.id}" value="${v}" ${value===v?'checked':''} onchange="TS.answer('${q.id}',this.value)"><span>${v}</span></label>`).join('')}</div></div>`;if(type==='tf'&&q.statements?.length===4){const selected=tfAnswersFrom(value);return `<div class="compact-tf"><b>Câu ${n}</b>${['a','b','c','d'].map((letter,j)=>`<div><span>${letter})</span>${['Đúng','Sai'].map(v=>`<label><input type="radio" name="ans-${q.id}-${j}" value="${v}" ${selected[j]===v?'checked':''} onchange="TS.studentTfAnswer('${q.id}',${j},this.value)"> ${v}</label>`).join('')}</div>`).join('')}</div>`;}if(type==='tf')return `<div class="compact-answer-row"><b>Câu ${n}</b>${['Đúng','Sai'].map(v=>`<label><input type="radio" name="ans-${q.id}" value="${v}" ${value===v?'checked':''} onchange="TS.answer('${q.id}',this.value)"> ${v}</label>`).join('')}</div>`;if(type==='short')return `<label class="compact-answer-row"><b>Câu ${n}</b><input class="ts-input" type="text" value="${esc(value)}" placeholder="Nhập đáp án" aria-label="Trả lời ngắn câu ${n}" oninput="TS.answer('${q.id}',this.value)"></label>`;return `<div class="compact-essay"><label><b>Câu ${n}</b><textarea class="ts-input" rows="3" placeholder="Nhập bài làm hoặc đính kèm file" oninput="TS.answer('${q.id}',this.value)">${esc(value)}</textarea></label>${essayFilesHTML(q.id,attempt?.files?.[q.id]||[],true)}</div>`;}).join('')}</section>`;}).join('')}</section>`;}
