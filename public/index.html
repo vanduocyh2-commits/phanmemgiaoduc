@@ -1499,7 +1499,6 @@ function localSubmittedSolutions(d,m,submissionId){
    editor.focus();const sel=window.getSelection(),caret=document.createRange();caret.setStartAfter(node);caret.collapse(true);sel.removeAllRanges();sel.addRange(caret);rememberCardSelection(editor);syncEssayAnswer(editor);closeEssayFormula();
  }
  function closeEssayFormula(){$('essay-answer-formula-modal')?.remove();essayFormulaTarget=null;}
- function closeEssayFormula(){$('essay-answer-formula-modal')?.remove();essayFormulaTarget=null;}
  function answer(id,v){if(!attempt||monitorLocked())return;attempt.answers[id]=v;put();}
  let checkingAssignmentStatus=false,lastAssignmentStatus=0;
  async function verifyLiveAssignment(){if(!hosted||!attempt||checkingAssignmentStatus||Date.now()-lastAssignmentStatus<10000)return;lastAssignmentStatus=Date.now();checkingAssignmentStatus=true;const active=attempt;try{const data=await onlineRequest('/api/assignments/'+encodeURIComponent(active.assignmentId)+'/status');if(data.available===false&&attempt===active){stop();if(data.view)onlineAdopt(data.view);renderPortalView();toast('Giáo viên đã xóa hoặc thu hồi đề. Lượt làm bài đã được đóng.');}}catch{}finally{checkingAssignmentStatus=false;}}
