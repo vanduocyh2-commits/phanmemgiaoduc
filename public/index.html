@@ -1205,7 +1205,7 @@ const TS = (() => {
  function renderQuestionBankContents(){
   const all=(state.questionBank||[]).filter(q=>q&&q.id);
   const values=k=>[...new Set(all.map(q=>String(q[k]||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'vi',{numeric:true}));
-  const select=(key,label,opts)=>'<label>'+label+'<select id="qbf-'+key+'" class="ts-input"><option value="">Tất cả</option>'+opts.map(v=>'<option value="'+esc(v)+'" '+(questionBankFilters[key]===v?'selected':'')+'>'+esc(v)+'</option>').join('')+'</select></label>';
+  const select=(key,label,opts)=>'<label>'+label+'<select id="qbf-'+key+'" class="ts-input"><option value="">Chọn '+label.toLowerCase()+'</option>'+opts.map(v=>'<option value="'+esc(v)+'" '+(questionBankFilters[key]===v?'selected':'')+'>'+esc(v)+'</option>').join('')+'</select></label>';
   const rows=all.filter(q=>!questionBankFilters.grade||String(q.grade)===questionBankFilters.grade)
    .filter(q=>!questionBankFilters.subject||q.subject===questionBankFilters.subject)
    .filter(q=>!questionBankFilters.curriculum||q.curriculum===questionBankFilters.curriculum)
@@ -1215,16 +1215,18 @@ const TS = (() => {
    .filter(q=>!questionBankFilters.level||q.level===questionBankFilters.level)
    .filter(q=>!questionBankFilters.search||[q.text,q.subject,q.curriculum,q.textbook,q.chapter,q.lesson,q.sourceExamTitle].join(' ').toLocaleLowerCase('vi').includes(questionBankFilters.search.toLocaleLowerCase('vi')))
    .sort((a,b)=>String(a.grade||'99').localeCompare(String(b.grade||'99'),'vi',{numeric:true})||String(a.subject||'').localeCompare(String(b.subject||''),'vi')||String(a.textbook||'').localeCompare(String(b.textbook||''),'vi')||(Number(a.chapterOrder)||999)-(Number(b.chapterOrder)||999)||(Number(a.lessonOrder)||999)-(Number(b.lessonOrder)||999)||String(a.level||'').localeCompare(String(b.level||'')));
+  const ready=!!(questionBankFilters.grade&&questionBankFilters.subject&&questionBankFilters.chapter&&questionBankFilters.lesson&&questionBankFilters.level);
+  const visibleRows=ready?rows:[];
   let group='';
-  const entries=rows.slice(0,100).map(q=>{
+  const entries=visibleRows.slice(0,100).map(q=>{
    const key=['Khối '+q.grade,q.subject,q.curriculum,q.textbook,'Chương '+(Number(q.chapterOrder)||1)+': '+q.chapter,'Bài '+(Number(q.lessonOrder)||1)+': '+q.lesson].join(' · ');
    const heading=key===group?'':'<h4 class="ts-note question-bank-group">'+esc(key)+'</h4>';group=key;
    return heading+'<article class="question-bank-row"><div><div class="ts-row"><b>'+esc((q.type||'').toUpperCase())+' · '+esc(q.level||'NB')+' · '+(Number(q.points)||0)+'đ</b><span class="ts-tag">'+esc(q.owner||'Trung tâm')+'</span></div><div class="question-bank-excerpt">'+MathBridge.inline(q.text||'')+'</div><small>Nguồn đề: '+esc(q.sourceExamTitle||'Ngân hàng câu hỏi')+'</small></div><button type="button" class="ts-btn" onclick="TS.addBankQuestion(\''+esc(q.id)+'\')">＋ Đưa vào đề</button></article>';
   }).join('');
   return '<section class="ts-box question-bank-section"><div class="ts-row"><div><h3>Ngân hàng câu hỏi</h3><p class="ts-help">Tìm và sử dụng câu hỏi theo Khối → Môn → Chương trình → Bộ sách → Chương → Bài → Mức độ.</p></div><span class="ts-tag">'+all.length+' câu đã lưu</span></div>'+
    '<div class="ts-grid">'+select('grade','Khối',values('grade'))+select('subject','Môn',values('subject'))+select('curriculum','Chương trình',values('curriculum'))+select('textbook','Bộ sách',values('textbook'))+select('chapter','Chương',values('chapter'))+select('lesson','Bài',values('lesson'))+select('level','Mức độ',levels)+'<label>Tìm nội dung<input id="qbf-search" class="ts-input" value="'+esc(questionBankFilters.search)+'" placeholder="Nhập từ khóa câu hỏi…"></label></div>'+
-   '<div class="ts-row"><button type="button" class="ts-btn" onclick="TS.filterQuestionBank()">Lọc câu hỏi</button><button type="button" class="ts-btn ts-secondary" onclick="TS.clearQuestionBankFilter()">Xóa lọc</button><span class="ts-help">'+rows.length+' câu phù hợp</span></div>'+
-   '<div class="question-bank-list">'+(entries||'<p class="ts-help">Chưa có câu hỏi phù hợp. Hãy phân loại câu và lưu đề để bổ sung vào ngân hàng.</p>')+(rows.length>100?'<p class="ts-help">Đang hiển thị 100 câu đầu tiên; hãy lọc theo môn, chương hoặc bài.</p>':'')+'</div></section>';
+   '<div class="ts-row"><button type="button" class="ts-btn" onclick="TS.filterQuestionBank()">Hiện câu hỏi phù hợp</button><button type="button" class="ts-btn ts-secondary" onclick="TS.clearQuestionBankFilter()">Xóa lọc</button><span class="ts-help">'+rows.length+' câu phù hợp</span></div>'+
+   '<div class="question-bank-list">'+(entries||(ready?'<p class="ts-help">Không có câu hỏi phù hợp với lựa chọn này.</p>':'<p class="ts-help">Ngân hàng đang ẩn. Chọn đủ khối, môn, chương, bài và mức độ để mở câu hỏi.</p>'))+(visibleRows.length>100?'<p class="ts-help">Đang hiển thị 100 câu đầu tiên; hãy lọc theo môn, chương hoặc bài.</p>':'')+'</div></section>';
  }
  function filterQuestionBank(){
   for(const key of ['grade','subject','curriculum','textbook','chapter','lesson','level','search'])questionBankFilters[key]=$('qbf-'+key)?.value||'';
