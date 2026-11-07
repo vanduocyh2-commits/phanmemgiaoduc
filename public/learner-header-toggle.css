@@ -1,0 +1,22 @@
+.learner-header-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  margin: 8px 0;
+  padding: 7px 12px;
+  border: 1px solid #64748b;
+  border-radius: 8px;
+  background: #fff;
+  color: #1e293b;
+  font: inherit;
+  cursor: pointer;
+}
+.learner-header-toggle:focus-visible {
+  outline: 3px solid #2563eb;
+  outline-offset: 2px;
+}
+.learner-header-compact {
+  max-height: 72px;
+  overflow: hidden;
+}
