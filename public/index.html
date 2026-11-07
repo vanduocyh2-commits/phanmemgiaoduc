@@ -1205,9 +1205,24 @@ const TS = (() => {
  function renderQuestionBankContents(){
   const all=(state.questionBank||[]).filter(q=>q&&q.id);
   const chain=['grade','subject','curriculum','textbook','chapter','lesson','level'];
+  const catalog=window.KNTTQuestionBankCatalog;
+  const matchingBooks=(catalog?.books||[]).filter(book=>
+   (!questionBankFilters.grade||String(book.grade)===questionBankFilters.grade)&&
+   (!questionBankFilters.subject||book.subject===questionBankFilters.subject)&&
+   (!questionBankFilters.curriculum||book.curriculum===questionBankFilters.curriculum));
+  const activeBook=matchingBooks.find(book=>book.textbook===questionBankFilters.textbook);
+  const activeChapter=activeBook?.chapters?.find(ch=>ch.title===questionBankFilters.chapter);
   const parentRows=(key)=>all.filter(q=>chain.slice(0,chain.indexOf(key)).every(k=>!questionBankFilters[k]||String(q[k]||'')===questionBankFilters[k]));
-  const values=k=>[...new Set(parentRows(k).map(q=>String(q[k]||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'vi',{numeric:true}));
-  const select=(key,label,opts)=>'<label>'+label+'<select id="qbf-'+key+'" class="ts-input" onchange="TS.changeQuestionBankFilter(\''+key+'\',this.value)"><option value="">Tất cả</option>'+opts.map(v=>'<option value="'+esc(v)+'" '+(questionBankFilters[key]===v?'selected':'')+'>'+esc(v)+'</option>').join('')+'</select></label>';
+  const values=k=>{
+   if(k==='textbook'&&matchingBooks.length)return matchingBooks.map(book=>book.textbook);
+   if(k==='chapter'&&activeBook)return activeBook.chapters.map(ch=>ch.title);
+   if(k==='lesson'&&activeChapter)return activeChapter.lessons.map(lesson=>lesson.title);
+   return [...new Set(parentRows(k).map(q=>String(q[k]||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'vi',{numeric:true}));
+  };
+  const select=(key,label,opts)=>'<label>'+label+'<select id="qbf-'+key+'" class="ts-input" onchange="TS.changeQuestionBankFilter(\''+key+'\',this.value)"><option value="">Tất cả</option>'+opts.map(v=>{
+   const chapter=key==='chapter'&&activeBook?.chapters?.find(ch=>ch.title===v),shown=chapter?'Chương '+chapter.order+'. '+v:v;
+   return '<option value="'+esc(v)+'" '+(questionBankFilters[key]===v?'selected':'')+'>'+esc(shown)+'</option>';
+  }).join('')+'</select></label>';
   const rows=all.filter(q=>!questionBankFilters.grade||String(q.grade)===questionBankFilters.grade)
    .filter(q=>!questionBankFilters.subject||q.subject===questionBankFilters.subject)
    .filter(q=>!questionBankFilters.curriculum||q.curriculum===questionBankFilters.curriculum)
