@@ -11,7 +11,7 @@ export async function mountAttendanceHistory(){
  if(!doc)return;
  const date=doc.getElementById('teacher-attendance-date'),classes=doc.getElementById('tch-class');
  if(!date||!classes?.value)return;
- const className=classes.value,prior=mounts.get(date);if(prior?.className===className){prior.sync();return;}if(prior)prior.root.remove();
+ const className=classes.value,month=doc.querySelector('.teacher-month-switcher select')?.value||'',prior=mounts.get(date);if(prior?.className===className){prior.sync();return;}if(prior)prior.root.remove();
  const root=element('div',undefined,'ts-row'),label=element('label','Ngày đã điểm danh'),select=element('select',undefined,'ts-input'),button=element('button','Điểm danh lại','ts-btn ts-secondary'),hint=element('p','','ts-help');
  root.id='teacher-attendance-history-panel';root.style.cssText='align-items:end;gap:12px;flex-wrap:wrap;margin:12px 0';label.style.cssText='flex:1;min-width:230px';select.id='teacher-attendance-history';select.style.width='100%';select.setAttribute('aria-label','Ngày đã điểm danh');button.id='teacher-attendance-reopen';button.type='button';hint.id='teacher-attendance-day-label';hint.style.cssText='flex-basis:100%;margin:0';hint.setAttribute('role','status');label.append(select);const remove=element('button','Xóa điểm danh ngày này','ts-btn ts-secondary');remove.type='button';remove.id='teacher-attendance-delete';root.append(label,button,remove,hint);date.closest('.ts-row')?.after(root);
  let data=null,loading=true,error='';
@@ -61,7 +61,7 @@ export async function mountAttendanceHistory(){
  select.append(option('Đang tải lịch sử điểm danh…',''));sync();
  try{const response=await fetch('/api/attendance/history?className='+encodeURIComponent(className),{credentials:'same-origin',cache:'no-store'}),result=await response.json();if(!response.ok)throw Error(result.error||'Không tải được lịch sử điểm danh.');if(!date.isConnected||classes.value!==className||mounts.get(date)?.root!==root)return;data=result;
  installExport();
- select.replaceChildren();select.append(option(result.sessions.length?'Chọn ngày đã lưu để xem / điểm danh lại':'Chưa có ngày điểm danh đã lưu',''));for(const row of result.sessions)select.append(option('Buổi học thứ '+row.lessonNo+' · '+attendanceDayLabel(row.date)+' · '+((Number(row.present)||0)+(Number(row.late)||0))+'/'+row.total+' đã học'+(row.absent?' · '+row.absent+' vắng':'')+(row.late?' · '+row.late+' muộn':'')+(row.makeup?' · '+row.makeup+' học bù':'')+(row.locked?' · ĐÃ KHÓA':''),row.date));}
+ select.replaceChildren();select.append(option(result.sessions.length?'Chọn ngày đã lưu để xem / điểm danh lại':'Chưa có ngày điểm danh đã lưu',''));const monthSessions=result.sessions.filter(row=>/^\\d{4}-(0[1-9]|1[0-2])$/.test(month)?row.date.slice(0,7)===month:true);for(const row of monthSessions)select.append(option('Buổi học thứ '+row.lessonNo+' · '+attendanceDayLabel(row.date)+' · '+((Number(row.present)||0)+(Number(row.late)||0))+'/'+row.total+' đã học'+(row.absent?' · '+row.absent+' vắng':'')+(row.late?' · '+row.late+' muộn':'')+(row.makeup?' · '+row.makeup+' học bù':'')+(row.locked?' · ĐÃ KHÓA':''),row.date));}
  catch(e){if(!date.isConnected)return;error=e.message;select.replaceChildren(option('Không tải được lịch sử',''));}
  finally{loading=false;if(date.isConnected&&mounts.get(date)?.root===root)sync();}
 }
