@@ -2078,7 +2078,7 @@ window.TS=TS;window.addEventListener('keydown',event=>{if(event.key==='Escape'){
 
 const ScanUI=createTeacherScanUI({state,assignments:()=>TS.classAssignments(),canManageClass,keyContext:()=>TS.keyContext(),applyKey:data=>TS.applyKeySet(data),readTable:file=>TS.readTable(file),toast,flush:onlineFlush,request:onlineRequest,adopt:onlineAdopt,saveScanFile:(blob,name)=>TS.saveScanFile(blob,name),autoGrade:(ex,answers)=>TS.autoGrade(ex,answers),excelFile:(name,sheets)=>TS.excelFile(name,sheets)});window.ScanUI=ScanUI;
 const originalTeacherRender=renderTeacher;
-renderTeacher=function(){originalTeacherRender();TS.mount();mountTeacherWorkspace();};
+renderTeacher=function(){TS.mount();originalTeacherRender();mountTeacherWorkspace();};
 const originalPortalRender=renderPortalView;
 renderPortalView=function(){originalPortalRender();TS.studentPanel();};
 const originalLogout=logoutCurrentAccount;
