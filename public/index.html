@@ -1194,7 +1194,7 @@ import {createTeacherScanUI} from "/teacher-scan-ui.mjs";
 
 // Teacher workflow: author -> assign -> submit -> grade -> track.
 const TS = (() => {
- function panelHost(){return $('admin-exam-panel')||$('ts-panel');}
+ function panelHost(){return state.sessionRole==='teacher'?($('ts-panel')||$('admin-exam-panel')):($('admin-exam-panel')||$('ts-panel'));}
 
  let teacherTop='',scopeOwner=null;const scopeDrafts=new Map();
  function scopedBankExams(){const c=state.classes.find(c=>c.id===teacherScopeClassId);return state.learningExams.filter(e=>!e.archivedAt&&examInTeacherClass(e,c));}
