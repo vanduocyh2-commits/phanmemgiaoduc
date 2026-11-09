@@ -27,3 +27,42 @@ export function tuitionOptionsFor(c,s,month,overrides={}){
 export function feeSelectionKey(c,s){return JSON.stringify([c.id,s.sbd])}
 export function selectedTuitionRows(classes,selected){return classes.flatMap(c=>(c.students||[]).filter(s=>selected.has(feeSelectionKey(c,s))).map(s=>({c,s})))}
 export function tuitionTotals(rows,month){return rows.reduce((total,{s})=>{const record=s.fees?.[month]||{};total.due+=collectible(record);total.paid+=received(record);total.unpaid+=outstanding(record);return total},{due:0,paid:0,unpaid:0})}
+
+// Apply a deliberately confirmed bulk tuition change to one student.
+// Paid invoices and transferred balances are protected from retroactive fee edits.
+export function applyTuitionBulkChange(student,classInfo,month,{status='',otherFee,otherLabel='Khoản thu khác',paymentDate}={}){
+ monthIndex(month);
+ if(status&&!['Đã đóng','Chưa đóng','Quá hạn'].includes(status))throw Error('Trạng thái học phí không hợp lệ.');
+ const hasOther=otherFee!==undefined&&otherFee!==null;
+ if(hasOther&&(!Number.isFinite(Number(otherFee))||Number(otherFee)<0||Number(otherFee)>1e12))throw Error('Khoản thu khác không hợp lệ.');
+ const summary={changed:false,feeChanged:false,statusChanged:false,skippedPaidFee:false,skippedTransferred:false,skippedPaidStatus:false,skippedNoAmount:false};
+ let record=student.fees?.[month]||{};
+ if(record.transferredTo){summary.skippedTransferred=!!(hasOther||status);return summary;}
+ if(hasOther){
+  if(record.status==='Đã đóng'&&record.calculation?.discountType!=='waiver')summary.skippedPaidFee=true;
+  else{
+   const options=tuitionOptionsFor(classInfo,student,month,{otherFee:Number(otherFee),otherLabel:String(otherLabel||'Khoản thu khác').trim().slice(0,200)||'Khoản thu khác'});
+   setTuition(student,month,options,{allowPaid:true});
+   summary.changed=true;summary.feeChanged=true;
+  }
+ }
+ record=student.fees?.[month]||{};
+ if(status){
+  if(record.transferredTo)summary.skippedTransferred=true;
+  else if(status==='Đã đóng'){
+   const paid=received(record),due=collectible(record);
+   if(due<=0&&paid<=0)summary.skippedNoAmount=true;
+   else if(outstanding(record)===0&&paid>0)summary.skippedPaidStatus=true;
+   else{
+    setPayment(student,month,Math.max(paid,due),record.paymentNote||'',paymentDate);
+    summary.changed=true;summary.statusChanged=true;
+   }
+  }else if(received(record)>0&&outstanding(record)===0)summary.skippedPaidStatus=true;
+  else{
+   record.status=status;
+   recalculateTuition(student);
+   summary.changed=true;summary.statusChanged=true;
+  }
+ }
+ return summary;
+}
