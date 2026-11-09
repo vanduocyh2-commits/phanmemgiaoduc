@@ -30,18 +30,23 @@ export function tuitionTotals(rows,month){return rows.reduce((total,{s})=>{const
 
 // Apply a deliberately confirmed bulk tuition change to one student.
 // Paid invoices and transferred balances are protected from retroactive fee edits.
-export function applyTuitionBulkChange(student,classInfo,month,{status='',otherFee,otherLabel='Khoản thu khác',paymentDate}={}){
+export function applyTuitionBulkChange(student,classInfo,month,{status='',otherFee,otherMode='replace',otherLabel='Khoản thu khác',paymentDate}={}){
  monthIndex(month);
  if(status&&!['Đã đóng','Chưa đóng','Quá hạn'].includes(status))throw Error('Trạng thái học phí không hợp lệ.');
+ if(!['add','replace'].includes(otherMode))throw Error('Cách áp dụng khoản thu khác không hợp lệ.');
  const hasOther=otherFee!==undefined&&otherFee!==null;
  if(hasOther&&(!Number.isFinite(Number(otherFee))||Number(otherFee)<0||Number(otherFee)>1e12))throw Error('Khoản thu khác không hợp lệ.');
  const summary={changed:false,feeChanged:false,statusChanged:false,skippedPaidFee:false,skippedTransferred:false,skippedPaidStatus:false,skippedNoAmount:false};
  let record=student.fees?.[month]||{};
  if(record.transferredTo){summary.skippedTransferred=!!(hasOther||status);return summary;}
+ if(status&&!hasOther&&!student.fees?.[month]){summary.skippedNoAmount=true;return summary;}
  if(hasOther){
   if(record.status==='Đã đóng'&&record.calculation?.discountType!=='waiver')summary.skippedPaidFee=true;
   else{
-   const options=tuitionOptionsFor(classInfo,student,month,{otherFee:Number(otherFee),otherLabel:String(otherLabel||'Khoản thu khác').trim().slice(0,200)||'Khoản thu khác'});
+   const previousOther=Number(record.calculation?.otherFee??classInfo.tuitionOtherFee??0)||0;
+   const nextOther=otherMode==='add'?previousOther+Number(otherFee):Number(otherFee);
+   if(!Number.isFinite(nextOther)||nextOther<0||nextOther>1e12)throw Error('Tổng khoản thu khác sau áp dụng vượt giới hạn cho phép.');
+   const options=tuitionOptionsFor(classInfo,student,month,{otherFee:nextOther,otherLabel:String(otherLabel||'Khoản thu khác').trim().slice(0,200)||'Khoản thu khác'});
    setTuition(student,month,options,{allowPaid:true});
    summary.changed=true;summary.feeChanged=true;
   }
