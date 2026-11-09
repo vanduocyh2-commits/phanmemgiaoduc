@@ -183,7 +183,12 @@ input[type="number"]::-webkit-outer-spin-button {
   height: 0 !important;
 }
 </style>
-</head>
+<style>
+.teacher-grade-fold details>summary,.teacher-submission-fold>summary{list-style:none}
+.teacher-grade-fold details>summary::-webkit-details-marker,.teacher-submission-fold>summary::-webkit-details-marker{display:none}
+.teacher-grade-fold details>summary:after,.teacher-submission-fold>summary:after{content:'＋';float:right;color:#64748b;font-size:12px;margin-left:8px}
+.teacher-grade-fold details[open]>summary:after,.teacher-submission-fold[open]>summary:after{content:'－'}
+</style></head>
 <body class="bg-slate-100 text-slate-800 antialiased flex flex-col min-h-screen selection:bg-indigo-600 selection:text-white">
 
     <!-- TOAST NOTIFICATION CONTAINER -->
@@ -1126,8 +1131,8 @@ const attSel = (c,s) => attendanceSelector(c,s);
  rows.sort((a,b)=>(b.average??-1)-(a.average??-1)||String(a.name).localeCompare(String(b.name),'vi'));let previous=null,rank=null;rows.forEach((r,i)=>{if(r.average!==null){if(r.average!==previous)rank=i+1;r.rank=rank;previous=r.average;}});return {classId:c.id,className:c.name,rows};
 }
         function parentRankingHTML(c,rows,mine){const table=list=>`<div class="overflow-x-auto"><table class="w-full text-sm"><thead><tr class="bg-indigo-50 text-left"><th class="p-2">Hạng</th><th class="p-2">Học sinh</th><th class="p-2">Điểm TB</th></tr></thead><tbody>${list.map(r=>`<tr class="border-b ${r.sbd===cur?.sbd?'bg-indigo-50 font-bold':''}"><td class="p-2">${r.rank===1?'🥇':r.rank===2?'🥈':r.rank===3?'🥉':r.rank??'—'}</td><td class="p-2">${esc(r.name)}</td><td class="p-2 font-bold text-indigo-700">${r.average===null?'—':Number(r.average).toFixed(2)}</td></tr>`).join('')}</tbody></table></div>`;return `<section class="bg-white p-4 rounded-2xl border shadow-sm mt-4"><div class="flex flex-wrap justify-between gap-2"><h3 class="font-extrabold text-indigo-700">🏆 Xếp hạng lớp ${esc(c.name)}</h3>${mine?`<b class="text-sm text-indigo-600">Hạng của con: ${mine.rank??'Chưa có điểm'}</b>`:''}</div>${rows.length?table(rows.slice(0,3)):'<p class="text-sm text-slate-500 mt-2">Chưa có dữ liệu xếp hạng.</p>'}${rows.length>3?`<details class="parent-rank-expand"><summary><span class="rank-show">Xem toàn bộ ${rows.length} học sinh ▾</span><span class="rank-hide">Thu gọn · Chỉ hiện top 3 ▴</span></summary>${table(rows.slice(3))}</details>`:''}</section>`;}
-        function rankingHTML(c){
-            if(!c)return '';const board=hosted?(state.classRankings||[]).find(b=>b.classId===c.id):classRanking(state,c);const rows=board?.rows||[],mine=rows.find(r=>r.sbd===cur?.sbd);if(state.sessionRole==='parent')return parentRankingHTML(c,rows,mine);const compact=state.sessionRole==='student';return `<${compact?'details':'section'} class="bg-white p-5 rounded-2xl border shadow-sm mt-4"><${compact?'summary':'div'} class="flex flex-wrap justify-between gap-2" style="${compact?'cursor:pointer':''}"><h3 class="font-extrabold text-indigo-700">🏆 Xếp hạng lớp ${esc(c.name)}</h3>${mine?`<b class="text-indigo-600">Hạng của em: ${mine.rank??'Chưa xếp hạng'}${mine.rank?' / '+rows.length:''}</b>`:''}</${compact?'summary':'div'}><p class="text-xs text-slate-500 my-3">Theo điểm trung bình các bài đã chấm · Thang 10 · Cùng điểm đồng hạng · Chưa có điểm không xếp hạng.</p><div class="overflow-x-auto"><table class="w-full text-sm"><thead><tr class="bg-indigo-50 text-left"><th class="p-3">Hạng</th><th class="p-3">Học sinh</th><th class="p-3">Điểm TB</th><th class="p-3">Bài đã chấm</th></tr></thead><tbody>${rows.map(r=>`<tr class="border-b ${r.sbd===cur?.sbd?'bg-indigo-50 font-bold':''}"><td class="p-3 font-bold">${r.rank===1?'🥇':r.rank===2?'🥈':r.rank===3?'🥉':r.rank??'—'}</td><td class="p-3">${esc(r.name)}</td><td class="p-3 font-bold text-indigo-700">${r.average===null?'—':r.average.toFixed(2)}</td><td class="p-3">${r.count}</td></tr>`).join('')||'<tr><td colspan="4" class="p-3 text-slate-400">Chưa có học sinh trong lớp.</td></tr>'}</tbody></table></div></${compact?'details':'section'}>`;
+        function rankingHTML(c,forceCompact=false){
+            if(!c)return '';const board=hosted?(state.classRankings||[]).find(b=>b.classId===c.id):classRanking(state,c);const rows=board?.rows||[],mine=rows.find(r=>r.sbd===cur?.sbd);if(state.sessionRole==='parent')return parentRankingHTML(c,rows,mine);const compact=forceCompact||state.sessionRole==='student';return `<${compact?'details':'section'} class="bg-white p-5 rounded-2xl border shadow-sm mt-4"><${compact?'summary':'div'} class="flex flex-wrap justify-between gap-2" style="${compact?'cursor:pointer':''}"><h3 class="font-extrabold text-indigo-700">🏆 Xếp hạng lớp ${esc(c.name)}</h3>${mine?`<b class="text-indigo-600">Hạng của em: ${mine.rank??'Chưa xếp hạng'}${mine.rank?' / '+rows.length:''}</b>`:''}</${compact?'summary':'div'}><p class="text-xs text-slate-500 my-3">Theo điểm trung bình các bài đã chấm · Thang 10 · Cùng điểm đồng hạng · Chưa có điểm không xếp hạng.</p><div class="overflow-x-auto"><table class="w-full text-sm"><thead><tr class="bg-indigo-50 text-left"><th class="p-3">Hạng</th><th class="p-3">Học sinh</th><th class="p-3">Điểm TB</th><th class="p-3">Bài đã chấm</th></tr></thead><tbody>${rows.map(r=>`<tr class="border-b ${r.sbd===cur?.sbd?'bg-indigo-50 font-bold':''}"><td class="p-3 font-bold">${r.rank===1?'🥇':r.rank===2?'🥈':r.rank===3?'🥉':r.rank??'—'}</td><td class="p-3">${esc(r.name)}</td><td class="p-3 font-bold text-indigo-700">${r.average===null?'—':r.average.toFixed(2)}</td><td class="p-3">${r.count}</td></tr>`).join('')||'<tr><td colspan="4" class="p-3 text-slate-400">Chưa có học sinh trong lớp.</td></tr>'}</tbody></table></div></${compact?'details':'section'}>`;
         }
 
         // ---------- Giáo viên ----------
@@ -1144,8 +1149,8 @@ const attSel = (c,s) => attendanceSelector(c,s);
             if($('tch-g-sbd'))setSel('tch-g-sbd', (c?.students || []).map(s => `<option value="${esc(s.sbd)}">${esc(s.sbd)} - ${esc(s.name)}</option>`).join(''));
             if($('tch-grades')){
                 $('teacher-class-ranking')?.remove();
-                $('tch-grades').insertAdjacentHTML('afterend','<div id="teacher-class-ranking">'+rankingHTML(c)+'</div>');
-                $('tch-grades').innerHTML = [...gs].reverse().map(g => `<div class="flex justify-between p-2 bg-slate-50 border rounded-lg"><span>${esc(name(g.sbd))} — ${esc(g.title)}: <b>${g.score}</b> <span class="text-slate-400">(${esc(g.date)})</span></span><button onclick="window.app.deleteGrade('${g.id}')" class="text-red-600"><i class="fa-solid fa-trash"></i></button></div>`).join('') || '<p class="text-slate-400">Chưa có điểm nào.</p>';
+                $('tch-grades').insertAdjacentHTML('afterend','<div id="teacher-class-ranking">'+rankingHTML(c,true)+'</div>');
+                $('tch-grades').innerHTML = [...gs].reverse().map(g => \`<div class="teacher-grade-fold flex items-center gap-2 p-2 bg-slate-50 border rounded-lg"><details class="min-w-0 flex-1"><summary class="cursor-pointer select-none"><span>\${esc(name(g.sbd))} — \${esc(g.title)}</span> <b>\${g.score}</b></summary><div class="pt-2 text-slate-500">Ngày nhập: \${esc(g.date||'—')} · Học sinh: \${esc(g.sbd||'—')}</div></details><button type="button" aria-label="Xóa điểm \${esc(g.title)} của \${esc(name(g.sbd))}" title="Xóa điểm" onclick="window.app.deleteGrade('\${g.id}')" class="text-red-600 hover:text-red-800 p-2 rounded-lg"><i class="fa-solid fa-trash"></i></button></div>\`).join('') || '<p class="text-slate-400">Chưa có điểm nào.</p>';
             }
         }
 
@@ -1155,7 +1160,7 @@ const attSel = (c,s) => attendanceSelector(c,s);
             state.gradeBook.push({ id: uid('gr'), classId: c.id, sbd, title, score, date: new Date(attendanceDate+'T12:00:00').toLocaleDateString('vi-VN') });
             $('tch-g-title').value = ''; $('tch-g-score').value = ''; persist(); refreshUI(); toast('Đã lưu điểm.');
         }
-        function deleteGrade(id) {const target=state.gradeBook.find(g=>g.id===id);if(!target||!canManageAssignment(state.assignments.find(a=>a.id===target.assignmentId)))return; state.gradeBook = state.gradeBook.filter(g => g.id !== id); persist(); refreshUI(); }
+        function deleteGrade(id) {const target=state.gradeBook.find(g=>g.id===id);if(!target)return;const linkedSubmission=target.source==='learning'||String(target.id).startsWith('learning_');const allowed=linkedSubmission?false:(target.assignmentId?canManageAssignment(state.assignments.find(a=>a.id===target.assignmentId)):canManageClass(target.classId));if(!allowed)return toast('Bạn không có quyền xóa điểm này. Bài đã chấm từ bài nộp cần xóa tại mục Bài nộp & chấm tự luận.');state.gradeBook=state.gradeBook.filter(g=>g.id!==id);persist();refreshUI();toast('Đã xóa điểm.');}
 
         // ---------- Học sinh / Phụ huynh ----------
         function monthlyFeeRows(s,months){
