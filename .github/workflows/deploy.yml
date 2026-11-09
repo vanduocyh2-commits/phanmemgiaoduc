@@ -16,7 +16,20 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Deploy through SSH
+      - name: Check out deployment scripts
+        uses: actions/checkout@v4
+
+      - name: Copy deployment script to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: "ops/phanmemgiaoduc-deploy.sh"
+          target: "/tmp"
+          strip_components: 1
+
+      - name: Install and run the versioned deployment script
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.VPS_HOST }}
@@ -24,4 +37,7 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
             set -e
+            sudo -n test -f /tmp/phanmemgiaoduc-deploy.sh
+            sudo -n install -o root -g root -m 0755 /tmp/phanmemgiaoduc-deploy.sh /usr/local/sbin/phanmemgiaoduc-deploy
+            rm -f /tmp/phanmemgiaoduc-deploy.sh
             sudo -n /usr/local/sbin/phanmemgiaoduc-deploy
