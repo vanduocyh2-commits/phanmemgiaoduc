@@ -167,6 +167,22 @@ body.role-header-compact header #header-account-controls{margin-left:auto}
 .teacher-roster-fold[open]>.ts-table{margin:0;padding:0 12px 12px}
 @media(max-width:640px){.teacher-roster-fold>summary{align-items:flex-start;flex-wrap:wrap}.teacher-roster-fold>summary strong{margin-left:0;width:100%}}
 </style>
+<style id="hide-native-number-stepper">
+/* Ẩn nút tăng/giảm của input số trên Chrome, Edge, Safari và Firefox */
+input[type="number"] {
+  -moz-appearance: textfield !important;
+  appearance: textfield !important;
+}
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  display: none !important;
+  margin: 0 !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+</style>
 </head>
 <body class="bg-slate-100 text-slate-800 antialiased flex flex-col min-h-screen selection:bg-indigo-600 selection:text-white">
 
