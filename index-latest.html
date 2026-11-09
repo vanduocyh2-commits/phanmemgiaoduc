@@ -2568,8 +2568,8 @@ window.app.logoutCurrentAccount=logoutCurrentAccount;
         function setLibraryFilter(k,v){if(k==='tab')libraryTab=v;else if(k in libraryFilters)libraryFilters[k]=v;showCenterLessons();}
         function showCenterLessons(){if(!['teacher','admin'].includes(state.sessionRole))return;centerData();const host=state.sessionRole==='admin'?$('center-lessons-admin'):$('center-lessons-teacher');if(!host)return;
         if(libraryTab==='questions'){
-         host.innerHTML='<section class="ts-box"><div class="ts-row"><div><h3>Thư viện</h3><p class="ts-help">Ngân hàng câu hỏi dùng chung với chức năng chọn câu hỏi khi soạn đề.</p></div></div><div class="ts-row">'+[['questions','Ngân hàng câu hỏi',(state.questionBank||[]).length],['exams','Ngân hàng đề thi',(state.learningExams||[]).filter(e=>!e.archivedAt).length],['lessons','Bài giảng',(state.centerLessons||[]).length]].map(([k,t,n])=>'<button type="button" class="ts-btn '+(libraryTab===k?'':'ts-secondary')+'" data-library-tab="'+k+'">'+t+' ('+n+')</button>').join('')+'</div><div id="library-question-bank-panel"></div></section>';
-         const panel=$('library-question-bank-panel');if(panel)panel.innerHTML=renderQuestionBankContents();
+         host.innerHTML='<section class="ts-box"><div class="ts-row"><div><h3>Thư viện</h3><p class="ts-help">Ngân hàng câu hỏi dùng chung với chức năng chọn câu hỏi khi soạn đề.</p></div></div><div class="ts-row">'+[['questions','Ngân hàng câu hỏi',(state.questionBank||[]).length],['exams','Ngân hàng đề thi',(state.learningExams||[]).filter(e=>!e.archivedAt).length],['lessons','Bài giảng',(state.centerLessons||[]).length]].map(([k,t,n])=>'<button type="button" class="ts-btn '+(libraryTab===k?'':'ts-secondary')+'" data-library-tab="'+k+'">'+t+' ('+n+')</button>').join('')+'</div><div id="question-bank-panel"></div></section>';
+         const panel=$('question-bank-panel');if(panel)panel.innerHTML=renderQuestionBankContents();
          host.querySelectorAll('[data-library-tab]').forEach(button=>button.onclick=()=>{libraryFilters.chapter='';setLibraryFilter('tab',button.dataset.libraryTab);});
          return;
         }
