@@ -182,6 +182,26 @@ function wordParagraph(runs, options={}) {
   if(options.align)p.push('<w:jc w:val="'+options.align+'"/>');
   return '<w:p>'+(p.length?'<w:pPr>'+p.join('')+'</w:pPr>':'')+runs+'</w:p>';
 }
+export function layoutTable(rows,widths) {
+  const safeWidths=widths.map(n=>Math.max(1,Math.floor(Number(n)||1)));
+  const total=safeWidths.reduce((a,b)=>a+b,0);
+  const nilBorders='<w:tblBorders><w:top w:val="nil"/><w:left w:val="nil"/><w:bottom w:val="nil"/><w:right w:val="nil"/><w:insideH w:val="nil"/><w:insideV w:val="nil"/></w:tblBorders>';
+  const margins='<w:tblCellMar><w:top w:w="45" w:type="dxa"/><w:left w:w="70" w:type="dxa"/><w:bottom w:w="45" w:type="dxa"/><w:right w:w="70" w:type="dxa"/></w:tblCellMar>';
+  const grid='<w:tblGrid>'+safeWidths.map(w=>'<w:gridCol w:w="'+w+'"/>').join('')+'</w:tblGrid>';
+  const body=rows.map(row=>'<w:tr>'+safeWidths.map((width,i)=>{
+    const content=row[i]||wordParagraph('');
+    return '<w:tc><w:tcPr><w:tcW w:w="'+width+'" w:type="dxa"/><w:vAlign w:val="center"/></w:tcPr>'+content+'</w:tc>';
+  }).join('')+'</w:tr>').join('');
+  return '<w:tbl><w:tblPr><w:tblW w:w="'+total+'" w:type="dxa"/><w:tblLayout w:type="fixed"/>'+nilBorders+margins+'</w:tblPr>'+grid+body+'</w:tbl>';
+}
+export function mcqOptionsTable(optionRuns) {
+  const cells=Array.from({length:4},(_,i)=>wordParagraph(optionRuns[i]||'',{after:50}));
+  return layoutTable([cells],[2482,2482,2481,2481]);
+}
+export function examQuestionParagraph(runs) {
+  return wordParagraph(runs,{after:80});
+}
+
 export function createWordDocx(html, options={}) {
   if (typeof DOMParser==='undefined') throw new Error('DOCX export requires a browser DOM parser.');
   const doc=new DOMParser().parseFromString(String(html||''),'text/html');
@@ -241,6 +261,49 @@ export function createWordDocx(html, options={}) {
     if(node.nodeType===3) return String(node.nodeValue||'').trim()?wordParagraph(wordRun(node.nodeValue)): '';
     if(node.nodeType!==1)return '';
     const tag=local(node);
+    // The browser preview uses CSS Grid/Flex for the exam header and choices.
+    // Word does not retain those CSS layouts, so convert the important regions
+    // to real OOXML tables and keep question text in one paragraph.
+    if(node.classList?.contains('exam-paper-header')) {
+      const unit=node.querySelector('.exam-paper-unit'), titleNode=node.querySelector('.exam-paper-title');
+      const left=unit?blockChildren(unit):wordParagraph('');
+      let right='';
+      if(titleNode) {
+        for(const child of children(titleNode)) {
+          const childTag=local(child), raw=String(child.textContent||'').trim();
+          if(!raw && !child.querySelector?.('math,img'))continue;
+          if(childTag==='h1')right+=wordParagraph(inline(child),{align:'center',before:0,after:80,keep:true});
+          else if(childTag==='h2')right+=wordParagraph(inline(child),{align:'center',after:50,keep:true});
+          else right+=wordParagraph(inline(child),{align:'center',after:35});
+        }
+      }
+      return layoutTable([[left,right]],[4100,5826]);
+    }
+    if(node.classList?.contains('exam-candidate')) {
+      const left=node.querySelector(':scope > div'), code=node.querySelector('.exam-code');
+      let right='';
+      if(code) {
+        const label=Array.from(code.childNodes||[]).filter(n=>n.nodeType===3).map(n=>n.nodeValue||'').join('').trim();
+        const value=code.querySelector('strong')?.textContent||'';
+        right=wordParagraph(wordRun(label,{bold:true}),{align:'center',after:35})+
+          wordParagraph(wordRun(value,{bold:true}),{align:'center'});
+      }
+      return layoutTable([[left?blockChildren(left):wordParagraph(''),right]],[8000,1926]);
+    }
+    if(node.classList?.contains('exam-options')) {
+      const optionNodes=children(node).filter(n=>n.nodeType===1&&n.classList?.contains('exam-option'));
+      const runs=optionNodes.map(option=>inline(option));
+      return mcqOptionsTable(runs);
+    }
+    if(node.classList?.contains('exam-question-text')) {
+      return examQuestionParagraph(inline(node));
+    }
+    if(node.classList?.contains('exam-section-note')) {
+      return wordParagraph(inline(node,{italic:true}),{after:90});
+    }
+    if(node.classList?.contains('exam-paper-footer')) {
+      return wordParagraph(inline(node),{align:'center',after:80});
+    }
     if(tag==='table')return tableXml(node);
     if(tag==='img')return wordParagraph(imageDrawing(node),{align:'center',after:100});
     if(/^h[1-6]$/.test(tag)) {
