@@ -79,7 +79,11 @@ test('practice-set attempts use a single-question interactive quiz player',()=>{
   assert.match(html,/practiceQuizNavigate/);
   assert.match(html,/practiceQuizCheck/);
   assert.match(html,/Câu hỏi số/);
-  assert.match(html,/Kiểm tra \/ Nộp bài/);
+  assert.match(html,/Kiểm tra đáp án/);
+  assert.match(html,/Hoàn thành bài/);
+  assert.match(html,/practiceQuizFeedbackHTML/);
+  assert.match(html,/practiceQuizPlayFeedback/);
+  assert.match(html,/Đáp án đúng/);
   assert.match(html,/\.practice-quiz-layout/);
   assert.match(html,/\.practice-quiz-question \.exam-options/);
 });
