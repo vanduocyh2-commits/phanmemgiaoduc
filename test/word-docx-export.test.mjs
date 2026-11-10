@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {mathMLToOMML, children, makeZip} from '../public/word-docx-export.mjs';
+import {mathMLToOMML, children, makeZip, mcqOptionsTable, layoutTable, examQuestionParagraph} from '../public/word-docx-export.mjs';
 
 function node(localName, children=[], text='', attrs={}) {
   return {
@@ -96,4 +96,27 @@ test('OMML text runs keep Word run properties in the schema-approved position',(
   const xml=mathMLToOMML(math);
   assert.match(xml,/<m:r><m:rPr><m:sty m:val="i"\/><\/m:rPr><w:rPr><w:rFonts[^>]*\/><\/w:rPr><m:t/);
   assert.doesNotMatch(xml,/<m:rPr>[\s\S]*<m:ctrlPr>/);
+});
+
+
+test('multiple-choice answers export as one four-column Word table',()=>{
+  const xml=mcqOptionsTable(['<w:r><w:t>A.</w:t></w:r>','<w:r><w:t>B.</w:t></w:r>','<w:r><w:t>C.</w:t></w:r>','<w:r><w:t>D.</w:t></w:r>']);
+  assert.equal((xml.match(/<w:gridCol /g)||[]).length,4);
+  assert.equal((xml.match(/<w:tc>/g)||[]).length,4);
+  assert.match(xml,/<w:tblLayout w:type="fixed"\/>/);
+  for(const label of ['A.','B.','C.','D.'])assert.ok(xml.includes(label));
+});
+
+test('exam question text stays in one paragraph with inline formula runs',()=>{
+  const xml=examQuestionParagraph('<w:r><w:t>Cho tập hợp </w:t></w:r><m:oMath><m:r><m:t>M</m:t></m:r></m:oMath><w:r><w:t>. Khẳng định nào đúng?</w:t></w:r>');
+  assert.equal((xml.match(/<w:p>/g)||[]).length,1);
+  assert.ok(xml.indexOf('Cho tập hợp')<xml.indexOf('<m:oMath>'));
+  assert.ok(xml.indexOf('<m:oMath>')<xml.indexOf('Khẳng định nào đúng'));
+});
+
+test('exam header uses a fixed two-column layout with no visible table borders',()=>{
+  const xml=layoutTable([[ '<w:p/>','<w:p/>' ]],[4100,5826]);
+  assert.equal((xml.match(/<w:gridCol /g)||[]).length,2);
+  assert.match(xml,/<w:tblBorders><w:top w:val="nil"/);
+  assert.match(xml,/<w:tblW w:w="9926" w:type="dxa"\/>/);
 });
