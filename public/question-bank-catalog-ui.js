@@ -105,6 +105,7 @@
       if (!response.ok) throw new Error('Không tải được danh mục sách Toán.');
       catalog = await response.json();
       window.KNTTQuestionBankCatalog = catalog;
+      window.dispatchEvent(new Event('kntt-catalog-ready'));
       scan();
       observer = new MutationObserver(records => {
         for (const record of records) {
