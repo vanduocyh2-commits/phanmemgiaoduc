@@ -99,10 +99,13 @@ test('OMML text runs keep Word run properties in the schema-approved position',(
 });
 
 
-test('multiple-choice answers export as one four-column Word table',()=>{
+test('multiple-choice answers export as one fixed two-column Word table with four options',()=>{
   const xml=mcqOptionsTable(['<w:r><w:t>A.</w:t></w:r>','<w:r><w:t>B.</w:t></w:r>','<w:r><w:t>C.</w:t></w:r>','<w:r><w:t>D.</w:t></w:r>']);
-  assert.equal((xml.match(/<w:gridCol /g)||[]).length,4);
+  // The exporter intentionally uses two columns for readable option widths;
+  // all four answers must still be present in four cells.
+  assert.equal((xml.match(/<w:gridCol /g)||[]).length,2);
   assert.equal((xml.match(/<w:tc>/g)||[]).length,4);
+  assert.equal((xml.match(/<w:tr>/g)||[]).length,2);
   assert.match(xml,/<w:tblLayout w:type="fixed"\/>/);
   for(const label of ['A.','B.','C.','D.'])assert.ok(xml.includes(label));
 });
