@@ -5,7 +5,7 @@ const DOC_REL_NS = 'http://schemas.openxmlformats.org/officeDocument/2006/relati
 const XML_NS = 'http://www.w3.org/XML/1998/namespace';
 const escXml = value => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[ch]));
 const local = node => String(node?.localName || node?.nodeName || '').split(':').pop().toLowerCase();
-const children = node => Array.from(node?.children || node?.childNodes || []).filter(child => child && child.nodeType !== 8);
+export const children = node => Array.from(node?.childNodes || []).filter(child => child && child.nodeType !== 8);
 const textOf = node => String(node?.textContent ?? '');
 const attr = (node, name, fallback='') => node?.getAttribute?.(name) ?? fallback;
 
@@ -124,18 +124,22 @@ function crc32(bytes) {
   }
   return (crc^0xffffffff)>>>0;
 }
-function makeZip(entries) {
+export function makeZip(entries) {
   const encoder=new TextEncoder(), localParts=[], centralParts=[];
+  // ZIP DOS timestamps must contain a valid calendar date. Zeroed date fields
+  // are tolerated by some readers but rejected by Microsoft Word on some builds.
+  const dosTime=0; // 00:00
+  const dosDate=0x21; // 1980-01-01, the minimum valid DOS date.
   let offset=0;
   const u16=(view,pos,n)=>view.setUint16(pos,n,true);
   const u32=(view,pos,n)=>view.setUint32(pos,n>>>0,true);
   for (const [path,value] of entries) {
     const name=encoder.encode(path), data=typeof value==='string'?encoder.encode(value):value;
     const crc=crc32(data), local=new Uint8Array(30), lv=new DataView(local.buffer);
-    u32(lv,0,0x04034b50);u16(lv,4,20);u16(lv,6,0x0800);u16(lv,8,0);u32(lv,14,crc);u32(lv,18,data.length);u32(lv,22,data.length);u16(lv,26,name.length);
+    u32(lv,0,0x04034b50);u16(lv,4,20);u16(lv,6,0x0800);u16(lv,8,0);u16(lv,10,dosTime);u16(lv,12,dosDate);u32(lv,14,crc);u32(lv,18,data.length);u32(lv,22,data.length);u16(lv,26,name.length);
     localParts.push(local,name,data);
     const central=new Uint8Array(46),cv=new DataView(central.buffer);
-    u32(cv,0,0x02014b50);u16(cv,4,20);u16(cv,6,20);u16(cv,8,0x0800);u16(cv,10,0);u32(cv,16,crc);u32(cv,20,data.length);u32(cv,24,data.length);u16(cv,28,name.length);u32(cv,42,offset);
+    u32(cv,0,0x02014b50);u16(cv,4,20);u16(cv,6,20);u16(cv,8,0x0800);u16(cv,10,0);u16(cv,12,dosTime);u16(cv,14,dosDate);u32(cv,16,crc);u32(cv,20,data.length);u32(cv,24,data.length);u16(cv,28,name.length);u32(cv,42,offset);
     centralParts.push(central,name);
     offset+=30+name.length+data.length;
   }
