@@ -2253,7 +2253,7 @@ Lời giải tham khảo.`;
    const typeRaw=read(block,'(?:Loại|Dạng)').toLowerCase(),type=typeRaw.includes('đúng')||typeRaw==='tf'?'tf':typeRaw.includes('tự luận')||typeRaw==='essay'?'essay':typeRaw.includes('ngắn')||typeRaw==='short'?'short':'mcq';
    const levelRaw=read(block,'Mức độ').toUpperCase(),level=/VDC|VẬN DỤNG CAO/.test(levelRaw)?'VDC':/VD|VẬN DỤNG/.test(levelRaw)?'VD':/TH|THÔNG HIỂU/.test(levelRaw)?'TH':'NB';
    const q={type,level,points:Number(read(block,'Điểm')||1),text:read(block,'(?:Nội dung|Câu hỏi)'),answer:read(block,'Đáp án'),explanation:read(block,'(?:Giải thích|Lời giải)')};
-   if(type==='mcq')q.options=['A','B','C','D'].map(k=>read(block,k));
+   if(type==='mcq'){q.options=['A','B','C','D'].map(k=>read(block,k));q.answer=q.answer.toUpperCase();}
    if(type==='tf'){q.statements=[1,2,3,4].map(n=>read(block,'Mệnh đề\\s*'+n));q.tfAnswers=tfAnswersFrom(q.answer);q.answer=tfCode(q.tfAnswers);}
    const problems=[];
    if(!q.text)problems.push('thiếu nội dung');
@@ -2310,7 +2310,7 @@ Lời giải tham khảo.`;
   }
   put();practiceImportDraft=[];
   const host=$('lp2-gemini-import-preview');if(host)host.innerHTML='<p class="ts-note">Đã lưu '+added+' câu mới vào Ngân hàng câu hỏi dùng chung. Có thể chọn ngay khi soạn đề thi hoặc tạo bài luyện tập.</p>';
-  practiceWorkspace();toast('Đã lưu '+added+' câu mới vào ngân hàng câu hỏi dùng chung.');
+  toast('Đã lưu '+added+' câu mới vào ngân hàng câu hỏi dùng chung.');
  }
  function cancelPracticeGeminiImport(){practiceImportDraft=[];const host=$('lp2-gemini-import-preview');if(host)host.innerHTML='';}
 
