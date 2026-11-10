@@ -2116,7 +2116,7 @@ function localSubmittedSolutions(d,m,submissionId){
   if(!c.students?.length)return toast('Lớp chưa có học sinh.');
   const grade=String(practiceDraft.grade||'').replace(/^(?:khối\s*|lớp\s*)/i,'').trim();
   const subject=String(practiceDraft.subject||'').trim(),chapter=String(practiceDraft.chapter||'').trim(),lesson=String(practiceDraft.lesson||'').trim();
-  if(!grade||!subject||!chapter||!lesson)return toast('Hãy nhập đủ khối, môn, chương và bài học trong giáo án.');
+  if(!grade||!subject||!chapter||!lesson)return toast('Hãy chọn đủ khối, môn, chương và bài học trong Bài luyện tập.');
   const days=Number(qsel('lp2-sequence-days')),duration=Number(qsel('lp2-sequence-duration'));
   if(![7,14,30].includes(days)||!Number.isInteger(duration)||duration<5||duration>180)return toast('Chọn chuỗi 7, 14 hoặc 30 ngày và thời gian 5–180 phút.');
   const counts={NB:Number(qsel('lp2-practice-NB')),TH:Number(qsel('lp2-practice-TH')),VD:Number(qsel('lp2-practice-VD')),VDC:Number(qsel('lp2-practice-VDC'))};
