@@ -69,3 +69,17 @@ test('orange textbook buttons open the lesson and create a grouped set of three 
   assert.match(html,/studentPracticeSetsHTML\(newestAssignments/);
   assert.match(html,/10 câu/);
 });
+
+
+test('practice-set attempts use a single-question interactive quiz player',()=>{
+  assert.match(html,/function practiceQuizRender\(a,e\)/);
+  assert.match(html,/if\(a\.practiceSetId\)\{practiceQuizRender\(a,e\)/);
+  assert.match(html,/practice-quiz-number/);
+  assert.match(html,/practice-quiz-side-title/);
+  assert.match(html,/practiceQuizNavigate/);
+  assert.match(html,/practiceQuizCheck/);
+  assert.match(html,/Câu hỏi số/);
+  assert.match(html,/Kiểm tra \/ Nộp bài/);
+  assert.match(html,/\\.practice-quiz-layout/);
+  assert.match(html,/\\.practice-quiz-question \\.exam-options/);
+});
