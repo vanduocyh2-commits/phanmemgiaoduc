@@ -14,12 +14,15 @@ test('practice and daily sequence builders live outside the lesson-plan editor',
   assert.match(html,/practice:practiceWorkspace/);
 });
 
-test('standalone practice uses independent scope selectors and question-bank filters',()=>{
-  assert.match(html,/practiceSelect\('lp2-grade'/);
-  assert.match(html,/practiceSelect\('lp2-subject'/);
-  assert.match(html,/practiceSelect\('lp2-textbook'/);
-  assert.match(html,/practiceSelect\('lp2-chapter'/);
-  assert.match(html,/practiceSelect\('lp2-lesson'/);
+test('standalone practice uses the textbook table of contents and selected lesson metadata',()=>{
+  assert.match(html,/function selectPracticeCatalogLesson\(/);
+  assert.match(html,/function changePracticeCatalogGrade\(/);
+  assert.match(html,/lp2-catalog-grade/);
+  assert.match(html,/TOÁN LỚP /);
+  assert.match(html,/Luyện tập chung/);
+  assert.match(html,/Bài tập cuối chương/);
+  assert.match(html,/src="\/question-bank-catalog-ui\.js"/);
+  assert.match(html,/kntt-catalog-ready/);
   const start=html.indexOf('function standaloneQuestionPool(){');
   const end=html.indexOf('function createStandalonePractice(){',start);
   assert.ok(start>=0&&end>start);
@@ -29,6 +32,17 @@ test('standalone practice uses independent scope selectors and question-bank fil
   assert.match(pool,/p\.chapter/);
   assert.match(pool,/p\.lesson/);
   assert.doesNotMatch(pool,/lessonDraft|captureLesson/);
+});
+
+test('direct practice question entry saves against the selected textbook lesson',()=>{
+  const start=html.indexOf('function addStandalonePracticeQuestion(){');
+  const end=html.indexOf('function standaloneQuestionPool(){',start);
+  assert.ok(start>=0&&end>start);
+  const add=html.slice(start,end);
+  assert.match(add,/capturePractice\(\)/);
+  assert.match(add,/const p=practiceDraft\|\|practiceBlank\(\)/);
+  assert.match(add,/chapterOrder:Number\(p\.chapterOrder\|\|prior\?\.chapterOrder\)/);
+  assert.doesNotMatch(add,/lp2-new-grade|lp2-new-subject|lp2-new-textbook/);
 });
 
 test('standalone sequence keeps the 7, 14 and 30 day choices and manual/random modes',()=>{
