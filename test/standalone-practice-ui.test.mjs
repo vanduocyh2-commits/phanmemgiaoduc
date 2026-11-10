@@ -62,6 +62,7 @@ test('orange textbook buttons open the lesson and create a grouped set of three 
   assert.match(html,/Bài tập 1 – Trình độ dễ/);
   assert.match(html,/Bài tập 2 – Trình độ trung bình/);
   assert.match(html,/Bài tập 3 – Trình độ nâng cao/);
+  assert.match(html,/Ba bài luyện tập theo mức độ/);
   assert.match(html,/practiceQuestionCount:10/);
   assert.match(html,/practiceSetId:setId/);
   assert.match(html,/function studentPracticeSetsHTML\(/);
