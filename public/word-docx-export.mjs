@@ -168,8 +168,7 @@ function wordRun(value,format={}) {
 function wordParagraph(runs, options={}) {
   const p=[];
   if(options.align)p.push('<w:jc w:val="'+options.align+'"/>');
-  if(options.before)p.push('<w:spacing w:before="'+options.before+'"/>');
-  if(options.after!==undefined)p.push('<w:spacing w:after="'+options.after+'"/>');
+  if(options.before!==undefined||options.after!==undefined)p.push('<w:spacing'+(options.before!==undefined?' w:before="'+options.before+'"':'')+(options.after!==undefined?' w:after="'+options.after+'"':'')+'/>');
   if(options.keep)p.push('<w:keepNext/>');
   if(options.style)p.push('<w:pStyle w:val="'+options.style+'"/>');
   if(options.indent)p.push('<w:ind w:left="'+options.indent+'"/>');
@@ -249,7 +248,6 @@ export function createWordDocx(html, options={}) {
     if(['body','html','section','article','main','header','footer','aside','div','ul','ol','blockquote','figure','figcaption'].includes(tag)) {
       let out='';
       if(tag==='section'&&node.classList?.contains('word-export-section')&&node.parentElement&&node.parentElement.tagName!=='BODY')out+=pageBreak;
-      else if(tag==='section'&&node.classList?.contains('word-export-section')&&out.length===0)out+=pageBreak;
       out+=blockChildren(node);
       return out;
     }
