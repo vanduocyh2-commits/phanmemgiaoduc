@@ -15,11 +15,11 @@ test('practice and daily sequence builders live outside the lesson-plan editor',
 });
 
 test('standalone practice uses independent scope selectors and question-bank filters',()=>{
-  assert.match(html,/id="lp2-grade"/);
-  assert.match(html,/id="lp2-subject"/);
-  assert.match(html,/id="lp2-textbook"/);
-  assert.match(html,/id="lp2-chapter"/);
-  assert.match(html,/id="lp2-lesson"/);
+  assert.match(html,/practiceSelect\('lp2-grade'/);
+  assert.match(html,/practiceSelect\('lp2-subject'/);
+  assert.match(html,/practiceSelect\('lp2-textbook'/);
+  assert.match(html,/practiceSelect\('lp2-chapter'/);
+  assert.match(html,/practiceSelect\('lp2-lesson'/);
   const start=html.indexOf('function standaloneQuestionPool(){');
   const end=html.indexOf('function createStandalonePractice(){',start);
   assert.ok(start>=0&&end>start);
