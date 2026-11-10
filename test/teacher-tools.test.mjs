@@ -1,6 +1,6 @@
 import {test} from 'node:test';import assert from 'node:assert/strict';
 import {parseAnswerRows,questionsFromKey,activeAttempt,canAttempt} from '../teacher-tools.mjs';
-import {emptyState,applyChanges,batchGrade,regradeExam,deleteCenterClass,deleteCenterStudent,saveClassAttendance,recordExamEvents} from '../portal-server.mjs';
+import {emptyState,applyChanges,batchGrade,regradeExam,deleteCenterClass,deleteCenterStudent,saveClassAttendance,recordExamEvents,sequencePrerequisiteComplete} from '../portal-server.mjs';
 const teacher={role:'teacher',username:'gv',account:{id:'t1'}},student={role:'student',cid:'c1',sbd:'S1'};
 function seed(){const d=emptyState('password123');d.classes=[{id:'c1',name:'10A',teacherId:'t1',students:[{sbd:'S1',name:'An',fees:{}}]},{id:'c2',name:'10B',teacherId:'t2',students:[{sbd:'S2',name:'Bình',fees:{}}]}];d.learningExams=[{id:'e1',owner:'gv',title:'Test',duration:45,questions:questionsFromKey([['Câu','Đáp án','Điểm','Loại'],[1,'A',5,'TN'],[2,'ĐSĐS',5,'ĐS']])}];d.assignments=[{id:'a1',examId:'e1',classId:'c1',students:['S1'],maxAttempts:2,assessmentType:'test',snapshot:structuredClone(d.learningExams[0])}];return d;}
 const change=(k,row)=>({[k]:{upsert:[row],remove:[]}});
@@ -16,3 +16,27 @@ test('make-up flag persists on each attendance session without duplicating atten
 
 test('wide answer tables select the requested exam code without mixing answer keys',()=>{const rows=[['Mã đề','Câu 1','Câu 2'],['101','A','B'],['102','C','D']];assert.equal(parseAnswerRows(rows,{code:'102'})[0].answer,'C');assert.throws(()=>parseAnswerRows(rows),/Mã đề/);});
 test('regrading objective answers preserves essay score, attachments, comments and submission timestamp',()=>{const d=seed();d.learningExams[0].questions[1]={id:'keyq_2',type:'essay',text:'Bài giải',answer:'Rubric',points:5};d.assignments[0].snapshot=structuredClone(d.learningExams[0]);batchGrade(d,teacher,{assignmentId:'a1',rows:[{sbd:'S1',answers:['A','Lời giải của học sinh']}]});const sub=d.learningSubmissions[0],date=sub.submittedAt;sub.details[1].points=3;sub.details[1].comment='Đúng cách làm';sub.details[1].attachments=[{id:'photo',name:'bai.jpg',type:'image/jpeg',size:100}];sub.feedback='Cố gắng';d.learningExams[0].questions[0].answer='B';regradeExam(d,teacher,{examId:'e1'});assert.equal(sub.score,3);assert.equal(sub.details[1].points,3);assert.equal(sub.details[1].comment,'Đúng cách làm');assert.equal(sub.details[1].attachments[0].id,'photo');assert.equal(sub.feedback,'Cố gắng');assert.equal(sub.submittedAt,date);assert.equal(d.gradeBook[0].score,3);});
+
+test('daily sequence stays locked until the same student has a graded submission for the previous day',()=>{
+ const d=emptyState('password123');
+ d.classes=[{id:'c1',name:'10A',students:[{sbd:'S1',name:'An'}]}];
+ const snapshot={questions:[{id:'q',type:'mcq',text:'Q',points:1,answer:'A'}]};
+ d.assignments=[
+  {id:'day1',sequenceId:'seq1',sequenceDay:1,classId:'c1',students:['S1'],snapshot:structuredClone(snapshot)},
+  {id:'day2',sequenceId:'seq1',sequenceDay:2,classId:'c1',students:['S1'],snapshot:structuredClone(snapshot)}
+ ];
+ const day2=d.assignments[1],attemptChange={learningAttempts:{upsert:[{id:'try-day2',assignmentId:'day2',classId:'c1',sbd:'S1',answers:{}}],remove:[]}};
+ assert.equal(sequencePrerequisiteComplete(d,day2,'c1','S1'),false);
+ assert.throws(()=>applyChanges(d,student,attemptChange),/hoàn thành và được xác nhận/);
+ d.learningSubmissions.push({id:'pending-other',assignmentId:'day1',classId:'c1',sbd:'S1',status:'pending'});
+ assert.equal(sequencePrerequisiteComplete(d,day2,'c1','S1'),false);
+ assert.throws(()=>applyChanges(d,student,attemptChange),/hoàn thành và được xác nhận/);
+ d.learningSubmissions.push({id:'graded-other-student',assignmentId:'day1',classId:'c1',sbd:'S2',status:'graded'});
+ assert.equal(sequencePrerequisiteComplete(d,day2,'c1','S1'),false);
+ d.learningSubmissions.push({id:'graded-day1',assignmentId:'day1',classId:'c1',sbd:'S1',status:'graded'});
+ assert.equal(sequencePrerequisiteComplete(d,day2,'c1','S1'),true);
+ assert.doesNotThrow(()=>applyChanges(d,student,attemptChange));
+ assert.equal(d.learningAttempts.some(row=>row.id==='try-day2'),true);
+ assert.equal(sequencePrerequisiteComplete(d,{sequenceId:'seq1',sequenceDay:1},'c1','S1'),true);
+ assert.equal(sequencePrerequisiteComplete(d,{sequenceId:'seq1',sequenceDay:3},'c1','S1'),false);
+});
