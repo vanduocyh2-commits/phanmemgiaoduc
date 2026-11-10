@@ -1470,17 +1470,116 @@ const TS = (() => {
  function fromMatrix(){capture();if(matrixSummary(draft.matrix).questions>400)return toast('Tối đa 400 câu mỗi đề.');syncQuestionCardsFromMatrix();toast('Đã đồng bộ thẻ theo ma trận; nội dung câu phù hợp được giữ lại.');}
  async function importText(inp){const f=inp.files?.[0];if(!f)return;if(f.size>2e6)return toast('Tệp quá lớn (tối đa 2 MB)');$('ts-content').value=await f.text();capture();inp.value='';}
 
- function exportWord(){
-  capture();
-  if(!questionDraft.length)return toast('Chưa có câu hỏi để xuất Word.');
-  const ex={...copy(draft),questions:copy(questionDraft)};
-  const includeAnswers=confirm('Bạn có muốn kèm đáp án và hướng dẫn chấm ở trang riêng cuối file Word?\\n\\nOK: Có đáp án.\\nCancel: Chỉ xuất đề cho học sinh.');
-  const safeName=String(draft.title||'de-kiem-tra').replace(/[\\\\/:*?"<>|]+/g,'-').trim().slice(0,100)||'de-kiem-tra';
-  const exam=paperHTML(ex,false);
-  const answerKey=includeAnswers?'<section class="word-answer-key" style="page-break-before:always;break-before:page"><h1>ĐÁP ÁN VÀ HƯỚNG DẪN CHẤM</h1><p><b>'+esc(draft.title||'Đề kiểm tra')+'</b> · Môn '+esc(draft.subject||'')+' · Khối '+esc(draft.grade||'')+'</p>'+questionDraft.map((q,i)=>'<div style="margin:10px 0;page-break-inside:avoid"><p><b>Câu '+(i+1)+' ('+(Number(q.points)||0)+' điểm) · '+esc(({mcq:'Trắc nghiệm',tf:'Đúng / Sai',short:'Trả lời ngắn',essay:'Tự luận'}[q.type]||'Câu hỏi'))+'</b></p><p>'+MathBridge.format(q.answer||'Giáo viên chấm theo hướng dẫn.')+'</p>'+(q.type==='tf'?'<p>Đáp án từng ý: '+esc(tfAnswersFrom(q.tfAnswers||q.answer).join(' · '))+'</p>':'')+'</div>').join('')+'</section>':'';
-  const html='<!DOCTYPE html><html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><meta http-equiv="Content-Type" content="text/html; charset=utf-8"><title>'+esc(draft.title||'Đề kiểm tra')+'</title><style>@page{size:21cm 29.7cm;margin:2cm 1.8cm}body{font-family:"Times New Roman",serif;font-size:13pt;color:#111}.exam-paper{width:100%;max-width:none;margin:0;padding:0;background:#fff;color:#111;box-shadow:none;font-family:"Times New Roman",serif}.exam-paper-header{display:flex;justify-content:space-between;gap:18px;margin-bottom:16px}.exam-paper-title{text-align:center;flex:1}.exam-paper-title h1{font-size:17pt}.exam-paper-title h2{font-size:14pt}.exam-candidate{display:flex;justify-content:space-between;gap:12px;margin:14px 0}.exam-code{border:1px solid #111;padding:8px;text-align:center}.exam-code strong{display:block;font-size:18pt}.exam-paper p{line-height:1.35;margin:6px 0}.exam-paper img{max-width:100%;height:auto}.exam-paper table{border-collapse:collapse;max-width:100%}.word-answer-key{page-break-before:always;break-before:page}.word-answer-key h1{text-align:center;font-size:16pt}.exam-paper-footer{text-align:center;margin-top:20px}</style></head><body>'+exam+answerKey+'</body></html>';
+ function wordSuperscript(value){const map={'0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹'};return [...String(value||'')].map(ch=>map[ch]||ch).join('');}
+function wordPlainMath(value){
+ let s=String(value??'').replace(/\r\n?/g,'\n');
+ s=s.replace(/(\d+(?:[.,]\d+)?)\s*(cm|mm|km|dm|m)\s*(\d+)\s*\1\s*\\text\{\s*\2\s*\}\s*\^\s*\{?\3\}?/gi,function(_,n,u,p){return n+' '+u+wordSuperscript(p);});
+ s=s.replace(/(\d+(?:[.,]\d+)?)\s*(cm|mm|km|dm|m)\s*\1\s*\\text\{\s*\2\s*\}/gi,'$1 $2');
+ for(let i=0;i<3;i++)s=s.replace(/\\(?:dfrac|tfrac|frac)\s*\{([^{}]*)\}\s*\{([^{}]*)\}/g,'($1)/($2)');
+ s=s.replace(/\\sqrt\s*\[([^\]]+)\]\s*\{([^{}]*)\}/g,'$1√($2)').replace(/\\sqrt\s*\{([^{}]*)\}/g,'√($1)');
+ s=s.replace(/\\(?:text|mathrm|textrm|mathbf|mathit|operatorname)\s*\{([^{}]*)\}/g,'$1');
+ const symbols={'\\alpha':'α','\\beta':'β','\\gamma':'γ','\\delta':'δ','\\epsilon':'ε','\\theta':'θ','\\lambda':'λ','\\mu':'μ','\\pi':'π','\\rho':'ρ','\\sigma':'σ','\\phi':'φ','\\omega':'ω','\\Delta':'Δ','\\Sigma':'Σ','\\Omega':'Ω','\\infty':'∞','\\times':'×','\\cdot':'·','\\div':'÷','\\pm':'±','\\mp':'∓','\\leq':'≤','\\le':'≤','\\geq':'≥','\\ge':'≥','\\neq':'≠','\\approx':'≈','\\equiv':'≡','\\in':'∈','\\notin':'∉','\\subset':'⊂','\\cup':'∪','\\cap':'∩','\\Rightarrow':'⇒','\\rightarrow':'→','\\leftarrow':'←','\\degree':'°','\\circ':'°','\\sum':'∑','\\int':'∫','\\prod':'∏'};
+ for(const key of Object.keys(symbols))s=s.split(key).join(symbols[key]);
+ s=s.replace(/\\(?:log|ln|sin|cos|tan|cot|lim)\b/g,function(v){return v.slice(1);});
+ s=s.replace(/\\left|\\right|\\displaystyle|\\textstyle|\\quad|\\qquad|\\,|\\;|\\!/g,' ').replace(/\\overline\s*\{([^{}]*)\}/g,'$1̅');
+ s=s.replace(/\b(cm|mm|km|dm|m)([23])\b/gi,function(_,u,p){return u+wordSuperscript(p);});
+ const sup={'0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹','+':'⁺','-':'⁻','=':'⁼','(':'⁽',')':'⁾','n':'ⁿ','i':'ⁱ'};
+ const sub={'0':'₀','1':'₁','2':'₂','3':'₃','4':'₄','5':'₅','6':'₆','7':'₇','8':'₈','9':'₉','+':'₊','-':'₋','=':'₌','(':'₍',')':'₎','a':'ₐ','e':'ₑ','i':'ᵢ','n':'ₙ','o':'ₒ','r':'ᵣ','u':'ᵤ','v':'ᵥ','x':'ₓ'};
+ s=s.replace(/\^\s*\{([^{}]+)\}|\^([0-9A-Za-z+-])/g,function(_,a,b){return [...(a||b)].map(ch=>sup[ch]||ch).join('');});
+ s=s.replace(/_\s*\{([^{}]+)\}|_([0-9A-Za-z+-])/g,function(_,a,b){return [...(a||b)].map(ch=>sub[ch]||ch).join('');});
+ s=s.replace(/\\%/g,'%').replace(/\\_/g,'_').replace(/\\&/g,'&').replace(/\\\\/g,'; ').replace(/[{}]/g,'');
+ s=s.replace(/\$\$?|\\\(|\\\)|\\\[|\\\]/g,'');
+ const ticks=String.fromCharCode(96).repeat(3);s=s.split(ticks+'latex').join('').split(ticks+'tex').join('').split(ticks+'math').join('').split(ticks).join('');
+ return s.replace(/[ \t]{2,}/g,' ').replace(/\n{3,}/g,'\n\n').trim();
+}
+function wordRich(value){const text=wordPlainMath(value);return window.MathBridge?window.MathBridge.format(text):esc(text).replace(/\n/g,'<br>');}
+function wordSection(title,body){return '<section class="word-export-section"><h1>'+esc(title)+'</h1><p class="word-export-meta"><b>'+esc(draft.title||'Đề kiểm tra')+'</b> · Môn '+esc(draft.subject||'')+' · Khối '+esc(draft.grade||'')+' · Mã đề '+esc(draft.presentation&&draft.presentation.code||'101')+'</p>'+body+'</section>';}
+function wordTable(headers,rows){return '<table class="word-export-table"><thead><tr>'+headers.map(x=>'<th>'+esc(x)+'</th>').join('')+'</tr></thead><tbody>'+rows.map(row=>'<tr>'+row.map(x=>'<td>'+(x===null||x===undefined?'':String(x))+'</td>').join('')+'</tr>').join('')+'</tbody></table>';}
+function wordMeta(q){return {chapter:String(q.chapter||draft.chapter||'Chưa phân chương'),lesson:String(q.lesson||draft.lesson||'Chưa phân bài'),level:levels.indexOf(q.level)>=0?q.level:'NB',type:q.type||'other',points:Number(q.points)||0};}
+function wordGroupedQuestions(questions){
+ const groups={};
+ questions.forEach((q,i)=>{const m=wordMeta(q),key=m.chapter+'\\u001f'+m.lesson;if(!groups[key])groups[key]={chapter:m.chapter,lesson:m.lesson,chapterOrder:Number(q.chapterOrder||draft.chapterOrder)||999,lessonOrder:Number(q.lessonOrder||draft.lessonOrder)||999,items:[]};groups[key].items.push({q:q,index:i,meta:m});});
+ return Object.values(groups).sort((a,b)=>a.chapterOrder-b.chapterOrder||a.lessonOrder-b.lessonOrder||a.chapter.localeCompare(b.chapter,'vi')||a.lesson.localeCompare(b.lesson,'vi'));
+}
+function wordMatrixSection(questions){
+ const order=['mcq','tf','short','essay'],byType={};
+ order.forEach(t=>byType[t]={count:0,points:0,levels:levels.map(()=>({count:0,points:0}))});
+ questions.forEach(q=>{const m=wordMeta(q),r=byType[m.type];if(!r)return;r.count++;r.points+=m.points;const cell=r.levels[levels.indexOf(m.level)];cell.count++;cell.points+=m.points;});
+ const fmt=n=>Number(n||0).toLocaleString('vi-VN',{maximumFractionDigits:2});
+ const rows=order.filter(t=>byType[t].count).map(t=>{const r=byType[t];return [types[t]||t].concat(r.levels.map(x=>x.count+' câu / '+fmt(x.points)+' điểm'),[r.count+' câu',fmt(r.points)+' điểm']);});
+ const totals=levels.map(level=>{const xs=questions.filter(q=>(levels.indexOf(q.level)>=0?q.level:'NB')===level);return xs.length+' câu / '+fmt(xs.reduce((n,q)=>n+(Number(q.points)||0),0))+' điểm';});
+ rows.push(['TỔNG'].concat(totals,[questions.length+' câu',fmt(questions.reduce((n,q)=>n+(Number(q.points)||0),0))+' điểm']));
+ const topic=[];
+ wordGroupedQuestions(questions).forEach(g=>order.forEach(t=>{const xs=g.items.filter(x=>x.meta.type===t);if(!xs.length)return;topic.push([esc(g.chapter),esc(g.lesson),types[t]||t].concat(levels.map(level=>xs.filter(x=>x.meta.level===level).length+' câu'),[xs.length+' câu',fmt(xs.reduce((n,x)=>n+x.meta.points,0))+' điểm']));}));
+ return '<h2>Ma trận theo dạng câu hỏi và mức độ</h2>'+wordTable(['Dạng câu','NB','TH','VD','VDC','Tổng câu','Tổng điểm'],rows)+'<h2>Phân bố theo chương, bài</h2>'+wordTable(['Chương','Bài','Dạng câu','NB','TH','VD','VDC','Tổng câu','Tổng điểm'],topic);
+}
+function wordSpecificationSection(questions){
+ const rows=questions.map((q,i)=>{const m=wordMeta(q);return [String(i+1),esc(m.chapter),esc(m.lesson),esc(types[m.type]||m.type),esc(m.level),m.points.toLocaleString('vi-VN')+' điểm',wordRich(q.text||'')];});
+ return '<p>Bản đặc tả được tổng hợp từ chương, bài, dạng câu hỏi, mức độ và nội dung đã khai báo.</p>'+wordTable(['Câu','Chương / chủ đề','Bài học','Dạng câu','Mức độ','Điểm','Nội dung đánh giá'],rows);
+}
+function wordAnswersSection(questions){
+ const rows=questions.map((q,i)=>{
+  let answer='';
+  if(q.type==='mcq'){const key=String(q.answer||'').trim().toUpperCase(),index='ABCD'.indexOf(key);answer='<b>'+esc(key||'Chưa nhập')+'</b>'+(index>=0&&q.options&&q.options[index]?' · '+wordRich(q.options[index]):'');}
+  else if(q.type==='tf'){const vals=tfAnswersFrom(q.tfAnswers||q.answer);answer=vals.map((v,j)=>'<div><b>'+('abcd'[j])+')</b> '+esc(v||'Chưa nhập')+(q.statements&&q.statements[j]?' — '+wordRich(q.statements[j]):'')+'</div>').join('');}
+  else answer=wordRich(q.answer||'Chưa nhập đáp án / hướng dẫn chấm.');
+  return [String(i+1),esc(types[q.type]||q.type),wordRich(q.text||''),answer,Number(q.points||0).toLocaleString('vi-VN')+' điểm'];
+ });
+ const notes=String(draft.answerNotes||'').trim()?'<h2>Ghi chú đáp án chung</h2><div>'+wordRich(draft.answerNotes)+'</div>':'';
+ return notes+wordTable(['Câu','Dạng câu','Nội dung câu hỏi','Đáp án','Điểm'],rows);
+}
+function wordSolutionsSection(questions){
+ const rows=questions.map((q,i)=>[String(i+1),wordRich(q.text||''),wordRich(q.explanation||'Chưa nhập lời giải chi tiết cho câu này.')]);
+ return '<p>Lời giải lấy từ trường giải thích / lời giải của từng câu. Phần chưa được nhập sẽ được đánh dấu rõ.</p>'+wordTable(['Câu','Nội dung câu hỏi','Lời giải chi tiết'],rows);
+}
+function wordRubricSection(questions){
+ const notes=String(draft.answerNotes||'').trim()?'<h2>Hướng dẫn chấm chung</h2><div>'+wordRich(draft.answerNotes)+'</div>':'<p>Chưa có hướng dẫn chấm chung được nhập.</p>';
+ const rows=questions.map((q,i)=>{let detail='';if(q.type==='essay')detail=wordRich(q.answer||'Chưa nhập rubric cho câu tự luận.');else if(q.type==='tf')detail='Đáp án: '+esc(tfAnswersFrom(q.tfAnswers||q.answer).join(' · '));else detail='Đáp án: '+wordRich(q.answer||'Chưa nhập');return [String(i+1),esc(types[q.type]||q.type),Number(q.points||0).toLocaleString('vi-VN')+' điểm',detail];});
+ return notes+'<h2>Hướng dẫn theo từng câu</h2>'+wordTable(['Câu','Dạng câu','Điểm tối đa','Tiêu chí / đáp án chấm'],rows);
+}
+function wordStatisticsSection(questions){
+ const groups=wordGroupedQuestions(questions),levelRows=levels.map(level=>{const xs=questions.filter(q=>(levels.indexOf(q.level)>=0?q.level:'NB')===level);return [level,String(xs.length),xs.reduce((n,q)=>n+(Number(q.points)||0),0).toLocaleString('vi-VN',{maximumFractionDigits:2})+' điểm'];});
+ const topicRows=groups.map(g=>{const counts=levels.map(level=>g.items.filter(x=>x.meta.level===level).length),points=g.items.reduce((n,x)=>n+x.meta.points,0);return [esc(g.chapter),esc(g.lesson)].concat(counts.map(String),[String(g.items.length),points.toLocaleString('vi-VN',{maximumFractionDigits:2})+' điểm']);});
+ const points=questions.reduce((n,q)=>n+(Number(q.points)||0),0);
+ return '<p><b>Tổng số câu:</b> '+questions.length+' · <b>Tổng điểm:</b> '+points.toLocaleString('vi-VN',{maximumFractionDigits:2})+'</p><h2>Thống kê theo mức độ</h2>'+wordTable(['Mức độ','Số câu','Tổng điểm'],levelRows)+'<h2>Thống kê theo chương và bài</h2>'+wordTable(['Chương','Bài','NB','TH','VD','VDC','Tổng câu','Tổng điểm'],topicRows);
+}
+function openWordExportDialog(){
+ let dialog=document.getElementById('word-export-dialog');
+ if(!dialog){
+  dialog=document.createElement('dialog');dialog.id='word-export-dialog';
+  dialog.style.cssText='width:min(760px,calc(100% - 28px));max-width:760px;max-height:90vh;border:1px solid #cbd5e1;border-radius:18px;padding:0;box-shadow:0 24px 70px #0f172a40;color:#0f172a';
+  dialog.innerHTML='<div style="padding:20px 22px 8px"><div style="display:flex;justify-content:space-between;align-items:center;gap:12px"><h2 style="font-size:20px;font-weight:800;margin:0">Xuất đề thi ra Word</h2><button type="button" data-word-close style="border:0;background:transparent;font-size:24px;cursor:pointer" aria-label="Đóng">×</button></div><p style="font-size:13px;color:#64748b;margin:8px 0 14px">Chọn từng phần cần xuất. Mỗi phần được đặt ở một trang riêng trong tài liệu.</p><div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px"><label class="word-export-choice"><input type="checkbox" data-word-part="exam" checked> <span><b>Đề thi</b><small>Nội dung câu hỏi và phương án</small></span></label><label class="word-export-choice"><input type="checkbox" data-word-part="matrix" checked> <span><b>Ma trận đề thi</b><small>Dạng câu, mức độ, chương và bài</small></span></label><label class="word-export-choice"><input type="checkbox" data-word-part="spec" checked> <span><b>Bản đặc tả đề thi</b><small>Nội dung, mức độ và điểm từng câu</small></span></label><label class="word-export-choice"><input type="checkbox" data-word-part="answers" checked> <span><b>Đáp án</b><small>Đáp án trắc nghiệm, đúng/sai, ngắn và tự luận</small></span></label><label class="word-export-choice"><input type="checkbox" data-word-part="solutions" checked> <span><b>Lời giải chi tiết</b><small>Lấy theo phần giải thích của từng câu</small></span></label><label class="word-export-choice"><input type="checkbox" data-word-part="rubric" checked> <span><b>Hướng dẫn chấm và thang điểm</b><small>Điểm từng câu và rubric đã nhập</small></span></label><label class="word-export-choice" style="grid-column:1/-1"><input type="checkbox" data-word-part="stats" checked> <span><b>Thống kê câu hỏi theo chương, bài, mức độ</b><small>Tổng số câu, điểm và phân bố nhận thức</small></span></label></div><div style="display:flex;gap:8px;flex-wrap:wrap;margin:14px 0"><button type="button" class="ts-btn" data-word-all>Chọn tất cả</button><button type="button" class="ts-btn" data-word-none>Bỏ chọn tất cả</button></div><div style="display:flex;justify-content:flex-end;gap:9px;border-top:1px solid #e2e8f0;padding:14px 22px 18px"><button type="button" class="ts-btn" data-word-close>Hủy</button><button type="button" class="ts-btn" data-word-export style="background:#1d4ed8;color:white;border-color:#1d4ed8">Xuất file Word</button></div></div>';
+  dialog.querySelectorAll('[data-word-close]').forEach(button=>button.addEventListener('click',()=>dialog.close()));
+  dialog.querySelector('[data-word-all]').addEventListener('click',()=>dialog.querySelectorAll('[data-word-part]').forEach(input=>input.checked=true));
+  dialog.querySelector('[data-word-none]').addEventListener('click',()=>dialog.querySelectorAll('[data-word-part]').forEach(input=>input.checked=false));
+  dialog.querySelector('[data-word-export]').addEventListener('click',()=>confirmWordExport());
+  dialog.addEventListener('click',event=>{if(event.target===dialog)dialog.close();});
+  document.body.appendChild(dialog);
+ }
+ dialog.querySelectorAll('[data-word-part]').forEach(input=>input.checked=true);
+ dialog.showModal();
+}
+function confirmWordExport(){
+ const dialog=document.getElementById('word-export-dialog');if(!dialog)return;
+ const selected=Array.from(dialog.querySelectorAll('[data-word-part]:checked')).map(input=>input.getAttribute('data-word-part'));
+ if(!selected.length)return toast('Bạn hãy chọn ít nhất một phần cần xuất.');
+ dialog.close();
+ try{
+  const cleanQuestions=copy(questionDraft).map(q=>({...q,text:wordPlainMath(q.text),answer:wordPlainMath(q.answer),explanation:wordPlainMath(q.explanation),options:(q.options||[]).map(wordPlainMath),statements:(q.statements||[]).map(wordPlainMath)}));
+  const wordDraft={...copy(draft),content:wordPlainMath(draft.content),sourceIntro:wordPlainMath(draft.sourceIntro),answerNotes:wordPlainMath(draft.answerNotes),presentation:Object.assign({},draft.presentation||{},{instructions:wordPlainMath(draft.presentation&&draft.presentation.instructions)}),questions:cleanQuestions};
+  const builders={exam:()=>wordSection('ĐỀ THI',paperHTML(wordDraft,false)),matrix:()=>wordSection('MA TRẬN ĐỀ THI',wordMatrixSection(cleanQuestions)),spec:()=>wordSection('BẢN ĐẶC TẢ ĐỀ THI',wordSpecificationSection(cleanQuestions)),answers:()=>wordSection('ĐÁP ÁN',wordAnswersSection(cleanQuestions)),solutions:()=>wordSection('LỜI GIẢI CHI TIẾT',wordSolutionsSection(cleanQuestions)),rubric:()=>wordSection('HƯỚNG DẪN CHẤM VÀ THANG ĐIỂM',wordRubricSection(cleanQuestions)),stats:()=>wordSection('THỐNG KÊ CÂU HỎI',wordStatisticsSection(cleanQuestions))};
+  const names={exam:'Đề thi',matrix:'Ma trận đề thi',spec:'Bản đặc tả đề thi',answers:'Đáp án',solutions:'Lời giải chi tiết',rubric:'Hướng dẫn chấm và thang điểm',stats:'Thống kê câu hỏi'};
+  const blocks=selected.map(key=>builders[key]());
+  const safeName=String(draft.title||'de-kiem-tra').replace(/[\\/:*?"<>|]+/g,'-').trim().slice(0,100)||'de-kiem-tra';
+  const html='<!DOCTYPE html><html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><meta http-equiv="Content-Type" content="text/html; charset=utf-8"><title>'+esc(draft.title||'Đề kiểm tra')+'</title><style>@page{size:21cm 29.7cm;margin:1.8cm 1.7cm}body{font-family:"Times New Roman",serif;font-size:12pt;color:#111;line-height:1.35}.word-export-section{page-break-before:always;break-before:page}.word-export-section:first-child{page-break-before:auto;break-before:auto}.word-export-section h1{text-align:center;font-size:16pt;margin:0 0 10pt}.word-export-section h2{font-size:13pt;margin:14pt 0 7pt}.word-export-meta{text-align:center;font-size:10.5pt;margin:0 0 12pt}.word-export-table{width:100%;border-collapse:collapse;margin:8pt 0 14pt;table-layout:auto}.word-export-table th,.word-export-table td{border:1px solid #555;padding:5pt 6pt;vertical-align:top}.word-export-table th{font-weight:bold;text-align:center;background:#e9eef7}.word-export-table td p{margin:0 0 4pt}.exam-paper{width:100%;max-width:none;margin:0;padding:0;background:#fff;color:#111;box-shadow:none;font-family:"Times New Roman",serif}.exam-paper-header{display:flex;justify-content:space-between;gap:18px;margin-bottom:16px}.exam-paper-title{text-align:center;flex:1}.exam-paper-title h1{font-size:17pt}.exam-paper-title h2{font-size:14pt}.exam-candidate{display:flex;justify-content:space-between;gap:12px;margin:14px 0}.exam-code{border:1px solid #111;padding:8px;text-align:center}.exam-code strong{display:block;font-size:18pt}.exam-paper p{line-height:1.35;margin:6px 0}.exam-paper img{max-width:100%;height:auto}.exam-paper table{border-collapse:collapse;max-width:100%}.exam-paper-footer{text-align:center;margin-top:20px}p{orphans:2;widows:2}tr,td,th{page-break-inside:avoid}</style></head><body>'+blocks.join('')+'</body></html>';
   download(safeName+'.doc',html,'application/msword;charset=utf-8');
-  toast('Đã tạo file Word. Mở bằng Microsoft Word rồi chọn Lưu thành .docx nếu cần định dạng DOCX.');
+  toast('Đã xuất Word gồm: '+selected.map(x=>names[x]).join(', ')+'. Mỗi phần được tách riêng.');
+ }catch(error){console.error('Word export failed',error);toast('Không xuất được Word: '+(error&&error.message||error));}
+}
+function exportWord(){
+ capture();
+ if(!questionDraft.length)return toast('Chưa có câu hỏi để xuất Word.');
+ openWordExportDialog();
 }
 function resetDraft(){if(!confirm('Tạo đề mới và bỏ nội dung đang soạn?'))return;draft=blank();questionDraft=[];editing=null;author();}
  function saveExam(andAssign=false){if(!staff())return;if(draft.bankGenerated)draft.matrix=matrixForQuestions(questionDraft);if(editing&&!canEditBankExam(state.learningExams.find(e=>e.id===editing)))return toast('Chỉ tác giả được sửa đề.');capture();if(!validTfCurve(draft.tfScoring||defaultTfCurve))return toast('Thang điểm lũy kế Đúng/Sai chưa hợp lệ.');if(questionDraft.some(q=>q.type==='tf'&&(!Array.isArray(q.statements)||q.statements.length!==4||q.statements.some(t=>!t.trim())||tfAnswersFrom(q.tfAnswers||q.answer).some(a=>!a))))return toast('Mỗi câu Đúng/Sai cần đủ 4 ý và đáp án riêng cho từng ý.');if(draft.authorMode==='upload'&&draft.attachment&&!questionDraft.length)return sendUploadedExam();if(draft.authorMode==='upload'&&!draft.attachment&&!draft.content.trim())return toast('Chọn file đề hoặc nhập nội dung đề');if(draft.authorMode!=='direct'&&!draft.keyImported){const err=validateMatrix(draft.matrix,questionDraft);if(err)return toast(err);}if(!draft.title.trim()||draft.duration<1||draft.duration>300||!questionDraft.length)return toast('Nhập tên đề, thời gian 1–300 phút và ít nhất một câu hỏi');if(questionDraft.some(q=>!q.text.trim()||!Number.isFinite(q.points)||q.points<=0||(q.type==='mcq'&&q.options.some(o=>!o.trim()))||(['mcq','tf','short'].includes(q.type)&&!q.answer.trim())))return toast('Hoàn thành nội dung câu hỏi, điểm, lựa chọn và đáp án');if(draft.variantEdits&&draft.answerVariants){const missing=Object.entries(draft.answerVariants).filter(([,qs])=>qs.some(q=>q.type==='mcq'&&!/^[ABCD]$/.test(q.answer||'')||q.type==='short'&&!String(q.answer||'').trim()||q.type==='tf'&&tfAnswersFrom(q.tfAnswers||q.answer).some(v=>!v)));if(missing.length)return toast('Còn thiếu đáp án ở mã '+missing.map(([code])=>code).join(', ')+'. Chọn từng mã để kiểm tra.');}const sum=questionDraft.reduce((a,q)=>a+q.points,0);if(Math.abs(sum-10)>.001)return toast('Tổng điểm các thẻ câu hỏi phải bằng 10 (hiện tại '+sum+')');if(draft.answerVariants){const code=String(draft.presentation?.code||'101');if(Object.values(draft.answerVariants).some(qs=>qs.length!==questionDraft.length||qs.some((q,i)=>q.type!==questionDraft[i].type||Math.abs(q.points-questionDraft[i].points)>.001)))return toast('Các mã đề cần cùng cấu trúc và thang điểm. Nhập lại cả bảng đáp án khi thay đổi cấu trúc.');draft.answerVariants[code]=copy(questionDraft);}try{validateVariantFiles({...draft,questions:questionDraft});}catch(e){return toast(e.message)}const previousQuestionBank=copy(state.questionBank||[]);for(let i=0;i<questionDraft.length;i++){const q=questionDraft[i];q.grade=String(q.grade||draft.grade||'').trim();q.subject=String(q.subject||draft.subject||'').trim();q.textbook=String(q.textbook||draft.textbook||'Kết nối tri thức với cuộc sống').trim();q.chapter=String(q.chapter||draft.chapter||'').trim();q.lesson=String(q.lesson||draft.lesson||'').trim();if(!/^(?:khối\s*|lớp\s*)?(?:1[0-2]|[1-9])$/i.test(q.grade)||!q.subject||!q.chapter||!q.lesson)return toast('Câu '+(i+1)+': hãy phân loại đủ khối, môn, chương và bài trước khi lưu đề.');}const examId=editing||uid('lex');saveQuestionDraftsToBank(examId,draft.title);const ex={...JSON.parse(JSON.stringify(draft)),id:examId,questions:JSON.parse(JSON.stringify(questionDraft)),updatedAt:new Date().toISOString()};const idx=state.learningExams.findIndex(e=>e.id===ex.id),previousExam=idx<0?null:state.learningExams[idx];if(idx<0)state.learningExams.push(ex);else state.learningExams[idx]=ex;try{const previous=JSON.parse(localStorage.getItem('portal_v1')||'{}');localStorage.setItem('portal_v1',JSON.stringify({...previous,learningExams:state.learningExams,questionBank:state.questionBank}));}catch(err){state.questionBank=previousQuestionBank;if(idx<0)state.learningExams.pop();else state.learningExams[idx]=previousExam;return toast('Không đủ dung lượng lưu trên trình duyệt. Giảm kích thước file đề hoặc xuất bản sao lưu rồi xóa đề cũ.');}editing=ex.id;put();if(andAssign){prepareAssign(ex.id);toast('Đã lưu đề và cập nhật '+questionDraft.length+' câu vào ngân hàng theo chương/bài. Chọn lớp rồi bấm Giao đề cho lớp.');}else {toast('Đã lưu đề và cập nhật '+questionDraft.length+' câu vào ngân hàng câu hỏi theo chương/bài.');author();}return ex.id;}
