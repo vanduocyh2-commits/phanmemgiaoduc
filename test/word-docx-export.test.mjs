@@ -89,3 +89,11 @@ test('DOCX ZIP local and central headers use a valid DOS date',async()=>{
   assert.equal(view.getUint16(centralOffset+12,true),0,'central modified time');
   assert.equal(view.getUint16(centralOffset+14,true),0x21,'central modified date is 1980-01-01');
 });
+
+
+test('OMML text runs keep Word run properties in the schema-approved position',()=>{
+  const math=node('math',[token('mi','x')]);
+  const xml=mathMLToOMML(math);
+  assert.match(xml,/<m:r><m:rPr><m:sty m:val="i"\/><\/m:rPr><w:rPr><w:rFonts[^>]*\/><\/w:rPr><m:t/);
+  assert.doesNotMatch(xml,/<m:rPr>[\s\S]*<m:ctrlPr>/);
+});
