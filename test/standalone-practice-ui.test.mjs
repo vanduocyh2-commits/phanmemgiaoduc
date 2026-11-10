@@ -53,3 +53,18 @@ test('standalone sequence keeps the 7, 14 and 30 day choices and manual/random m
   assert.match(html,/value="manual">Giáo viên chọn thủ công/);
   assert.match(html,/function createStandaloneSequence\(\)/);
 });
+
+
+test('orange textbook buttons open the lesson and create a grouped set of three 10-question levels',()=>{
+  assert.match(html,/function openPracticeLesson\(/);
+  assert.match(html,/onclick="TS\.openPracticeLesson\(/);
+  assert.match(html,/function createThreeLevelPracticeSet\(\)/);
+  assert.match(html,/Bài tập 1 – Trình độ dễ/);
+  assert.match(html,/Bài tập 2 – Trình độ trung bình/);
+  assert.match(html,/Bài tập 3 – Trình độ nâng cao/);
+  assert.match(html,/practiceQuestionCount:10/);
+  assert.match(html,/practiceSetId:setId/);
+  assert.match(html,/function studentPracticeSetsHTML\(/);
+  assert.match(html,/studentPracticeSetsHTML\(newestAssignments/);
+  assert.match(html,/10 câu/);
+});
