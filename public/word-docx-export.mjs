@@ -273,5 +273,19 @@ export function createWordDocx(html, options={}) {
   entries.push(['word/_rels/document.xml.rels','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="'+REL_NS+'"><Relationship Id="rIdStyles" Type="'+DOC_REL_NS+'/styles" Target="styles.xml"/>'+imageRels.join('')+'</Relationships>']);
   entries.push(['word/styles.xml',styles]);
   entries.push(['word/document.xml',docXml]);
-  return {blob:makeZip(entries),formulaCount,imageCount,warnings,unsupportedImages,title:options.title||'Đề thi'};
+  // Validate every XML part before packaging. A malformed XML part can produce
+  // a ZIP that downloads successfully but Word refuses to open.
+  if (typeof DOMParser === 'undefined') throw new Error('Không thể kiểm tra cấu trúc DOCX trên trình duyệt này.');
+  for (const [path, value] of entries) {
+    if (!path.endsWith('.xml') && !path.endsWith('.rels')) continue;
+    const parsed = new DOMParser().parseFromString(String(value), 'application/xml');
+    if (parsed.querySelector('parsererror') || !parsed.documentElement) {
+      throw new Error('Cấu trúc XML không hợp lệ trong gói Word (' + path + '). Vui lòng thử lại; chưa tải file lỗi.');
+    }
+  }
+  const blob=makeZip(entries);
+  if (!blob || blob.size < 300 || blob.type !== 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+    throw new Error('Gói DOCX chưa được tạo hoàn chỉnh. Vui lòng thử xuất lại.');
+  }
+  return {blob,formulaCount,imageCount,warnings,unsupportedImages,title:options.title||'Đề thi'};
 }
