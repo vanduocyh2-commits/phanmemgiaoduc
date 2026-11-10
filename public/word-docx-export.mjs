@@ -12,7 +12,11 @@ const attr = (node, name, fallback='') => node?.getAttribute?.(name) ?? fallback
 function mathRun(value, style='p') {
   const text = String(value ?? '');
   if (!text) return '';
-  return '<m:r><m:rPr><m:sty m:val="' + escXml(style) + '"/><m:ctrlPr><w:rPr><w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" w:eastAsia="Cambria Math"/></w:rPr></m:ctrlPr></m:rPr><m:t xml:space="preserve">' + escXml(text) + '</m:t></m:r>';
+  // OMML CT_R requires m:rPr first (math-specific properties), followed by
+  // WordprocessingML run properties directly under m:r. Putting w:rPr inside
+  // m:ctrlPr nested within m:rPr violates shared-math.xsd and causes Word to
+  // reject the entire DOCX even though tolerant readers may display it.
+  return '<m:r><m:rPr><m:sty m:val="' + escXml(style) + '"/></m:rPr><w:rPr><w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" w:eastAsia="Cambria Math"/></w:rPr><m:t xml:space="preserve">' + escXml(text) + '</m:t></m:r>';
 }
 function mathElement(tag, content, props='') {
   return '<m:' + tag + '>' + (props || '') + content + '</m:' + tag + '>';
