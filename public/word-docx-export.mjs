@@ -195,11 +195,12 @@ export function layoutTable(rows,widths) {
   return '<w:tbl><w:tblPr><w:tblW w:w="'+total+'" w:type="dxa"/><w:tblLayout w:type="fixed"/>'+nilBorders+margins+'</w:tblPr>'+grid+body+'</w:tbl>';
 }
 export function mcqOptionsTable(optionRuns) {
-  const cells=Array.from({length:4},(_,i)=>wordParagraph(optionRuns[i]||'',{after:50}));
-  return layoutTable([cells],[2482,2482,2481,2481]);
+  // Two-column layout is substantially more readable in Word than four narrow columns.
+  const cells=Array.from({length:4},(_,i)=>wordParagraph(optionRuns[i]||'',{after:70}));
+  return layoutTable([[cells[0],cells[1]],[cells[2],cells[3]]],[4963,4963]);
 }
 export function examQuestionParagraph(runs) {
-  return wordParagraph(runs,{after:80});
+  return wordParagraph(runs,{after:90,keep:true});
 }
 
 export function createWordDocx(html, options={}) {
