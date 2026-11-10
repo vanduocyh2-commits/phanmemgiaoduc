@@ -1495,7 +1495,7 @@ function wordPlainMath(value){
  const ticks=String.fromCharCode(96).repeat(3);s=s.split(ticks+'latex').join('').split(ticks+'tex').join('').split(ticks+'math').join('').split(ticks).join('');
  return s.replace(/[ \t]{2,}/g,' ').replace(/\n{3,}/g,'\n\n').trim();
 }
-function wordRich(value){const text=wordPlainMath(value);return window.MathBridge?window.MathBridge.format(text):esc(text).replace(/\n/g,'<br>');}
+function wordRich(value){const raw=String(value??'');return window.MathBridge?window.MathBridge.format(raw):esc(raw).replace(/\n/g,'<br>');}
 function wordSection(title,body){return '<section class="word-export-section"><h1>'+esc(title)+'</h1><p class="word-export-meta"><b>'+esc(draft.title||'Đề kiểm tra')+'</b> · Môn '+esc(draft.subject||'')+' · Khối '+esc(draft.grade||'')+' · Mã đề '+esc(draft.presentation&&draft.presentation.code||'101')+'</p>'+body+'</section>';}
 function wordTable(headers,rows){return '<table class="word-export-table"><thead><tr>'+headers.map(x=>'<th>'+esc(x)+'</th>').join('')+'</tr></thead><tbody>'+rows.map(row=>'<tr>'+row.map(x=>'<td>'+(x===null||x===undefined?'':String(x))+'</td>').join('')+'</tr>').join('')+'</tbody></table>';}
 function wordMeta(q){return {chapter:String(q.chapter||draft.chapter||'Chưa phân chương'),lesson:String(q.lesson||draft.lesson||'Chưa phân bài'),level:levels.indexOf(q.level)>=0?q.level:'NB',type:q.type||'other',points:Number(q.points)||0};}
@@ -1562,22 +1562,26 @@ function openWordExportDialog(){
  dialog.querySelectorAll('[data-word-part]').forEach(input=>input.checked=true);
  dialog.showModal();
 }
-function confirmWordExport(){
+async function confirmWordExport(){
  const dialog=document.getElementById('word-export-dialog');if(!dialog)return;
  const selected=Array.from(dialog.querySelectorAll('[data-word-part]:checked')).map(input=>input.getAttribute('data-word-part'));
  if(!selected.length)return toast('Bạn hãy chọn ít nhất một phần cần xuất.');
  dialog.close();
  try{
-  const cleanQuestions=copy(questionDraft).map(q=>({...q,text:wordPlainMath(q.text),answer:wordPlainMath(q.answer),explanation:wordPlainMath(q.explanation),options:(q.options||[]).map(wordPlainMath),statements:(q.statements||[]).map(wordPlainMath)}));
-  const wordDraft={...copy(draft),content:wordPlainMath(draft.content),sourceIntro:wordPlainMath(draft.sourceIntro),answerNotes:wordPlainMath(draft.answerNotes),presentation:Object.assign({},draft.presentation||{},{instructions:wordPlainMath(draft.presentation&&draft.presentation.instructions)}),questions:cleanQuestions};
+  if(!window.WordDocxExport||typeof window.WordDocxExport.createWordDocx!=='function')throw Error('Bộ xuất DOCX chưa tải xong. Hãy tải lại trang rồi thử lại.');
+  const cleanQuestions=copy(questionDraft);
+  const wordDraft={...copy(draft),questions:cleanQuestions};
   const builders={exam:()=>wordSection('ĐỀ THI',paperHTML(wordDraft,false)),matrix:()=>wordSection('MA TRẬN ĐỀ THI',wordMatrixSection(cleanQuestions)),spec:()=>wordSection('BẢN ĐẶC TẢ ĐỀ THI',wordSpecificationSection(cleanQuestions)),answers:()=>wordSection('ĐÁP ÁN',wordAnswersSection(cleanQuestions)),solutions:()=>wordSection('LỜI GIẢI CHI TIẾT',wordSolutionsSection(cleanQuestions)),rubric:()=>wordSection('HƯỚNG DẪN CHẤM VÀ THANG ĐIỂM',wordRubricSection(cleanQuestions)),stats:()=>wordSection('THỐNG KÊ CÂU HỎI',wordStatisticsSection(cleanQuestions))};
   const names={exam:'Đề thi',matrix:'Ma trận đề thi',spec:'Bản đặc tả đề thi',answers:'Đáp án',solutions:'Lời giải chi tiết',rubric:'Hướng dẫn chấm và thang điểm',stats:'Thống kê câu hỏi'};
   const blocks=selected.map(key=>builders[key]());
   const safeName=String(draft.title||'de-kiem-tra').replace(/[\\/:*?"<>|]+/g,'-').trim().slice(0,100)||'de-kiem-tra';
-  const html='<!DOCTYPE html><html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><meta http-equiv="Content-Type" content="text/html; charset=utf-8"><title>'+esc(draft.title||'Đề kiểm tra')+'</title><style>@page{size:21cm 29.7cm;margin:1.8cm 1.7cm}body{font-family:"Times New Roman",serif;font-size:12pt;color:#111;line-height:1.35}.word-export-section{page-break-before:always;break-before:page}.word-export-section:first-child{page-break-before:auto;break-before:auto}.word-export-section h1{text-align:center;font-size:16pt;margin:0 0 10pt}.word-export-section h2{font-size:13pt;margin:14pt 0 7pt}.word-export-meta{text-align:center;font-size:10.5pt;margin:0 0 12pt}.word-export-table{width:100%;border-collapse:collapse;margin:8pt 0 14pt;table-layout:auto}.word-export-table th,.word-export-table td{border:1px solid #555;padding:5pt 6pt;vertical-align:top}.word-export-table th{font-weight:bold;text-align:center;background:#e9eef7}.word-export-table td p{margin:0 0 4pt}.exam-paper{width:100%;max-width:none;margin:0;padding:0;background:#fff;color:#111;box-shadow:none;font-family:"Times New Roman",serif}.exam-paper-header{display:flex;justify-content:space-between;gap:18px;margin-bottom:16px}.exam-paper-title{text-align:center;flex:1}.exam-paper-title h1{font-size:17pt}.exam-paper-title h2{font-size:14pt}.exam-candidate{display:flex;justify-content:space-between;gap:12px;margin:14px 0}.exam-code{border:1px solid #111;padding:8px;text-align:center}.exam-code strong{display:block;font-size:18pt}.exam-paper p{line-height:1.35;margin:6px 0}.exam-paper img{max-width:100%;height:auto}.exam-paper table{border-collapse:collapse;max-width:100%}.exam-paper-footer{text-align:center;margin-top:20px}p{orphans:2;widows:2}tr,td,th{page-break-inside:avoid}</style></head><body>'+blocks.join('')+'</body></html>';
-  download(safeName+'.doc',html,'application/msword;charset=utf-8');
-  toast('Đã xuất Word gồm: '+selected.map(x=>names[x]).join(', ')+'. Mỗi phần được tách riêng.');
- }catch(error){console.error('Word export failed',error);toast('Không xuất được Word: '+(error&&error.message||error));}
+  const result=await window.WordDocxExport.createWordDocx(blocks.join(''),{title:draft.title||'Đề kiểm tra'});
+  const url=URL.createObjectURL(result.blob),link=document.createElement('a');
+  link.href=url;link.download=safeName+'.docx';document.body.appendChild(link);link.click();link.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),30000);
+  const note=result.warnings.length?' · Lưu ý: '+result.warnings.join('; '):'';
+  toast('Đã xuất DOCX có '+result.formulaCount+' công thức Word Equation'+(result.imageCount?' và '+result.imageCount+' hình':'')+'. Có thể mở MathType để chuyển công thức. Các phần: '+selected.map(x=>names[x]).join(', ')+'.'+note);
+ }catch(error){console.error('DOCX export failed',error);toast('Không xuất được DOCX: '+(error&&error.message||error));}
 }
 function exportWord(){
  capture();
@@ -2850,7 +2854,11 @@ window.app.logoutCurrentAccount=logoutCurrentAccount;
 .bank-chapter-table td,.bank-chapter-table th{padding:8px 10px}
 .bank-chapter-count{width:82px;min-width:82px}
 .bank-chapter-table input:disabled{opacity:.45;cursor:not-allowed}
-</style></body>
+</style><script type="module">
+import {createWordDocx} from '/word-docx-export.mjs';
+window.WordDocxExport={createWordDocx};
+</script>
+</body>
 </html>
 
 
