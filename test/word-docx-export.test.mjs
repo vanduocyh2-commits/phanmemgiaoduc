@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {mathMLToOMML} from '../public/word-docx-export.mjs';
+import {mathMLToOMML, children, makeZip} from '../public/word-docx-export.mjs';
 
 function node(localName, children=[], text='', attrs={}) {
   return {
@@ -61,4 +61,31 @@ test('definite integrals keep lower and upper limits with the integrand',()=>{
 
 test('only MathML roots are accepted',()=>{
   assert.throws(()=>mathMLToOMML(node('mrow',[token('mi','x')])),/MathML/);
+});
+
+
+test('DOCX HTML traversal preserves ordinary text nodes as well as elements',()=>{
+  const textNode={nodeType:3,nodeValue:'Question text'};
+  const boldNode={nodeType:1,nodeName:'B'};
+  const commentNode={nodeType:8,nodeValue:'ignored'};
+  const parent={children:[boldNode],childNodes:[textNode,boldNode,commentNode]};
+  assert.deepEqual(children(parent),[textNode,boldNode]);
+});
+
+test('DOCX ZIP local and central headers use a valid DOS date',async()=>{
+  const blob=makeZip([['word/document.xml','<w:document/>']]);
+  const bytes=new Uint8Array(await blob.arrayBuffer());
+  const view=new DataView(bytes.buffer,bytes.byteOffset,bytes.byteLength);
+  assert.equal(view.getUint32(0,true),0x04034b50,'local file header');
+  assert.equal(view.getUint16(10,true),0,'local modified time');
+  assert.equal(view.getUint16(12,true),0x21,'local modified date is 1980-01-01');
+  let eocd=-1;
+  for(let i=bytes.length-22;i>=Math.max(0,bytes.length-65557);i--){
+    if(view.getUint32(i,true)===0x06054b50){eocd=i;break;}
+  }
+  assert.notEqual(eocd,-1,'end-of-central-directory record exists');
+  const centralOffset=view.getUint32(eocd+16,true);
+  assert.equal(view.getUint32(centralOffset,true),0x02014b50,'central directory header');
+  assert.equal(view.getUint16(centralOffset+12,true),0,'central modified time');
+  assert.equal(view.getUint16(centralOffset+14,true),0x21,'central modified date is 1980-01-01');
 });
