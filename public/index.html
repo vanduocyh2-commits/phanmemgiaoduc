@@ -2034,7 +2034,7 @@ function progress(){const selected=qsel('progress-class');const c=teacherClasses
  }
  if(!chosen.length)return toast('Chưa có câu hỏi phù hợp trong ngân hàng.');
  const total=chosen.length;let allocated=0;
- const questions=chosen.map((source,i)=>{const q=copy(source);for(const k of ['owner','_bankKey','sourceExamId','sourceExamTitle','createdAt','updatedAt','bankId','sourceBankId'])delete q[k];q.id=uid('lpq');q.points=i===total-1?Number((10-allocated).toFixed(3)):Number((10/total).toFixed(3));allocated+=q.points;return q;});
+ const questions=chosen.map((source,i)=>{const q=copy(source);for(const k of ['owner','_bankKey','sourceExamId','sourceExamTitle','createdAt','updatedAt','bankId','sourceBankId'])delete q[k];q.id=uid('lpq');q.sourceBankId=String(source.id);q.points=i===total-1?Number((10-allocated).toFixed(3)):Number((10/total).toFixed(3));allocated+=q.points;return q;});
  const examId=uid('lex'),title='Luyện tập · '+(lessonDraft.title||lesson)+' · '+c.name;
  const matrix=['mcq','tf','short','essay'].map(type=>{const rows=questions.filter(q=>q.type===type);return {type,points:rows[0]?.points||1,levels:['NB','TH','VD','VDC'].map(level=>rows.filter(q=>q.level===level).length)};}).filter(row=>row.levels.some(Boolean));
  const ex={...blank(),id:examId,title,grade,subject,chapter,lesson,duration,authorMode:'direct',scope:'Luyện tập độc lập',matrix,questions,updatedAt:new Date().toISOString(),owner:activeAccount?.username};
@@ -2406,7 +2406,7 @@ Lời giải tham khảo.`;
   const setId=uid('practice-set'),now=new Date().toISOString(),newExams=[],newAssignments=[];
   for(const spec of specs){
    const chosen=spec.parts.flatMap(([level,count])=>take(level,count));
-   const questions=chosen.map(source=>{const q=copy(source);for(const k of ['owner','_bankKey','sourceExamId','sourceExamTitle','createdAt','updatedAt','bankId','sourceBankId'])delete q[k];q.id=uid('lpq');q.points=1;return q;});
+   const questions=chosen.map(source=>{const q=copy(source);for(const k of ['owner','_bankKey','sourceExamId','sourceExamTitle','createdAt','updatedAt','bankId','sourceBankId'])delete q[k];q.id=uid('lpq');q.sourceBankId=String(source.id);q.points=1;return q;});
    const matrix=['mcq','tf','short','essay'].map(type=>{const rows=questions.filter(q=>q.type===type);return {type,points:1,levels:levels.map(level=>rows.filter(q=>String(q.level||'').toUpperCase()===level).length)};}).filter(row=>row.levels.some(Boolean));
    const title=spec.title+' · '+lesson+' · '+c.name,examId=uid('lex');
    const ex={...blank(),id:examId,title,grade,subject,chapter,lesson,duration:20,authorMode:'direct',scope:'Bộ 3 bài luyện tập theo mức độ',matrix,questions,updatedAt:now,owner:activeAccount?.username};
