@@ -24,10 +24,10 @@ test('standalone practice uses independent scope selectors and question-bank fil
   const end=html.indexOf('function createStandalonePractice(){',start);
   assert.ok(start>=0&&end>start);
   const pool=html.slice(start,end);
-  assert.match(pool,/practiceDraft\.grade/);
-  assert.match(pool,/practiceDraft\.subject/);
-  assert.match(pool,/practiceDraft\.chapter/);
-  assert.match(pool,/practiceDraft\.lesson/);
+  assert.match(pool,/p\.grade/);
+  assert.match(pool,/p\.subject/);
+  assert.match(pool,/p\.chapter/);
+  assert.match(pool,/p\.lesson/);
   assert.doesNotMatch(pool,/lessonDraft|captureLesson/);
 });
 
