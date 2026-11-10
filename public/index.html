@@ -1382,7 +1382,7 @@ const TS = (() => {
   const sync=q=>{if(!q||String(q.bankId||q.sourceBankId||'')!==String(id))return false;const keep=q.id,bank=q.bankId,source=q.sourceBankId;Object.assign(q,copy(item),{id:keep,bankId:bank,sourceBankId:source});synced++;return true;};
   for(const exam of state.learningExams||[]){if(!(exam.questions||[]).some(q=>String(q.bankId||q.sourceBankId||'')===String(id)))continue;const related=(state.assignments||[]).filter(a=>a.examId===exam.id);if(related.some(a=>hasSubmission(a.id))){protectedCount++;continue;}for(const q of exam.questions||[])sync(q);}
   for(const a of state.assignments||[]){if(!a.snapshot?.questions||!a.snapshot.questions.some(q=>String(q.bankId||q.sourceBankId||'')===String(id)))continue;if(hasSubmission(a.id)){protectedCount++;continue;}for(const q of a.snapshot.questions)sync(q);}
-  put();const panel=$('question-bank-panel');if(panel)panel.innerHTML=renderQuestionBankContents();
+  put();const panel=$('question-bank-panel');if(panel)panel.innerHTML=TS.renderQuestionBankContents();
   toast('Đã lưu câu hỏi. '+synced+' vị trí đề chưa có lượt nộp được đồng bộ.'+(protectedCount?' '+protectedCount+' đề có lịch sử làm bài được giữ nguyên.':''));
  }
 
