@@ -80,6 +80,6 @@ test('practice-set attempts use a single-question interactive quiz player',()=>{
   assert.match(html,/practiceQuizCheck/);
   assert.match(html,/Câu hỏi số/);
   assert.match(html,/Kiểm tra \/ Nộp bài/);
-  assert.match(html,/\\.practice-quiz-layout/);
-  assert.match(html,/\\.practice-quiz-question \\.exam-options/);
+  assert.match(html,/\.practice-quiz-layout/);
+  assert.match(html,/\.practice-quiz-question \.exam-options/);
 });
