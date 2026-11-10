@@ -2059,8 +2059,7 @@ function localSubmittedSolutions(d,m,submissionId){
  function addStandalonePracticeQuestion(){
   if(!staff())return;
   capturePractice();
-  practiceDraft=practiceDraft||practiceBlank();
-  const p=practiceDraft,grade=String(p.grade||'').trim(),subject=String(p.subject||'').trim(),textbook=String(p.textbook||'').trim(),chapter=String(p.chapter||'').trim(),lesson=String(p.lesson||'').trim();
+  const p=practiceDraft||practiceBlank(),grade=String(p.grade||'').trim(),subject=String(p.subject||'').trim(),textbook=String(p.textbook||'').trim(),chapter=String(p.chapter||'').trim(),lesson=String(p.lesson||'').trim();
   if(!grade||!subject||!textbook||!chapter||!lesson)return toast('Hãy chọn đủ Khối, Môn, Bộ sách, Chương và Bài học ở phần phạm vi kiến thức trước khi thêm câu hỏi.');
   const type=qsel('lp2-new-type')||'mcq',level=qsel('lp2-new-level')||'NB',text=qsel('lp2-new-text').trim(),answerInput=qsel('lp2-new-answer').trim(),points=Number(qsel('lp2-new-points')||1);
   if(!text)return toast('Hãy nhập nội dung câu hỏi.');
