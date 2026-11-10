@@ -2025,7 +2025,7 @@ function localSubmittedSolutions(d,m,submissionId){
  }
 
  let practiceDraft=null;
- let standaloneSequenceSelectedIds=[];
+ 
  const practiceBlank=()=>({classId:teacherClasses()[0]?.id||'',grade:'',subject:'',textbook:'Kết nối tri thức với cuộc sống',chapter:'',lesson:''});
  function practiceValues(field){return [...new Set((state.questionBank||[]).map(q=>String(q?.[field]??'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'vi',{numeric:true}));}
  function practiceSelect(id,label,field,value){return '<label>'+label+'<select id="'+id+'" class="ts-input"><option value="">— Chọn —</option>'+practiceValues(field).map(v=>'<option value="'+esc(v)+'" '+(v===value?'selected':'')+'>'+esc(v)+'</option>').join('')+'</select></label>';}
