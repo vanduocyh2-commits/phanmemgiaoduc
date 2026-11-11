@@ -2176,7 +2176,7 @@ function progress(){const selected=qsel('progress-class');const c=teacherClasses
     else{const rows=pools[level];chosen.push(rows[cursors[level]++%rows.length]);}
    }
    const total=chosen.length;let allocated=0;
-   const questions=chosen.map((source,i)=>{const q=copy(source);for(const k of ['owner','_bankKey','sourceExamId','sourceExamTitle','createdAt','updatedAt','bankId','sourceBankId','__selectionLevel'])delete q[k];q.id=uid('seqq');q.points=i===total-1?Number((10-allocated).toFixed(3)):Number((10/total).toFixed(3));allocated+=q.points;return q;});
+   const questions=chosen.map((source,i)=>{const q=copy(source);for(const k of ['owner','_bankKey','sourceExamId','sourceExamTitle','createdAt','updatedAt','bankId','sourceBankId'])delete q[k];q.level=source.__selectionLevel||q.level;delete q.__selectionLevel;q.id=uid('seqq');q.points=i===total-1?Number((10-allocated).toFixed(3)):Number((10/total).toFixed(3));allocated+=q.points;return q;});
    const examId=uid('lex'),title=sequenceTitle+' · Ngày '+day+'/'+days;
    const matrix=['mcq','tf','short','essay'].map(type=>{const rows=questions.filter(q=>q.type===type);return {type,points:rows[0]?.points||1,levels:levels.map(level=>rows.filter(q=>String(q.level||'').toUpperCase()===level).length)};}).filter(row=>row.levels.some(Boolean));
    const ex={...blank(),id:examId,title,grade,subject,chapter,lesson,duration,authorMode:'direct',scope:'Chuỗi bài tập hằng ngày',matrix,questions,updatedAt:now,owner:activeAccount?.username};
@@ -2477,7 +2477,7 @@ Lời giải tham khảo.`;
    if(picked.length<need)throw new Error('Phạm vi khối, môn, chương và bài hiện chỉ có '+(Number(counts[level])||0)+' câu phù hợp; còn thiếu '+(need-picked.length)+' câu.');
   }return chosen;
  }
- async function createStandalonePractice async function createStandalonePractice(){
+ async function createStandalonePractice(){
  if(!staff())return;
  if(!await preparePracticeDelivery())return;
  capturePractice();
@@ -2496,7 +2496,7 @@ Lời giải tham khảo.`;
  const pool=standaloneQuestionPool();let chosen=[];try{chosen=selectPracticeQuestions(pool,counts,new Set(),true);}catch(error){return toast(error.message);}
  if(!chosen.length)return toast('Chưa có câu hỏi phù hợp trong ngân hàng.');
  const total=chosen.length;let allocated=0;
- const questions=chosen.map((source,i)=>{const q=copy(source);for(const k of ['owner','_bankKey','sourceExamId','sourceExamTitle','createdAt','updatedAt','bankId','sourceBankId'])delete q[k];q.id=uid('lpq');q.points=i===total-1?Number((10-allocated).toFixed(3)):Number((10/total).toFixed(3));allocated+=q.points;return q;});
+ const questions=chosen.map((source,i)=>{const q=copy(source);for(const k of ['owner','_bankKey','sourceExamId','sourceExamTitle','createdAt','updatedAt','bankId','sourceBankId'])delete q[k];q.level=source.__selectionLevel||q.level;delete q.__selectionLevel;q.id=uid('lpq');q.points=i===total-1?Number((10-allocated).toFixed(3)):Number((10/total).toFixed(3));allocated+=q.points;return q;});
  const examId=uid('lex'),title='Luyện tập · '+lesson+' · '+c.name;
  const matrix=['mcq','tf','short','essay'].map(type=>{const rows=questions.filter(q=>q.type===type);return {type,points:rows[0]?.points||1,levels:['NB','TH','VD','VDC'].map(level=>rows.filter(q=>q.level===level).length)};}).filter(row=>row.levels.some(Boolean));
  const ex={...blank(),id:examId,title,grade,subject,chapter,lesson,duration,authorMode:'direct',scope:'Luyện tập theo bài giảng',matrix,questions,updatedAt:new Date().toISOString(),owner:activeAccount?.username};
@@ -2988,7 +2988,7 @@ async function saveLessonToLibrary(){const id=await saveLesson(false);if(!id)ret
   if(questions.length!==base.questions.length)throw new Error('Không thể sinh đủ câu theo ma trận đã cấu hình.');
   return {...copy(base),questions};
  }
- function studentExamSnapshot function studentExamSnapshot(ex,{includeExplanations=false}={}){const snapshot=JSON.parse(JSON.stringify(ex));delete snapshot.answerAttachment;delete snapshot.answerNotes;delete snapshot.answerVariants;delete snapshot.variantAttachments;delete snapshot.variantAnswerFiles;delete snapshot.variantAnswerNotes;delete snapshot.variantContent;delete snapshot.variantEdits;delete snapshot.folderImportReport;if(!includeExplanations)for(const q of snapshot.questions||[])delete q.explanation;return snapshot;}
+ function studentExamSnapshot(ex,{includeExplanations=false}={}){const snapshot=JSON.parse(JSON.stringify(ex));delete snapshot.answerAttachment;delete snapshot.answerNotes;delete snapshot.answerVariants;delete snapshot.variantAttachments;delete snapshot.variantAnswerFiles;delete snapshot.variantAnswerNotes;delete snapshot.variantContent;delete snapshot.variantEdits;delete snapshot.folderImportReport;if(!includeExplanations)for(const q of snapshot.questions||[])delete q.explanation;return snapshot;}
 
 
  function pdfSheetBuilder(){if(!draft.attachment)return '';return `<section class="pdf-sheet-builder"><h3>Phiếu trả lời ngay trên đề PDF</h3><p class="ts-help">Cách nhanh: nhập bảng đáp án ở mục 2 để tự tạo phiếu trả lời. Hoặc tạo số câu thủ công tại đây. File PDF/ảnh lời giải đính kèm dùng để giáo viên đối chiếu khi chấm.</p><div class="ts-grid">${[['mcq','Trắc nghiệm A/B/C/D',12,.25],['tf','Đúng/Sai (4 ý/câu)',4,1],['short','Trả lời ngắn',6,.5],['essay','Tự luận',0,1]].map(([k,label,n,p])=>`<fieldset><legend>${label}</legend><label>Số câu<input class="ts-input" id="pdf-count-${k}" type="number" min="0" max="200" step="1" value="${n}"></label><label>Điểm mỗi câu<input class="ts-input" id="pdf-points-${k}" type="number" min="0.001" max="10" step="0.001" value="${p}"></label></fieldset>`).join('')}</div><button class="ts-btn" type="button" onclick="TS.createPdfSheet()">Tạo phiếu trả lời</button><p class="ts-help">Tổng điểm phải bằng 10. Nếu chỉ giao tự luận, đặt 1 câu tự luận × 10 điểm và các loại khác bằng 0.</p></section>`;}
