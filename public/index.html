@@ -2978,8 +2978,8 @@ async function saveLessonToLibrary(){const id=await saveLesson(false);if(!id)ret
   for(const {sample,count} of groups.values()){
    const target=String(sample.level||'NB').toUpperCase(),candidates=source.filter(q=>q.type===sample.type&&norm(q.chapter||scope.chapter)===norm(sample.chapter||scope.chapter)&&norm(q.lesson||scope.lesson)===norm(sample.lesson||scope.lesson)&&!used.has(String(q.id)));
    const fresh=candidates.filter(q=>!usedBefore.has(String(q.id))),distance=q=>Math.abs((rank[String(q.level||'NB').toUpperCase()]??0)-(rank[target]??0));
-   const exact=shuffle(fresh.filter(q=>String(q.level||'NB').toUpperCase()===target)),other=shuffle(fresh.filter(q=>String(q.level||'NB').toUpperCase()!==target).sort((a,b)=>distance(a)-distance(b)));
-   const reused=shuffle(candidates.filter(q=>usedBefore.has(String(q.id))).sort((a,b)=>distance(a)-distance(b)||(usedBefore.get(String(a.id))||0)-(usedBefore.get(String(b.id))||0)));
+   const exact=shuffle(fresh.filter(q=>String(q.level||'NB').toUpperCase()===target)),other=fresh.filter(q=>String(q.level||'NB').toUpperCase()!==target).sort((a,b)=>distance(a)-distance(b)||Math.random()-.5);
+   const reused=candidates.filter(q=>usedBefore.has(String(q.id))).sort((a,b)=>distance(a)-distance(b)||(usedBefore.get(String(a.id))||0)-(usedBefore.get(String(b.id))||0)||Math.random()-.5);
    const chosen=[...exact,...other,...reused].slice(0,count);
    if(chosen.length<count)throw new Error('Ngân hàng hiện không có đủ câu cùng khối, môn, chương và bài để tạo '+base.questions.length+' câu.');
    chosen.forEach(q=>{used.add(String(q.id));const item=copy(q);for(const k of ['owner','_bankKey','sourceExamId','sourceExamTitle','createdAt','updatedAt','bankId'])delete item[k];item.sourceBankId=String(q.id);item.id=uid('attemptq');item.points=Number(sample.points)||Number(q.points)||1;questions.push(item);});
