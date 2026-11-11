@@ -101,3 +101,14 @@ test('standalone practice renderer safely initializes its host before rendering'
   assert.match(renderer,/host\.querySelector\(/);
   assert.doesNotMatch(renderer,/panelHost\(\)\.innerHTML|panelHost\(\)\.querySelector/);
 });
+
+test('practice workspace guards missing teacher panel before rendering',()=>{
+  const start=html.indexOf('function practiceWorkspace(){');
+  const end=html.indexOf('function changePracticeCatalogGrade',start);
+  assert.ok(start>=0&&end>start,'practice workspace boundaries exist');
+  const workspace=html.slice(start,end);
+  assert.match(workspace,/if\(state\.sessionRole==='teacher'&&!\$\('ts-panel'\)\)/);
+  assert.match(workspace,/const host=panelHost\(\)/);
+  assert.match(workspace,/if\(!host\)/);
+  assert.doesNotMatch(workspace,/panelHost\(\)\.innerHTML|panelHost\(\)\.querySelector/);
+});
