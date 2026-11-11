@@ -161,6 +161,6 @@ test('teacher practice history filters by grade, class and subject and previews 
 
 test('server refuses new teacher assignments to classes outside the teacher assignment scope',()=>{
   const server=readFileSync(new URL('../portal-server.mjs',import.meta.url),'utf8');
-  assert.match(server,/teacherCanCreate=m\.role!=='teacher'\|\|allowed\.has\(incoming\.classId\)\|\|!!\(old&&old\.createdBy===m\.username\)/);
-  assert.match(server,/Lớp nhận bài chưa được phân công cho tài khoản giáo viên/);
+  assert.match(server,/teacherCanCreate=m\.role!=='teacher'\|\|!incoming\.lessonPractice\|\|allowed\.has\(incoming\.classId\)\|\|!!\(old&&old\.createdBy===m\.username\)/);
+  assert.match(server,/Bài luyện tập mới phải giao cho lớp được phân công/);
 });
