@@ -1430,7 +1430,7 @@ const TS = (() => {
  }
  function bankGeminiScope(){
   const get=id=>String(qsel(id)||'').trim();
-  const scope={grade:get('qbg-grade').replace(/^(?:khối\\s*|lớp\\s*)/i,''),subject:get('qbg-subject'),curriculum:get('qbg-curriculum')||'GDPT 2018',textbook:get('qbg-textbook'),chapter:get('qbg-chapter'),lesson:get('qbg-lesson')};
+  const scope={grade:get('qbg-grade').replace(/^(?:khối\s*|lớp\s*)/i,''),subject:get('qbg-subject'),curriculum:get('qbg-curriculum')||'GDPT 2018',textbook:get('qbg-textbook'),chapter:get('qbg-chapter'),lesson:get('qbg-lesson')};
   const missing=Object.entries(scope).filter(([k,v])=>!v).map(([k])=>({grade:'khối',subject:'môn',curriculum:'chương trình',textbook:'bộ sách',chapter:'chương',lesson:'bài / chủ đề'}[k]));
   if(missing.length)throw Error('Hãy nhập đủ phạm vi: '+missing.join(', ')+'.');
   const counts={};for(const level of ['NB','TH','VD','VDC']){const raw=get('qbg-'+level),n=raw===''?0:Number(raw);if(!Number.isInteger(n)||n<0||n>500)throw Error('Số câu '+level+' phải là số nguyên từ 0 đến 500.');counts[level]=n;}
@@ -1439,14 +1439,14 @@ const TS = (() => {
  }
  function bankGeminiPromptText(){
   const {scope,counts}=bankGeminiScope(),total=Object.values(counts).reduce((a,b)=>a+b,0);
-  return 'Bạn là chuyên gia biên soạn câu hỏi. Hãy tạo đúng '+total+' câu hỏi mới theo phạm vi và phân bố dưới đây.\\n\\n'+
-   'KHỐI: '+scope.grade+'\\nMÔN: '+scope.subject+'\\nCHƯƠNG TRÌNH: '+scope.curriculum+'\\nBỘ SÁCH: '+scope.textbook+'\\nCHƯƠNG: '+scope.chapter+'\\nBÀI / CHỦ ĐỀ: '+scope.lesson+'\\n\\n'+
-   'SỐ LƯỢNG BẮT BUỘC: NB '+counts.NB+', TH '+counts.TH+', VD '+counts.VD+', VDC '+counts.VDC+'. Tạo đúng từng số lượng, không tự đổi mức độ. Đây là yêu cầu tạo kho câu hỏi, không liên quan số câu của 3 bài luyện tập.\\n'+
-   'Mỗi câu phải có nội dung rõ ràng, đáp án chính xác và lời giải / hướng dẫn chấm. Đa dạng cách hỏi, không lặp lại cùng một ý. Giữ nguyên công thức Toán bằng LaTeX.\\n'+
-   'Chỉ dùng loại: mcq, tf, short, essay; mức độ: NB, TH, VD, VDC. Mỗi câu bắt đầu bằng tiêu đề ## Câu số.\\n'+
-   'mcq: đủ A, B, C, D và Đáp án A/B/C/D. tf: đủ 4 mệnh đề và đáp án gồm 4 giá trị Đúng/Sai. short: có đáp án. essay: có hướng dẫn chấm. Mỗi câu có Điểm và Giải thích.\\n'+
-   'Xuất toàn bộ nội dung thành tệp questions.md hoặc cau-hoi-ngan-hang.md, đồng thời hiển thị đầy đủ nội dung để sao chép. Không thêm lời dẫn ngoài các khối câu hỏi. Đánh số liên tục từ ## Câu 1.\\n\\n'+
-   'MẪU:\\n## Câu 1\\nLoại: mcq\\nMức độ: NB\\nĐiểm: 1\\nNội dung:\\nNội dung câu hỏi\\nA: Phương án A\\nB: Phương án B\\nC: Phương án C\\nD: Phương án D\\nĐáp án: A\\nGiải thích:\\nLời giải ngắn gọn.';
+  return 'Bạn là chuyên gia biên soạn câu hỏi. Hãy tạo đúng '+total+' câu hỏi mới theo phạm vi và phân bố dưới đây.\n\n'+
+   'KHỐI: '+scope.grade+'\nMÔN: '+scope.subject+'\nCHƯƠNG TRÌNH: '+scope.curriculum+'\nBỘ SÁCH: '+scope.textbook+'\nCHƯƠNG: '+scope.chapter+'\nBÀI / CHỦ ĐỀ: '+scope.lesson+'\n\n'+
+   'SỐ LƯỢNG BẮT BUỘC: NB '+counts.NB+', TH '+counts.TH+', VD '+counts.VD+', VDC '+counts.VDC+'. Tạo đúng từng số lượng, không tự đổi mức độ. Đây là yêu cầu tạo kho câu hỏi, không liên quan số câu của 3 bài luyện tập.\n'+
+   'Mỗi câu phải có nội dung rõ ràng, đáp án chính xác và lời giải / hướng dẫn chấm. Đa dạng cách hỏi, không lặp lại cùng một ý. Giữ nguyên công thức Toán bằng LaTeX.\n'+
+   'Chỉ dùng loại: mcq, tf, short, essay; mức độ: NB, TH, VD, VDC. Mỗi câu bắt đầu bằng tiêu đề ## Câu số.\n'+
+   'mcq: đủ A, B, C, D và Đáp án A/B/C/D. tf: đủ 4 mệnh đề và đáp án gồm 4 giá trị Đúng/Sai. short: có đáp án. essay: có hướng dẫn chấm. Mỗi câu có Điểm và Giải thích.\n'+
+   'Xuất toàn bộ nội dung thành tệp questions.md hoặc cau-hoi-ngan-hang.md, đồng thời hiển thị đầy đủ nội dung để sao chép. Không thêm lời dẫn ngoài các khối câu hỏi. Đánh số liên tục từ ## Câu 1.\n\n'+
+   'MẪU:\n## Câu 1\nLoại: mcq\nMức độ: NB\nĐiểm: 1\nNội dung:\nNội dung câu hỏi\nA: Phương án A\nB: Phương án B\nC: Phương án C\nD: Phương án D\nĐáp án: A\nGiải thích:\nLời giải ngắn gọn.';
  }
  function copyBankGeminiPrompt(openGemini=false){
   if(!staff())return;let prompt;try{prompt=bankGeminiPromptText();}catch(e){return toast(e.message);}
@@ -1463,7 +1463,7 @@ const TS = (() => {
  function previewBankGeminiImport(input){
   if(!staff())return;const file=input?.files?.[0];if(!file)return;
   if(file.size>5*1024*1024){input.value='';return toast('Tệp tối đa 5 MB.');}
-  if(!/\\.(md|txt)$/i.test(file.name)){input.value='';return toast('Chỉ nhận tệp .md hoặc .txt.');}
+  if(!/\.(md|txt)$/i.test(file.name)){input.value='';return toast('Chỉ nhận tệp .md hoặc .txt.');}
   const reader=new FileReader();reader.onload=()=>{try{stageBankGeminiContent(reader.result,file.name);}catch(e){toast(e.message||'Không đọc được tệp.');}finally{input.value='';}};reader.onerror=()=>toast('Không đọc được tệp.');reader.readAsText(file,'UTF-8');
  }
  function previewBankGeminiText(){
