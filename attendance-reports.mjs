@@ -1,4 +1,4 @@
-import { attendanceHistory } from './attendance-history.mjs';
+import { attendanceHistory, attendanceReason } from './attendance-history.mjs';
 import { styledWorkbook } from './class-reports.mjs';
 
 const validDate = value => {
@@ -17,7 +17,7 @@ const latestRecords = student => {
   return records;
 };
 
-const reasonLabel = row => row?.status==='Vắng'&&row.makeup!==true ? ({excused:'Có phép',unexcused:'Không phép'}[String(row.absenceType||'').toLowerCase()]||'Chưa phân loại') : '';
+const reasonLabel = row => row?.status==='Vắng'&&row.makeup!==true ? ({excused:'Có phép',unexcused:'Không phép'}[attendanceReason(row)]||'Chưa phân loại') : '';
 
 const labelOf = row => {
   if (!row) return 'Chưa điểm danh';
