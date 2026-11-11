@@ -2166,7 +2166,7 @@ function progress(){const selected=qsel('progress-class');const c=teacherClasses
    for(const level of levels){const required=counts[level]*days,actual=manualByLevel[level].length;if(actual!==required)return toast('Mức '+level+' cần chọn đúng '+required+' câu cho '+days+' ngày; hiện có '+actual+' câu.');}
    if(selected.length!==lessonSequenceSelectedIds.length)return toast('Danh sách câu hỏi đã thay đổi. Hãy mở lại danh sách và kiểm tra lựa chọn.');
   }else{
-   try{const selected=selectPracticeQuestions(pool,Object.fromEntries(levels.map(level=>[level,counts[level]*days])),new Set(),true);for(const level of levels)pools[level]=selected.filter(q=>q.__selectionLevel===level);}catch(error){return toast(error.message);}
+   try{const selected=selectPracticeQuestions(pool,Object.fromEntries(levels.map(level=>[level,counts[level]*days])),new Set(),true,counts);for(const level of levels)pools[level]=selected.filter(q=>q.__selectionLevel===level);}catch(error){return toast(error.message);}
   }
   const sequenceId=uid('seq'),sequenceTitle='Hành trình '+(lessonDraft.title||lesson)+' · '+c.name,now=new Date().toISOString(),cursors={NB:0,TH:0,VD:0,VDC:0},newExams=[],newAssignments=[];
   for(let day=1;day<=days;day++){
@@ -2467,13 +2467,14 @@ Lời giải tham khảo.`;
   const seen=new Set();
   return(state.questionBank||[]).filter(q=>{if(!q||q.id==null||norm(q.grade)!==norm(p.grade)||norm(q.subject)!==norm(p.subject)||norm(q.textbook||'Kết nối tri thức với cuộc sống')!==norm(p.textbook||'Kết nối tri thức với cuộc sống')||norm(q.chapter)!==norm(p.chapter)||norm(q.lesson)!==norm(p.lesson))return false;const id=String(q.id);if(seen.has(id))return false;seen.add(id);return true;});
  }
- function selectPracticeQuestions(pool,counts,historyIds=new Set(),allowReuse=true){
+ function selectPracticeQuestions(pool,counts,historyIds=new Set(),allowReuse=true,repeatPerAttempt=null){
   const levels=['NB','TH','VD','VDC'],rank={NB:0,TH:1,VD:2,VDC:3},used=new Set(),chosen=[];
   const shuffle=rows=>{const a=[...rows];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
   for(const level of levels){const need=Number(counts[level])||0;if(!need)continue;const eligible=pool.filter(q=>!used.has(String(q.id))),fresh=eligible.filter(q=>!historyIds.has(String(q.id))),dist=q=>Math.abs((rank[String(q.level||'NB').toUpperCase()]??0)-rank[level]);
    const exact=shuffle(fresh.filter(q=>String(q.level||'NB').toUpperCase()===level)),near=shuffle(fresh.filter(q=>String(q.level||'NB').toUpperCase()!==level).sort((a,b)=>dist(a)-dist(b)));
    const reused=allowReuse?shuffle(eligible.filter(q=>historyIds.has(String(q.id))).sort((a,b)=>dist(a)-dist(b))):[];
    const picked=[...exact,...near,...reused].slice(0,need);picked.forEach(q=>{used.add(String(q.id));chosen.push({...q,__selectionLevel:level});});
+   if(picked.length<need&&repeatPerAttempt&&Number(repeatPerAttempt[level])>0){const distinct=eligible.length;if(distinct<Number(repeatPerAttempt[level]))throw new Error('Bài mỗi ngày cần '+repeatPerAttempt[level]+' câu khác nhau ở mức '+level+' nhưng phạm vi bài học chỉ có '+distinct+' câu.');const repeatSource=[...picked,...eligible.filter(q=>!picked.some(x=>String(x.id)===String(q.id)))];let cursor=0;while(picked.length<need){const q=repeatSource[cursor++%repeatSource.length];picked.push(q);chosen.push({...q,__selectionLevel:level});}}
    if(picked.length<need)throw new Error('Phạm vi khối, môn, chương và bài hiện chỉ có '+(Number(counts[level])||0)+' câu phù hợp; còn thiếu '+(need-picked.length)+' câu.');
   }return chosen;
  }
@@ -2657,11 +2658,7 @@ Lời giải tham khảo.`;
    for(const level of levels){const required=counts[level]*days,actual=manualByLevel[level].length;if(actual!==required)return toast('Mức '+level+' cần chọn đúng '+required+' câu cho '+days+' ngày; hiện có '+actual+' câu.');}
    if(selected.length!==standaloneSequenceSelectedIds.length)return toast('Danh sách câu hỏi đã thay đổi. Hãy mở lại danh sách và kiểm tra lựa chọn.');
   }else{
-   for(const level of levels){
-    pools[level]=pool.filter(q=>String(q.level||'').toUpperCase()===level);
-    if(pools[level].length<counts[level]*days)return toast('Mức '+level+' cần '+(counts[level]*days)+' câu khác nhau cho toàn bộ chuỗi '+days+' ngày nhưng ngân hàng chỉ có '+pools[level].length+' câu phù hợp. Hãy giảm số câu/ngày, rút ngắn chuỗi hoặc bổ sung câu hỏi.');
-    for(let i=pools[level].length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pools[level][i],pools[level][j]]=[pools[level][j],pools[level][i]];}
-   }
+   try{const selected=selectPracticeQuestions(pool,Object.fromEntries(levels.map(level=>[level,counts[level]*days])),new Set(),true,counts);for(const level of levels)pools[level]=selected.filter(q=>q.__selectionLevel===level);}catch(error){return toast(error.message);}
   }
   const sequenceId=uid('seq'),sequenceTitle='Hành trình '+lesson+' · '+c.name,now=new Date().toISOString(),cursors={NB:0,TH:0,VD:0,VDC:0},newExams=[],newAssignments=[];
   for(let day=1;day<=days;day++){
