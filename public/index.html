@@ -2219,7 +2219,7 @@ function progress(){const selected=qsel('progress-class');const c=teacherClasses
   practiceDraft=practiceDraft||practiceBlank();
   const p=practiceDraft,catalog=window.KNTTQuestionBankCatalog;
   const grades=catalog?.grades||[6,7,8,9,10,11,12],catalogGrade=Number(p.grade)||9;
-  const classes=managedTeacherClasses().filter(c=>!classGrade(c)||String(classGrade(c))===String(catalogGrade));
+  const classes=managedTeacherClasses().filter(c=>String(classGrade(c))===String(catalogGrade));
   if(!classes.some(c=>c.id===p.classId))p.classId=classes[0]?.id||'';
   const books=(catalog?.books||[]).filter(b=>Number(b.grade)===catalogGrade&&b.subject==='Toán');
   const selected=!!(p.catalogBookId&&p.catalogChapterId&&p.catalogLessonId);
