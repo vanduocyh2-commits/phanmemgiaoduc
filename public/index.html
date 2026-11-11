@@ -1432,7 +1432,7 @@ const TS = (() => {
  function changeBankCatalogFilter(key,value){
   if(key==='grade'){bankCatalogSelection.grade=String(value);bankCatalogSelection.subject='';}
   else if(key==='subject')bankCatalogSelection.subject=String(value);
-  const host=$('question-bank-panel');if(host)host.innerHTML=renderQuestionBankContents();
+  const host=$('question-bank-panel');if(host)host.innerHTML=TS.renderQuestionBankContents();
  }
  function selectBankCatalogLesson(bookId,chapterId,lessonId){
   const catalog=window.KNTTQuestionBankCatalog,book=catalog?.books?.find(x=>x.id===bookId),chapter=book?.chapters?.find(x=>x.id===chapterId);
@@ -1523,7 +1523,7 @@ const TS = (() => {
   const seen=new Set((state.questionBank||[]).map(q=>practiceGeminiQuestionIdentity(q))),owner=activeAccount?.username||onlineMember?.username||'admin',now=new Date().toISOString();let added=0;
   for(const source of bankGeminiImportDraft){const q={...copy(source),id:uid('qb'),owner,source:'gemini-bank-import',sourceExamTitle:'Bổ sung từ Gemini',createdAt:now,updatedAt:now};const key=practiceGeminiQuestionIdentity(q);if(seen.has(key))continue;seen.add(key);q._bankKey=key;state.questionBank.push(q);added++;}
   put();bankGeminiImportDraft=[];const host=$('qbg-preview');if(host)host.innerHTML='<p class="ts-note">Đã lưu '+added+' câu mới vào ngân hàng. Câu hỏi đã sẵn sàng để chọn khi cấu hình 3 bài luyện tập hoặc soạn đề.</p>';
-  const panel=$('question-bank-panel');if(panel){const note=host?.innerHTML;panel.innerHTML=renderQuestionBankContents();const next=$('qbg-preview');if(next)next.innerHTML=note;}
+  const panel=$('question-bank-panel');if(panel){const note=host?.innerHTML;panel.innerHTML=TS.renderQuestionBankContents();const next=$('qbg-preview');if(next)next.innerHTML=note;}
   toast('Đã lưu '+added+' câu mới vào ngân hàng câu hỏi.');
  }
  function cancelBankGeminiImport(){bankGeminiImportDraft=[];const host=$('qbg-preview');if(host)host.innerHTML='';}
@@ -1537,13 +1537,13 @@ const TS = (() => {
   if(index<0)return;
   questionBankFilters[key]=value||'';
   for(const child of chain.slice(index+1))questionBankFilters[child]='';
-  const host=$('question-bank-panel');if(host)host.innerHTML=renderQuestionBankContents();
+  const host=$('question-bank-panel');if(host)host.innerHTML=TS.renderQuestionBankContents();
  }
  function filterQuestionBank(){
   for(const key of ['grade','subject','curriculum','textbook','chapter','lesson','level','search'])questionBankFilters[key]=$('qbf-'+key)?.value||'';
-  const host=$('question-bank-panel');if(host)host.innerHTML=renderQuestionBankContents();
+  const host=$('question-bank-panel');if(host)host.innerHTML=TS.renderQuestionBankContents();
  }
- function clearQuestionBankFilter(){questionBankFilters={grade:'',subject:'',curriculum:'',textbook:'',chapter:'',lesson:'',level:'',search:''};const host=$('question-bank-panel');if(host)host.innerHTML=renderQuestionBankContents();}
+ function clearQuestionBankFilter(){questionBankFilters={grade:'',subject:'',curriculum:'',textbook:'',chapter:'',lesson:'',level:'',search:''};const host=$('question-bank-panel');if(host)host.innerHTML=TS.renderQuestionBankContents();}
 
  function editBankQuestion(id){
   if(!staff())return;const item=(state.questionBank||[]).find(q=>String(q.id)===String(id));if(!item)return toast('Câu hỏi không còn trong ngân hàng.');
