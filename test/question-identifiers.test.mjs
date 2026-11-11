@@ -26,9 +26,9 @@ test('exam identity is unique, stable on edits, and generates a readable title',
   const registry = [];
   const exam = { subject: 'Toán', grade: 9, chapter: 'Chương 2', lesson: 'Bài 1' };
   const first = assignExamIdentity([], exam, null, registry, new Date('2026-11-12T05:00:00Z'));
-  assert.match(first.examCode, /^DE-T9-261112-[A-F0-9]{6}$/);
+  assert.match(first.examUid, /^DE-T9-261112-[A-F0-9]{6}$/);
   assert.match(first.title, /Toán – lớp 9 – Bài 1/);
-  const edited = assignExamIdentity([{ examCode: first.examCode }], { ...exam, title: 'Tên giáo viên đặt' }, { examCode: first.examCode, title: '' }, registry);
-  assert.equal(edited.examCode, first.examCode);
+  const edited = assignExamIdentity([{ examUid: first.examUid }], { ...exam, title: 'Tên giáo viên đặt' }, { examUid: first.examUid, title: '' }, registry);
+  assert.equal(edited.examUid, first.examUid);
   assert.equal(edited.title, 'Tên giáo viên đặt');
 });
