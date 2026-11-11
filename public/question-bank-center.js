@@ -27,10 +27,12 @@
   function decorateCards() {
     if (!window.TS || !window.TS.getQuestion) return;
     document.querySelectorAll('[data-question-card]').forEach(card => {
-      if (card.querySelector('.qcard-curriculum')) return;
       const index = Number(card.getAttribute('data-question-card')); if (!Number.isInteger(index)) return;
       const q = window.TS.getQuestion(index) || {};
+      const existingPanel = card.querySelector('.qcard-curriculum');
+      if (existingPanel) { const code = existingPanel.querySelector('.qcard-question-code'); if (code) code.textContent = q.questionCode ? 'Mã câu: ' + q.questionCode : 'Mã câu sẽ được cấp khi lưu'; return; }
       const panel = document.createElement('div'); panel.className = 'qcard-curriculum ts-grid';
+      const code = document.createElement('div'); code.className = 'qcard-question-code'; code.textContent = q.questionCode ? 'Mã câu: ' + q.questionCode : 'Mã câu sẽ được cấp khi lưu'; panel.appendChild(code);
       const grades = Array.from({ length: 7 }, (_, i) => String(i + 6)).map(v => ({ value: v, label: 'Lớp ' + v }));
       addField(panel, 'qg-' + index, 'Khối', q.grade || '12', 'select', grades);
       addField(panel, 'qs-' + index, 'Môn học', q.subject || 'Toán');
@@ -92,7 +94,7 @@
         (!filters.lesson.value || text(q.lesson) === filters.lesson.value) &&
         (!filters.level.value || q.level === filters.level.value || LEVEL_LABELS[LEVELS.indexOf(q.level)] === filters.level.value) &&
         (!filters.type.value || type === filters.type.value) &&
-        (!includeSearch || !search.value || norm([q.text,q.topic,q.outcome,q.chapter,q.lesson].join(' ')).includes(norm(search.value)));
+        (!includeSearch || !search.value || norm([q.questionCode,q.text,q.topic,q.outcome,q.chapter,q.lesson].join(' ')).includes(norm(search.value)));
     }
     selectVisible.addEventListener('click', () => {
       const found = currentRows().filter(q => matches(q, true)).slice(0,100);
@@ -106,7 +108,7 @@
     });
     details.appendChild(status); details.appendChild(list); panel.appendChild(details);
     const style = document.createElement('style');
-    style.textContent = '#question-bank-center-panel{margin:12px 0;padding:12px;border:1px solid #cbd5e1;border-radius:14px;background:#f8fafc}#question-bank-center-panel summary{cursor:pointer;font-weight:800;color:#334155;padding:5px}#question-bank-center-panel .question-bank-center-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:10px;margin:7px 0}#question-bank-center-panel .question-bank-center-row small{display:block;color:#64748b;margin-top:3px}#question-bank-center-panel .question-bank-center-row p{margin:5px 0;white-space:pre-wrap;overflow-wrap:anywhere}#question-bank-center-panel .question-bank-center-row button{white-space:nowrap}#question-bank-center-panel select:disabled{opacity:.55}@media(max-width:650px){#question-bank-center-panel .question-bank-center-row{grid-template-columns:1fr}}';
+    style.textContent = '#question-bank-center-panel{margin:12px 0;padding:12px;border:1px solid #cbd5e1;border-radius:14px;background:#f8fafc}#question-bank-center-panel summary{cursor:pointer;font-weight:800;color:#334155;padding:5px}#question-bank-center-panel .qcard-question-code{grid-column:1/-1;font-weight:800;color:#075985;background:#e0f2fe;border-radius:8px;padding:6px 9px}#question-bank-center-panel .question-bank-center-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:10px;margin:7px 0}#question-bank-center-panel .question-bank-center-row small{display:block;color:#64748b;margin-top:3px}#question-bank-center-panel .question-bank-center-row p{margin:5px 0;white-space:pre-wrap;overflow-wrap:anywhere}#question-bank-center-panel .question-bank-center-row button{white-space:nowrap}#question-bank-center-panel select:disabled{opacity:.55}@media(max-width:650px){#question-bank-center-panel .question-bank-center-row{grid-template-columns:1fr}}';
     document.head.appendChild(style); host.parentNode.insertBefore(panel, host);
     function setOptions(key, values, placeholder, disabled) {
       const select = filters[key], previous = select.value;
@@ -144,7 +146,7 @@
         const row = document.createElement('article'); row.className = 'question-bank-center-row';
         const info = document.createElement('div'), title = document.createElement('b'), meta = document.createElement('small'), body = document.createElement('p');
         title.textContent = (TYPES[q.type] || q.type) + ' · ' + (q.level || 'Chưa phân mức') + ' · ' + (Number(q.points) || 0) + ' điểm';
-        meta.textContent = ['Lớp ' + (q.grade || ''),q.subject,q.textbook,q.chapter,q.lesson].filter(Boolean).join(' · ');
+        meta.textContent = [q.questionCode || 'Mã đang cấp', 'Lớp ' + (q.grade || ''),q.subject,q.textbook,q.chapter,q.lesson].filter(Boolean).join(' · ');
         body.textContent = q.text || ''; info.append(title, meta, body, pickLabel);
         const button = document.createElement('button'); button.type = 'button'; button.className = 'ts-btn'; button.textContent = '＋ Đưa vào đề';
         button.addEventListener('click', () => window.TS.addQuestionFromBank(q)); row.append(info, button); list.appendChild(row);
