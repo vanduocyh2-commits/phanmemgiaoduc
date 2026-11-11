@@ -61,20 +61,20 @@ function dateToken(date) {
 
 export function assignExamIdentity(exams, exam, oldExam, registry = [], now = new Date()) {
   const used = new Set([
-    ...(exams || []).map(row => String(row?.examCode || '')).filter(Boolean),
+    ...(exams || []).map(row => String(row?.examUid || '')).filter(Boolean),
     ...(registry || []).map(String)
   ]);
-  let examCode = oldExam?.examCode || '';
-  if (!examCode) {
+  let examUid = oldExam?.examUid || '';
+  if (!examUid) {
     const prefix = 'DE-' + subjectCode(exam.subject) + (String(Number(exam.grade) || '').trim()) + '-' + dateToken(now) + '-';
     for (let attempt = 0; attempt < 100; attempt += 1) {
       const suffix = randomBytes(3).toString('hex').toUpperCase();
       const candidate = prefix + suffix;
-      if (!used.has(candidate)) { examCode = candidate; break; }
+      if (!used.has(candidate)) { examUid = candidate; break; }
     }
-    if (!examCode) throw new Error('Không tạo được mã đề duy nhất. Vui lòng thử lại.');
+    if (!examUid) throw new Error('Không tạo được mã đề duy nhất. Vui lòng thử lại.');
   }
-  if (Array.isArray(registry) && !registry.includes(examCode)) registry.push(examCode);
+  if (Array.isArray(registry) && !registry.includes(examUid)) registry.push(examUid);
   const subject = String(exam.subject || 'Môn học').trim();
   const grade = Number(exam.grade);
   const topic = String(exam.lesson || exam.chapter || exam.topic || '').trim();
@@ -82,7 +82,7 @@ export function assignExamIdentity(exams, exam, oldExam, registry = [], now = ne
   const generatedTitle = [subject, Number.isInteger(grade) && grade > 0 ? 'lớp ' + grade : '', topic, 'Đề ' + date]
     .filter(Boolean).join(' – ');
   return {
-    examCode,
+    examUid,
     title: String(exam.title || oldExam?.title || generatedTitle).trim().slice(0, 240)
   };
 }
