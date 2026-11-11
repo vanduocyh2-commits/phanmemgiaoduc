@@ -2478,7 +2478,7 @@ Lời giải tham khảo.`;
    if(picked.length<need)throw new Error('Phạm vi khối, môn, chương và bài hiện chỉ có '+(Number(counts[level])||0)+' câu phù hợp; còn thiếu '+(need-picked.length)+' câu.');
   }return chosen;
  }
- async function createStandalonePractice async function createStandalonePractice(){
+ async function createStandalonePractice(){
  if(!staff())return;
  if(!await preparePracticeDelivery())return;
  capturePractice();
