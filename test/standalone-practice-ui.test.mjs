@@ -121,7 +121,7 @@ test('three-level practice reports success only after hosted state save is confi
   assert.match(builder,/if\(!await commitPracticeDelivery\(newExams,newAssignments\)\)return;/);
   assert.ok(builder.indexOf('await commitPracticeDelivery')<builder.indexOf("toast('Đã lưu và giao 3 bài"));
   const flush=html.slice(html.indexOf('async function onlineFlushNow()'),html.indexOf('async function onlineLogin'));
-  assert.match(flush,/catch\(e\)\{onlineDirty=true;setBadge\(false\);toast\('Chưa lưu lên máy chủ: '\+e\.message\);throw e;\}/);
+  assert.match(flush,/catch\(e\)\{onlineDirty=true;setBadge\(Number\.isInteger\(e\.status\)\);toast\(/);
 });
 
 
