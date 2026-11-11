@@ -1426,16 +1426,33 @@ const TS = (() => {
  const btn=(label,fn,kind='')=>`<button type="button" class="ts-btn ${kind}" onclick="TS.${fn}">${label}</button>`;
  function options(){return teacherClasses().map(c=>`<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('');}
  function download(name,text,type='text/plain;charset=utf-8'){
+  let url='';
   try{
    const mime=String(type||'text/plain').includes('charset=')?String(type):String(type||'text/plain')+';charset=utf-8';
+   const safeName=String(name||'tai-lieu.txt').replace(/[\\/:*?"<>|]+/g,'-');
    const blob=new Blob(['\ufeff',String(text??'')],{type:mime});
-   const url=URL.createObjectURL(blob),link=document.createElement('a');
-   link.href=url;link.download=String(name||'tai-lieu.txt').replace(/[\\/:*?"<>|]+/g,'-');
-   link.style.display='none';link.rel='noopener';document.body.appendChild(link);
-   link.click();link.remove();
-   setTimeout(()=>URL.revokeObjectURL(url),60000);
+   url=URL.createObjectURL(blob);
+   const link=document.createElement('a');
+   link.href=url;link.download=safeName;link.rel='noopener';
+   link.style.cssText='position:fixed;left:-10000px;top:0';
+   document.body.appendChild(link);link.click();link.remove();
+   document.getElementById('ts-download-fallback')?.remove();
+   const panel=document.createElement('div');panel.id='ts-download-fallback';
+   panel.style.cssText='position:fixed;z-index:2147483000;left:16px;right:16px;bottom:16px;max-width:680px;margin:auto;padding:14px;background:#fff;border:2px solid #2563eb;border-radius:12px;box-shadow:0 8px 32px rgba(15,23,42,.25);color:#1e293b';
+   const title=document.createElement('b');title.textContent='Nếu file chưa tự tải xuống, thầy bấm liên kết bên dưới:';
+   const manual=document.createElement('a');manual.href=url;manual.download=safeName;manual.textContent='⬇ Tải '+safeName;
+   manual.style.cssText='display:block;margin:10px 0;padding:11px 14px;border-radius:8px;background:#2563eb;color:#fff;text-align:center;font-weight:700;text-decoration:none';
+   const close=document.createElement('button');close.type='button';close.textContent='Đóng';close.style.cssText='padding:7px 12px;border:1px solid #cbd5e1;border-radius:7px;background:#f8fafc;color:#334155';
+   close.onclick=()=>{panel.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);};
+   panel.append(title,manual,close);document.body.appendChild(panel);
+   setTimeout(()=>{if(panel.isConnected){panel.remove();URL.revokeObjectURL(url);}},10*60*1000);
    return true;
-  }catch(error){console.error('Download failed:',error);toast('Trình duyệt chưa tạo được tệp. Hãy thử lại hoặc cho phép tải xuống.');return false;}
+  }catch(error){
+   console.error('Download failed:',error);
+   if(url)try{URL.revokeObjectURL(url);}catch(_){}
+   toast('Không tạo được tệp. Thầy kiểm tra quyền tải xuống của trình duyệt rồi thử lại.');
+   return false;
+  }
  }
  function shell(){if(!staff())return;if($('tch-class'))attendanceClassId=$('tch-class').value;ensure();const root=$('teacher-suite');if(!root)return;root.innerHTML=`<nav class="teacher-top-buttons" aria-label="Nhóm chức năng giáo viên"><button type="button" class="teacher-top-button ${teacherTop==='learning'?'is-active':''}" aria-pressed="${teacherTop==='learning'}" onclick="TS.selectTop('learning')">📚 Dạy học & Theo dõi học sinh</button><button type="button" class="teacher-top-button ${teacherTop==='schedule'?'is-active':''}" aria-pressed="${teacherTop==='schedule'}" onclick="TS.selectTop('schedule')">🗓 Thời khóa biểu</button><button type="button" class="teacher-top-button ${teacherTop==='tools'?'is-active':''}" aria-pressed="${teacherTop==='tools'}" onclick="TS.selectTop('tools')">🧰 Tiện ích giáo viên</button><button type="button" class="teacher-top-button ${teacherTop==='library'?'is-active':''}" aria-pressed="${teacherTop==='library'}" onclick="TS.selectTop('library')">📚 Thư viện</button><button type="button" id="teacher-accounts-button" class="teacher-top-button" onclick="window.app.openFamilyAccountManager()">Quản lí tài khoản</button><label class="teacher-month-switcher"><select aria-label="Chọn tháng thống kê" title="Chọn tháng thống kê" onchange="TS.changeGradeStatsMonth(this.value)">${gradeMonthOptions()}</select></label><label class="teacher-class-switcher">Lớp<select id="teacher-scope-class" class="ts-input" onchange="TS.changeTeacherScope(this.value)"><option value="">Tất cả lớp</option>${managedTeacherClasses().map(c=>`<option value="${esc(c.id)}" ${teacherScopeClassId===c.id?'selected':''}>Lớp ${esc(c.name)}</option>`).join('')}</select></label></nav><div class="ts-schedule-content">${teacherScheduleHTML()}</div><div class="ts-learning-content"><nav class="ts-nav">${[['students','01','Danh sách học sinh','Cập nhật · đồng bộ quản trị'],['author','02','Soạn đề','Cấu trúc · ma trận · tải đề'],['assign','03','Quản trị giao bài','Chọn lớp · hẹn giờ · hạn nộp'],['grade','04','Chấm điểm','Nhập điểm · chấm bài kiểm tra'],['progress','05','Thống kê cuối kỳ, cuối năm','Theo lớp · HK1 · HK2 · cả năm'],['reports','06','Báo lỗi','Học sinh báo · giáo viên xử lý'],['lessons','07','Soạn giáo án & bài giảng','Soạn · Video · PowerPoint · Thư viện'],['practice','08','Bài luyện tập & Chuỗi hằng ngày','Tạo độc lập từ ngân hàng câu hỏi'],['mixing','09','Trộn đề Word','Đảo câu · đáp án · giữ công thức']].map(([k,n,t,s])=>`<button class="${(tab===k||k==='matrix'&&tab==='author'&&draft?.authorMode==='matrix')?'active':''}" ${k==='matrix'?'onclick="TS.openAzotaComposer()"':`onclick="TS.open('${k}')"`}><b><span class="teacher-tab-title">${n}. ${t}</span><span class="teacher-tab-count" data-tab-count="${k}" title="${({students:'Học sinh',author:'Đề đã soạn',assign:'Bài đã giao',grade:'Bài nộp chờ chấm',reports:'Phản hồi chưa xử lý',lessons:'Giáo án / bài giảng đã lưu',practice:'Bài luyện tập và chuỗi đã tạo',mixing:'Bộ đề có nhiều mã'})[k]}">${k==='grade'?gradeBadgeLabel():(tabCounts()[k]??0)}</span></b><small>${s}</small></button>`).join('')}</nav><div class="teacher-delivery-actions"><button type="button" class="ts-btn ts-secondary" onclick="TS.sendTeachingResource('lesson')">Gửi bài giảng</button><button type="button" class="ts-btn ts-secondary" onclick="TS.sendTeachingResource('homework')">Gửi bài tập</button><button type="button" class="ts-btn ts-secondary" onclick="TS.openLessonUpload()">Tải bài PDF / Word / PowerPoint</button><button type="button" class="ts-btn ts-secondary" onclick="TS.openPdfConversion()">Chuyển sang PDF trước khi tải lên</button><input type="file" id="teacher-pdf-convert" accept=".pdf,.doc,.docx,.ppt,.pptx" hidden onchange="TS.convertLessonToPdf(this)"></div><div id="ts-panel"></div></div><div class="ts-library-content" id="center-lessons-teacher"></div>`;const renderTab={students,author,assign,grade,progress,reports,lessons,practice:practiceWorkspace,mixing}[tab];if(renderTab)renderTab();else $('ts-panel').innerHTML='<p class="ts-help">Chọn chức năng phía trên để bắt đầu.</p>';applyTop();if(teacherTop==='library')showCenterLessons();}
  function resetSelection(){tab='';teacherTop='learning';}
@@ -2344,8 +2361,8 @@ Lời giải tham khảo.`;
   }
   const fileExt=ext==='txt'?'txt':'md';
   const fileName='bieu-mau-gemini-'+(p.grade||'khoi')+'-'+(p.lesson||'bai').replace(/[^\p{L}\p{N}-]+/gu,'-')+'.'+fileExt;
-  download(fileName,prompt,fileExt==='md'?'text/markdown;charset=utf-8':'text/plain;charset=utf-8');
-  toast('Đã tải biểu mẫu. Gemini cần trả về đúng cấu trúc để hệ thống kiểm tra và nhập ngân hàng.');
+  const saved=download(fileName,prompt,fileExt==='md'?'text/markdown;charset=utf-8':'text/plain;charset=utf-8');
+  if(saved)toast('Đã tạo biểu mẫu. Nếu trình duyệt không tự tải, dùng liên kết tải dự phòng ở cuối màn hình.');
  }
  function copyPracticeGeminiPrompt(){downloadPracticeGeminiTemplate('copy');}
  function copyPracticeGeminiPromptAndOpen(){downloadPracticeGeminiTemplate('copy-open');}
