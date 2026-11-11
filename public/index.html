@@ -2427,7 +2427,7 @@ Lời giải tham khảo.`;
   const raw=qsel('lp2-gemini-paste');
   if(!raw.trim())return toast('Hãy dán toàn bộ kết quả Gemini trước khi tạo tệp.');
   let content=raw.replace(/^\uFEFF/,'').trim();
-  content=content.replace(/^\s*\`\`\`(?:markdown|md|text|txt)?\s*\n/i,'').replace(/\n\s*\`\`\`\s*$/,'').trim()+'\n';
+  content=content.trim()+'\n';
   if(!/^##\s*Câu\s*1\b/im.test(content))return toast('Chưa thấy nội dung bắt đầu bằng “## Câu 1”. Hãy dán toàn bộ kết quả câu hỏi trước.');
   const p=practiceDraft||practiceBlank();
   const safe=v=>String(v||'').normalize('NFC').replace(/[^\p{L}\p{N}-]+/gu,'-').replace(/^-+|-+$/g,'').slice(0,60);
