@@ -118,8 +118,8 @@ test('three-level practice reports success only after hosted state save is confi
   const end=html.indexOf('function studentPracticeSetsHTML',start);
   assert.ok(start>=0&&end>start,'async three-level builder exists');
   const builder=html.slice(start,end);
-  assert.match(builder,/if\(hosted\)\{try\{await onlineFlush\(\);\}catch\(e\)\{return;\}\}/);
-  assert.ok(builder.indexOf('await onlineFlush()')<builder.indexOf("toast('Đã lưu và giao 3 bài"));
+  assert.match(builder,/if\(!await commitPracticeDelivery\(newExams,newAssignments\)\)return;/);
+  assert.ok(builder.indexOf('await commitPracticeDelivery')<builder.indexOf("toast('Đã lưu và giao 3 bài"));
   const flush=html.slice(html.indexOf('async function onlineFlushNow()'),html.indexOf('async function onlineLogin'));
   assert.match(flush,/catch\(e\)\{onlineDirty=true;setBadge\(false\);toast\('Chưa lưu lên máy chủ: '\+e\.message\);throw e;\}/);
 });
