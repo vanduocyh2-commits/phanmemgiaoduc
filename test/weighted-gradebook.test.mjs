@@ -25,3 +25,5 @@ test('manual test grades count once, learning mirror rows do not double count, a
  const physics=buildWeightedGradeRows({classRecord:cls,assignments,submissions:[sub('t2','t2','S01',9,'2026-09-12')],from:'2026-09-01',to:'2026-09-30',subject:'Vật lý'});
  assert.equal(physics[0].testAvg,9);assert.equal(weightedGradeSubjects({classRecord:cls,assignments}).includes('Vật lý'),true);
 });
+
+test('a graded record with a blank score is still excluded',()=>{const rows=buildWeightedGradeRows({classRecord:cls,assignments,submissions:[sub('p','p1','S01',null,'2026-09-10')],from:'2026-09-01',to:'2026-09-30'});assert.equal(rows[0].practiceCount,0);});

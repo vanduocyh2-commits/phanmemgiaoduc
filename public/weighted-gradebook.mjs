@@ -1,6 +1,6 @@
 const DAY=86400000;
 function parseDate(value){if(!value)return null;const text=String(value).trim();let m=text.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);let date=m?new Date(Number(m[3]),Number(m[2])-1,Number(m[1])):new Date(text);return Number.isFinite(date.getTime())?date:null;}
-function scoreOf(value){const n=Number(value);return Number.isFinite(n)&&n>=0&&n<=10?n:null;}
+function scoreOf(value){if(value===null||value===undefined||String(value).trim()==='')return null;const n=Number(value);return Number.isFinite(n)&&n>=0&&n<=10?n:null;}
 function subjectOf(row,classRecord){return String(row?.subject||row?.snapshot?.subject||row?.bankSource?.subject||classRecord?.subject||'Chưa phân môn').trim()||'Chưa phân môn';}
 function inRange(value,from,to){const d=parseDate(value);if(!d)return false;const start=parseDate(from),end=parseDate(to);return (!start||d>=start)&&(!end||d<=new Date(end.getFullYear(),end.getMonth(),end.getDate(),23,59,59,999));}
 function isPractice(a){return !!(a?.lessonPractice||a?.practiceSetId||a?.sequenceId||a?.dailySequenceId);}
