@@ -1422,7 +1422,7 @@ const TS = (() => {
   return '<section class="ts-box" style="border:1px solid #c4b5fd;background:#faf8ff;margin:14px 0">'+
    '<div class="ts-row"><div><h3>🤖 Xây dựng ngân hàng bằng Gemini</h3><p class="ts-help">Tạo và tích lũy câu hỏi độc lập với 3 bài luyện tập. Có thể nhập nhiều tệp nhiều lần; câu trùng được tự lọc, câu hợp lệ vẫn lưu dù một số câu trong tệp bị lỗi.</p></div><span class="ts-tag">Kho dùng chung</span></div>'+
    '<div class="ts-grid">'+opts('qbg-grade','Khối',questionBankFilters.grade,'Ví dụ: 9')+opts('qbg-subject','Môn',questionBankFilters.subject,'Ví dụ: Toán')+opts('qbg-curriculum','Chương trình',questionBankFilters.curriculum||'GDPT 2018','GDPT 2018')+opts('qbg-textbook','Bộ sách',questionBankFilters.textbook,'Ví dụ: Kết nối tri thức với cuộc sống')+opts('qbg-chapter','Chương',questionBankFilters.chapter,'Tên chương')+opts('qbg-lesson','Bài / chủ đề',questionBankFilters.lesson,'Tên bài học')+'</div>'+
-   '<p class="ts-help"><b>Số câu muốn Gemini tạo</b> (độc lập với cấu hình 3 bài):</p><div class="ts-grid">'+count('qbg-NB','Nhận biết (NB)',20)+count('qbg-TH','Thông hiểu (TH)',20)+count('qbg-VD','Vận dụng (VD)',20)+count('qbg-VDC','Vận dụng cao (VDC)',0)+'</div>'+
+   '<p class="ts-help"><b>Cấu hình đủ 4 phần câu hỏi</b> (độc lập với cấu hình 3 bài luyện tập). Thầy có thể tăng, giảm hoặc đặt 0 cho từng phần:</p><div class="ts-grid">'+count('qbg-mcq','1. Trắc nghiệm 4 lựa chọn',12)+count('qbg-tf','2. Đúng / Sai (mỗi câu 4 mệnh đề)',4)+count('qbg-short','3. Trả lời ngắn',4)+count('qbg-essay','4. Tự luận (số câu tùy ý)',2)+'</div><p class="ts-help">Mặc định: 12 trắc nghiệm, 4 đúng/sai, 4 trả lời ngắn, 2 tự luận. Có thể chỉnh số lượng mỗi phần từ 0 đến 500. Mỗi câu vẫn được gắn mức độ NB / TH / VD / VDC để sau này lọc khi lập đề.</p>'+
    '<div class="ts-row" style="flex-wrap:wrap"><button type="button" class="ts-btn" onclick="TS.copyBankGeminiPromptAndOpen()">📋 Sao chép câu lệnh &amp; mở Gemini</button><button type="button" class="ts-btn ts-secondary" onclick="TS.copyBankGeminiPrompt()">Chỉ sao chép câu lệnh</button><button type="button" class="ts-btn ts-secondary" onclick="TS.downloadBankGeminiPrompt()">⬇ Tải câu lệnh .md</button></div>'+
    '<div style="border-top:1px solid #ddd6fe;margin-top:12px;padding-top:12px"><b>📥 Nhập kho câu hỏi từ Gemini</b><p class="ts-help">Chọn tệp .md/.txt hoặc dán nội dung. Hệ thống không bắt buộc tệp phải đủ số lượng đã yêu cầu: câu hợp lệ được giữ lại, câu lỗi được báo riêng, câu trùng tự bỏ qua.</p>'+
    '<label>Dán nội dung Gemini<textarea id="qbg-paste" class="ts-input" rows="6" placeholder="Dán các khối ## Câu 1, ## Câu 2..."></textarea></label>'+
@@ -1433,20 +1433,20 @@ const TS = (() => {
   const scope={grade:get('qbg-grade').replace(/^(?:khối\s*|lớp\s*)/i,''),subject:get('qbg-subject'),curriculum:get('qbg-curriculum')||'GDPT 2018',textbook:get('qbg-textbook'),chapter:get('qbg-chapter'),lesson:get('qbg-lesson')};
   const missing=Object.entries(scope).filter(([k,v])=>!v).map(([k])=>({grade:'khối',subject:'môn',curriculum:'chương trình',textbook:'bộ sách',chapter:'chương',lesson:'bài / chủ đề'}[k]));
   if(missing.length)throw Error('Hãy nhập đủ phạm vi: '+missing.join(', ')+'.');
-  const counts={};for(const level of ['NB','TH','VD','VDC']){const raw=get('qbg-'+level),n=raw===''?0:Number(raw);if(!Number.isInteger(n)||n<0||n>500)throw Error('Số câu '+level+' phải là số nguyên từ 0 đến 500.');counts[level]=n;}
-  if(!Object.values(counts).some(Boolean))throw Error('Hãy nhập số câu lớn hơn 0 ở ít nhất một mức độ.');
+  const counts={};for(const type of ['mcq','tf','short','essay']){const raw=get('qbg-'+type),n=raw===''?0:Number(raw);if(!Number.isInteger(n)||n<0||n>500)throw Error('Số câu '+({mcq:'trắc nghiệm',tf:'đúng/sai',short:'trả lời ngắn',essay:'tự luận'}[type])+' phải là số nguyên từ 0 đến 500.');counts[type]=n;}
+  if(!Object.values(counts).some(Boolean))throw Error('Hãy nhập số câu lớn hơn 0 ở ít nhất một phần.');
   return {scope,counts};
  }
  function bankGeminiPromptText(){
   const {scope,counts}=bankGeminiScope(),total=Object.values(counts).reduce((a,b)=>a+b,0);
-  return 'Bạn là chuyên gia biên soạn câu hỏi. Hãy tạo đúng '+total+' câu hỏi mới theo phạm vi và phân bố dưới đây.\n\n'+
+  return 'Bạn là chuyên gia biên soạn câu hỏi. Hãy tạo đúng '+total+' câu hỏi mới, đủ 4 phần theo cấu hình giáo viên.\n\n'+
    'KHỐI: '+scope.grade+'\nMÔN: '+scope.subject+'\nCHƯƠNG TRÌNH: '+scope.curriculum+'\nBỘ SÁCH: '+scope.textbook+'\nCHƯƠNG: '+scope.chapter+'\nBÀI / CHỦ ĐỀ: '+scope.lesson+'\n\n'+
-   'SỐ LƯỢNG BẮT BUỘC: NB '+counts.NB+', TH '+counts.TH+', VD '+counts.VD+', VDC '+counts.VDC+'. Tạo đúng từng số lượng, không tự đổi mức độ. Đây là yêu cầu tạo kho câu hỏi, không liên quan số câu của 3 bài luyện tập.\n'+
-   'Mỗi câu phải có nội dung rõ ràng, đáp án chính xác và lời giải / hướng dẫn chấm. Đa dạng cách hỏi, không lặp lại cùng một ý. Giữ nguyên công thức Toán bằng LaTeX.\n'+
-   'Chỉ dùng loại: mcq, tf, short, essay; mức độ: NB, TH, VD, VDC. Mỗi câu bắt đầu bằng tiêu đề ## Câu số.\n'+
-   'mcq: đủ A, B, C, D và Đáp án A/B/C/D. tf: đủ 4 mệnh đề và đáp án gồm 4 giá trị Đúng/Sai. short: có đáp án. essay: có hướng dẫn chấm. Mỗi câu có Điểm và Giải thích.\n'+
-   'Xuất toàn bộ nội dung thành tệp questions.md hoặc cau-hoi-ngan-hang.md, đồng thời hiển thị đầy đủ nội dung để sao chép. Không thêm lời dẫn ngoài các khối câu hỏi. Đánh số liên tục từ ## Câu 1.\n\n'+
-   'MẪU:\n## Câu 1\nLoại: mcq\nMức độ: NB\nĐiểm: 1\nNội dung:\nNội dung câu hỏi\nA: Phương án A\nB: Phương án B\nC: Phương án C\nD: Phương án D\nĐáp án: A\nGiải thích:\nLời giải ngắn gọn.';
+   'SỐ LƯỢNG BẮT BUỘC THEO DẠNG: Trắc nghiệm 4 lựa chọn (mcq): '+counts.mcq+' câu; Đúng/Sai (tf): '+counts.tf+' câu; Trả lời ngắn (short): '+counts.short+' câu; Tự luận (essay): '+counts.essay+' câu. Tổng cộng '+total+' câu. Phải tạo chính xác từng số lượng theo từng dạng; không được tự chuyển câu từ dạng này sang dạng khác. Đây là cấu hình tạo ngân hàng, hoàn toàn độc lập với số câu của 3 bài luyện tập.\n'+
+   'Mỗi câu phải có nội dung rõ ràng, đáp án chính xác và lời giải / hướng dẫn chấm. Đa dạng cách hỏi, không lặp ý. Giữ nguyên công thức toán bằng LaTeX. Mỗi câu phải gắn một mức độ NB, TH, VD hoặc VDC phù hợp; phân bố mức độ hợp lý, không cần người dùng cấu hình số lượng theo mức độ.\n'+
+   'ĐỊNH DẠNG BẮT BUỘC: mỗi câu bắt đầu bằng ## Câu số; có Loại, Mức độ, Điểm, Nội dung, Đáp án, Giải thích.\n'+
+   '- mcq: đủ A, B, C, D; Đáp án chỉ A/B/C/D.\n- tf: đủ 4 mệnh đề; Đáp án gồm đúng 4 giá trị Đúng/Sai.\n- short: câu trả lời ngắn, có đáp án chính xác (có thể kèm đơn vị hoặc biểu thức).\n- essay: câu tự luận yêu cầu trình bày lời giải; Đáp án phải là hướng dẫn chấm/rubric có các ý, điểm thành phần và tiêu chí chấp nhận đáp án tương đương.\n'+
+   'Xuất toàn bộ nội dung thành tệp cau-hoi-ngan-hang.md, đồng thời hiển thị đầy đủ nội dung để sao chép. Không thêm lời dẫn ngoài các khối câu hỏi. Đánh số liên tục từ ## Câu 1.\n\n'+
+   'MẪU 4 DẠNG:\n## Câu 1\nLoại: mcq\nMức độ: NB\nĐiểm: 1\nNội dung:\nNội dung câu hỏi\nA: Phương án A\nB: Phương án B\nC: Phương án C\nD: Phương án D\nĐáp án: A\nGiải thích:\nLời giải ngắn gọn.\n\n## Câu 2\nLoại: tf\nMức độ: TH\nĐiểm: 1\nNội dung:\nNhận định gồm bốn ý\nMệnh đề 1: ...\nMệnh đề 2: ...\nMệnh đề 3: ...\nMệnh đề 4: ...\nĐáp án: Đúng, Sai, Đúng, Sai\nGiải thích:\nGiải thích bốn ý.\n\n## Câu 3\nLoại: short\nMức độ: VD\nĐiểm: 1\nNội dung:\nTính giá trị ...\nĐáp án: ...\nGiải thích:\nTrình bày ngắn gọn.\n\n## Câu 4\nLoại: essay\nMức độ: VDC\nĐiểm: 2\nNội dung:\nGiải bài toán ...\nĐáp án: Hướng dẫn chấm: ý 1 ... điểm; ý 2 ... điểm.\nGiải thích:\nLời giải tham khảo đầy đủ.';
  }
  function runBankGeminiCopy(openGemini=false){
   if(!staff())return;let prompt;try{prompt=bankGeminiPromptText();}catch(e){return toast(e.message);}
@@ -1474,9 +1474,11 @@ const TS = (() => {
   const {scope}=bankGeminiScope(),parsed=parsePracticeGeminiText(raw),existing=new Set((state.questionBank||[]).map(q=>practiceGeminiQuestionIdentity(q))),unique=[],duplicates=[];
   for(const q of parsed.questions){const row={...q,...scope,chapterOrder:1,lessonOrder:1,owner:activeAccount?.username||onlineMember?.username||'admin',source:'gemini-bank-import',sourceExamTitle:'Bổ sung từ Gemini'};const key=practiceGeminiQuestionIdentity(row);if(existing.has(key)){duplicates.push(row);continue;}existing.add(key);unique.push(row);}
   bankGeminiImportDraft=unique;
-  const count=level=>parsed.questions.filter(q=>q.level===level).length;
+  const count=type=>parsed.questions.filter(q=>q.type===type).length,required=(()=>{try{return bankGeminiScope().counts;}catch(e){return null;}})();
   const host=$('qbg-preview');if(!host)return;
-  host.innerHTML='<div class="ts-note"><b>Kiểm tra tệp: '+esc(fileName)+'</b><p>Đọc được '+parsed.total+' khối · Hợp lệ '+parsed.questions.length+' · Trùng '+duplicates.length+' · Lỗi '+parsed.errors.length+'</p><p>NB '+count('NB')+' · TH '+count('TH')+' · VD '+count('VD')+' · VDC '+count('VDC')+'</p>'+
+  const actual={mcq:count('mcq'),tf:count('tf'),short:count('short'),essay:count('essay')};
+  const typeSummary=['mcq','tf','short','essay'].map(type=>({mcq:'Trắc nghiệm',tf:'Đúng/Sai',short:'Trả lời ngắn',essay:'Tự luận'}[type])+': '+actual[type]+(required?' / '+required[type]+' yêu cầu':'')).join(' · ');
+  host.innerHTML='<div class="ts-note"><b>Kiểm tra tệp: '+esc(fileName)+'</b><p>Đọc được '+parsed.total+' khối · Hợp lệ '+parsed.questions.length+' · Trùng '+duplicates.length+' · Lỗi '+parsed.errors.length+'</p><p><b>Thống kê đủ 4 phần:</b> '+esc(typeSummary)+'</p>'+
    (duplicates.length?'<p class="ts-help">Câu trùng không được lưu.</p>':'')+
    (parsed.errors.length?'<p style="color:#b91c1c"><b>Các câu lỗi (được bỏ qua):</b><br>'+parsed.errors.map(esc).join('<br>')+'</p>':'')+
    '<div class="ts-table"><table><thead><tr><th>#</th><th>Mức</th><th>Dạng</th><th>Nội dung</th><th>Đáp án</th></tr></thead><tbody>'+unique.slice(0,40).map((q,i)=>'<tr><td>'+(i+1)+'</td><td>'+esc(q.level)+'</td><td>'+esc(q.type)+'</td><td>'+MathBridge.inline(q.text||'')+'</td><td>'+MathBridge.inline(q.answer||'')+'</td></tr>').join('')+'</tbody></table></div>'+
