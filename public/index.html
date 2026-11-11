@@ -1448,7 +1448,7 @@ const TS = (() => {
    'Xuất toàn bộ nội dung thành tệp questions.md hoặc cau-hoi-ngan-hang.md, đồng thời hiển thị đầy đủ nội dung để sao chép. Không thêm lời dẫn ngoài các khối câu hỏi. Đánh số liên tục từ ## Câu 1.\n\n'+
    'MẪU:\n## Câu 1\nLoại: mcq\nMức độ: NB\nĐiểm: 1\nNội dung:\nNội dung câu hỏi\nA: Phương án A\nB: Phương án B\nC: Phương án C\nD: Phương án D\nĐáp án: A\nGiải thích:\nLời giải ngắn gọn.';
  }
- function copyBankGeminiPrompt(openGemini=false){
+ function runBankGeminiCopy(openGemini=false){
   if(!staff())return;let prompt;try{prompt=bankGeminiPromptText();}catch(e){return toast(e.message);}
   if(openGemini)window.open('https://gemini.google.com/app','_blank','noopener');
   if(navigator.clipboard?.writeText){navigator.clipboard.writeText(prompt).then(()=>toast('Đã sao chép câu lệnh tạo ngân hàng. Hãy dán vào Gemini.'),()=>bankGeminiCopyFallback(prompt));}
@@ -1457,8 +1457,8 @@ const TS = (() => {
  function bankGeminiCopyFallback(prompt){
   const area=document.createElement('textarea');area.value=prompt;area.style.cssText='position:fixed;left:12px;top:12px;width:90%;height:220px;z-index:2147483000';document.body.appendChild(area);area.focus();area.select();toast('Câu lệnh đã hiện trong ô chọn. Nhấn Ctrl+C để sao chép.');area.addEventListener('blur',()=>area.remove(),{once:true});
  }
- function copyBankGeminiPrompt(){copyBankGeminiPrompt(false);}
- function copyBankGeminiPromptAndOpen(){copyBankGeminiPrompt(true);}
+ function copyBankGeminiPrompt(){runBankGeminiCopy(false);}
+ function copyBankGeminiPromptAndOpen(){runBankGeminiCopy(true);}
  function downloadBankGeminiPrompt(){if(!staff())return;try{const prompt=bankGeminiPromptText();download('yeu-cau-tao-ngan-hang-cau-hoi.md',prompt,'text/markdown;charset=utf-8');}catch(e){toast(e.message);}}
  function previewBankGeminiImport(input){
   if(!staff())return;const file=input?.files?.[0];if(!file)return;
