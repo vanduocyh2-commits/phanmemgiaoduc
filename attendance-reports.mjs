@@ -17,20 +17,22 @@ const latestRecords = student => {
   return records;
 };
 
+const reasonLabel = row => row?.status==='Vắng'&&row.makeup!==true ? ({excused:'Có phép',unexcused:'Không phép'}[String(row.absenceType||'').toLowerCase()]||'Chưa phân loại') : '';
+
 const labelOf = row => {
   if (!row) return 'Chưa điểm danh';
   if (row.makeup === true) return 'Học bù';
-  return ['Có mặt', 'Vắng', 'Muộn'].includes(row.status) ? row.status : 'Chưa điểm danh';
+  return ['Có mặt', 'Vắng', 'Muộn'].includes(row.status) ? (row.status==='Vắng' ? 'Vắng · '+reasonLabel(row) : row.status) : 'Chưa điểm danh';
 };
 
 const countStatuses = rows => {
-  const counts = { present: 0, absent: 0, late: 0, makeup: 0, marked: 0, attended: 0 };
+  const counts = { present: 0, absent: 0, excused: 0, unexcused: 0, unclassified: 0, late: 0, makeup: 0, marked: 0, attended: 0 };
   for (const row of rows) {
     const status = labelOf(row);
     if (status === 'Chưa điểm danh') continue;
     counts.marked++;
     if (status === 'Có mặt') counts.present++;
-    else if (status === 'Vắng') counts.absent++;
+    else if (status.startsWith('Vắng')) { counts.absent++; const reason=reasonLabel(row); if(reason==='Có phép')counts.excused++;else if(reason==='Không phép')counts.unexcused++;else counts.unclassified++; }
     else if (status === 'Muộn') counts.late++;
     else if (status === 'Học bù') counts.makeup++;
   }
@@ -99,7 +101,7 @@ export function buildAttendanceReport(d, actor, allowedClassIds, input = {}) {
     const subtitle = [
       dateLabel(date) + '/' + date.slice(0, 4),
       'Có mặt: ' + counts.present,
-      'Vắng: ' + counts.absent,
+      'Vắng: ' + counts.absent + ' (Có phép: '+counts.excused+', Không phép: '+counts.unexcused+', Chưa phân loại: '+counts.unclassified+')',
       'Muộn: ' + counts.late,
       'Học bù: ' + counts.makeup,
       'Chưa điểm danh: ' + (students.length - counts.marked),
@@ -137,6 +139,9 @@ export function buildAttendanceReport(d, actor, allowedClassIds, input = {}) {
       ...byDate.map(dayRows => labelOf(dayRows[index])),
       summary.present,
       summary.absent,
+      summary.excused,
+      summary.unexcused,
+      summary.unclassified,
       summary.late,
       summary.makeup,
       summary.attended,
@@ -148,6 +153,9 @@ export function buildAttendanceReport(d, actor, allowedClassIds, input = {}) {
     ...dates.map(() => ''),
     perStudent.reduce((sum, row) => sum + row.present, 0),
     perStudent.reduce((sum, row) => sum + row.absent, 0),
+    perStudent.reduce((sum, row) => sum + row.excused, 0),
+    perStudent.reduce((sum, row) => sum + row.unexcused, 0),
+    perStudent.reduce((sum, row) => sum + row.unclassified, 0),
     perStudent.reduce((sum, row) => sum + row.late, 0),
     perStudent.reduce((sum, row) => sum + row.makeup, 0),
     perStudent.reduce((sum, row) => sum + row.attended, 0),
@@ -156,7 +164,7 @@ export function buildAttendanceReport(d, actor, allowedClassIds, input = {}) {
   const headers = [
     'STT', 'SBD', 'Họ và tên',
     ...dates.map(dateLabel),
-    'Có mặt', 'Vắng', 'Muộn', 'Học bù', 'Buổi đã học', 'Buổi đã điểm danh'
+    'Có mặt', 'Vắng', 'Có phép', 'Không phép', 'Chưa phân loại', 'Muộn', 'Học bù', 'Buổi đã học', 'Buổi đã điểm danh'
   ];
   const sheet = {
     name: 'Cả tháng',
@@ -167,7 +175,7 @@ export function buildAttendanceReport(d, actor, allowedClassIds, input = {}) {
     headers,
     rows,
     totals,
-    widths: [7, 17, 32, ...dates.map(() => 13), 12, 10, 10, 10, 13, 17]
+    widths: [7, 17, 32, ...dates.map(() => 13), 12, 10, 10, 10, 10, 10, 13, 17]
   };
   return {
     filename: 'DIEM_DANH_THANG_' + safeName(classLabel) + '_' + month + '.xlsx',
