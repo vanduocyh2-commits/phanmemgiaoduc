@@ -86,3 +86,62 @@ export function assignExamIdentity(exams, exam, oldExam, registry = [], now = ne
     title: String(exam.title || oldExam?.title || generatedTitle).trim().slice(0, 240)
   };
 }
+
+
+// Backfill identifiers for legacy bank questions and every persisted exam snapshot.
+// The question ID is the stable join key, so the bank and all copies keep one code.
+export function synchronizeQuestionCodes(state = {}) {
+  state.questionBank = Array.isArray(state.questionBank) ? state.questionBank : [];
+  state.learningExams = Array.isArray(state.learningExams) ? state.learningExams : [];
+  state.assignments = Array.isArray(state.assignments) ? state.assignments : [];
+  state.learningAttempts = Array.isArray(state.learningAttempts) ? state.learningAttempts : [];
+  state._questionCodeCounters ||= {};
+  const byId = new Map();
+  const usedRows = [];
+  let assigned = 0;
+
+  const register = (question, context = {}) => {
+    if (!question || typeof question !== 'object') return;
+    const id = String(question.id || question.bankId || '');
+    const known = id && byId.get(id);
+    if (question.questionCode) {
+      if (id && !known) byId.set(id, question.questionCode);
+      usedRows.push(question);
+      return;
+    }
+    if (known) {
+      question.questionCode = known;
+      usedRows.push(question);
+      assigned += 1;
+      return;
+    }
+    const metadata = { ...context, ...question };
+    question.questionCode = assignQuestionCode(usedRows, metadata, null, state._questionCodeCounters);
+    usedRows.push(question);
+    if (id) byId.set(id, question.questionCode);
+    assigned += 1;
+  };
+
+  const registerExam = exam => {
+    if (!exam || typeof exam !== 'object') return;
+    const context = {
+      subject: exam.subject || 'Toán',
+      grade: exam.grade,
+      chapter: exam.chapter,
+      chapterOrder: exam.chapterOrder,
+      lesson: exam.lesson,
+      lessonOrder: exam.lessonOrder
+    };
+    for (const question of exam.questions || []) register(question, context);
+    for (const variant of Object.values(exam.answerVariants || {})) {
+      for (const question of Array.isArray(variant) ? variant : variant?.questions || []) register(question, context);
+    }
+  };
+
+  for (const question of state.questionBank) register(question);
+  for (const exam of state.learningExams) registerExam(exam);
+  for (const assignment of state.assignments) registerExam(assignment.snapshot);
+  for (const attempt of state.learningAttempts) registerExam(attempt.examSnapshot);
+
+  return assigned;
+}
