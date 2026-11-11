@@ -2547,7 +2547,7 @@ Lời giải tham khảo.`;
    const exact=shuffle(fresh.filter(q=>String(q.level||'NB').toUpperCase()===level));
    const reused=allowReuse?shuffle(eligible.filter(q=>historyIds.has(String(q.id))&&String(q.level||'NB').toUpperCase()===level)):[];
    const picked=[...exact,...reused].slice(0,need);picked.forEach(q=>{used.add(String(q.id));chosen.push({...q,__selectionLevel:level});});
-   if(picked.length<need&&repeatPerAttempt&&Number(repeatPerAttempt[level])>0){const distinct=eligible.length;if(distinct<Number(repeatPerAttempt[level]))throw new Error('Bài mỗi ngày cần '+repeatPerAttempt[level]+' câu khác nhau ở mức '+level+' nhưng phạm vi bài học chỉ có '+distinct+' câu.');const repeatSource=[...picked,...eligible.filter(q=>!picked.some(x=>String(x.id)===String(q.id)))];let cursor=0;while(picked.length<need){const q=repeatSource[cursor++%repeatSource.length];picked.push(q);chosen.push({...q,__selectionLevel:level});}}
+   if(picked.length<need&&repeatPerAttempt&&Number(repeatPerAttempt[level])>0){const levelEligible=eligible.filter(q=>String(q.level||'NB').toUpperCase()===level),distinct=levelEligible.length;if(distinct<Number(repeatPerAttempt[level]))throw new Error('Bài mỗi ngày cần '+repeatPerAttempt[level]+' câu khác nhau ở mức '+level+' nhưng phạm vi bài học chỉ có '+distinct+' câu đúng mức độ.');const repeatSource=[...picked,...levelEligible.filter(q=>!picked.some(x=>String(x.id)===String(q.id)))];let cursor=0;while(picked.length<need){const q=repeatSource[cursor++%repeatSource.length];picked.push(q);chosen.push({...q,__selectionLevel:level});}}
    if(picked.length<need)throw new Error('Phạm vi khối, môn, chương và bài hiện chỉ có '+(Number(counts[level])||0)+' câu phù hợp; còn thiếu '+(need-picked.length)+' câu.');
   }return chosen;
  }
