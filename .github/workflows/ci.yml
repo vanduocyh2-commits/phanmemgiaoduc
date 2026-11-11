@@ -35,5 +35,5 @@ jobs:
               Path(f'/tmp/portal-inline-{index}.mjs').write_text(script, encoding='utf-8')
           print(f'Extracted {len(scripts)} inline module script(s)')
           PY
-          for file in /tmp/portal-inline-*.mjs; do node --check "$file"; done
+          for file in /tmp/portal-inline-*.mjs; do node --check $file; done
       - run: npm test
