@@ -1464,8 +1464,7 @@ const TS = (() => {
  }
  function questionBankIdentity(q){
   const norm=v=>String(v??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').toLocaleLowerCase('vi').replace(/\s+/g,' ').trim();
-  // Compare normalized question stems within the same curriculum scope; option/answer edits do not bypass deduplication.
-  return JSON.stringify({grade:norm(q.grade),subject:norm(q.subject),curriculum:norm(q.curriculum||'GDPT 2018'),textbook:norm(q.textbook),chapter:norm(q.chapter),lesson:norm(q.lesson),type:norm(q.type),text:norm(q.text)});
+  return JSON.stringify({grade:norm(q.grade),subject:norm(q.subject),curriculum:norm(q.curriculum||'GDPT 2018'),textbook:norm(q.textbook),chapter:norm(q.chapter),lesson:norm(q.lesson),type:norm(q.type),text:norm(q.text),options:(q.options||q.statements||[]).map(norm),answer:norm(q.answer),tfAnswers:(q.tfAnswers||[]).map(norm)});
  }
  function saveQuestionDraftsToBank(examId,examTitle){
   state.questionBank=Array.isArray(state.questionBank)?state.questionBank:[];
@@ -2338,6 +2337,10 @@ function progress(){const selected=qsel('progress-class');const c=teacherClasses
  }
 
  let practiceImportDraft=[];
+ function practiceGeminiQuestionIdentity(q){
+  const norm=v=>String(v??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').toLocaleLowerCase('vi').replace(/\s+/g,' ').trim();
+  return JSON.stringify({grade:norm(q.grade),subject:norm(q.subject),curriculum:norm(q.curriculum||'GDPT 2018'),textbook:norm(q.textbook),chapter:norm(q.chapter),lesson:norm(q.lesson),type:norm(q.type),text:norm(q.text)});
+ }
  function practiceGeminiRequirements(){
   const pool=standaloneQuestionPool(),levels=['NB','TH','VD','VDC'],need={},counts={};
   for(const level of levels){
@@ -2487,11 +2490,11 @@ Lời giải tham khảo.`;
     const actualCounts=Object.fromEntries(['NB','TH','VD','VDC'].map(level=>[level,parsed.questions.filter(q=>q.level===level).length]));
     const countMismatches=['NB','TH','VD','VDC'].filter(level=>actualCounts[level]!==requirements.need[level]).map(level=>level+': yêu cầu '+requirements.need[level]+' câu, tệp có '+actualCounts[level]+' câu');
     const norm=v=>String(v??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').toLocaleLowerCase('vi').replace(/\s+/g,' ').trim();
-    const existing=new Set((state.questionBank||[]).map(q=>questionBankIdentity(q)));
+    const existing=new Set((state.questionBank||[]).map(q=>practiceGeminiQuestionIdentity(q)));
     const unique=[],duplicates=[];
     for(const q of parsed.questions){
      const row={...q,grade:String(p.grade||'').replace(/^(?:khối\s*|lớp\s*)/i,''),subject:p.subject,curriculum:p.curriculum||'GDPT 2018',textbook:p.textbook||'Kết nối tri thức với cuộc sống',chapter:p.chapter,chapterOrder:Number(p.chapterOrder)||1,lesson:p.lesson,lessonOrder:Number(p.lessonOrder)||1};
-     const key=questionBankIdentity(row);
+     const key=practiceGeminiQuestionIdentity(row);
      if(existing.has(key)){duplicates.push(row);continue;}
      existing.add(key);unique.push(row);
     }
@@ -2533,11 +2536,11 @@ Lời giải tham khảo.`;
  function commitPracticeGeminiImport(){
   if(!staff()||!practiceImportDraft.length)return toast('Không có câu hỏi hợp lệ để lưu.');
   capturePractice();
-  const p=practiceDraft||practiceBlank(),owner=activeAccount?.username||onlineMember?.username||'admin',now=new Date().toISOString(),seen=new Set((state.questionBank||[]).map(q=>questionBankIdentity(q)));
+  const p=practiceDraft||practiceBlank(),owner=activeAccount?.username||onlineMember?.username||'admin',now=new Date().toISOString(),seen=new Set((state.questionBank||[]).map(q=>practiceGeminiQuestionIdentity(q)));
   let added=0;
   for(const source of practiceImportDraft){
    const q={...copy(source),id:uid('qb'),owner,source:'gemini-markdown-import',sourceExamTitle:'Bổ sung từ Gemini',createdAt:now,updatedAt:now};
-   const key=questionBankIdentity(q);if(seen.has(key))continue;seen.add(key);q._bankKey=key;state.questionBank.push(q);added++;
+   const key=practiceGeminiQuestionIdentity(q);if(seen.has(key))continue;seen.add(key);q._bankKey=key;state.questionBank.push(q);added++;
   }
   put();practiceImportDraft=[];
   const host=$('lp2-gemini-import-preview');if(host)host.innerHTML='<p class="ts-note">Đã lưu '+added+' câu mới vào Ngân hàng câu hỏi dùng chung. Có thể chọn ngay khi soạn đề thi hoặc tạo bài luyện tập.</p>';
