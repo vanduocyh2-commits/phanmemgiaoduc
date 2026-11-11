@@ -127,7 +127,7 @@ test('three-level practice reports success only after hosted state save is confi
 
 test('practice delivery validates class grade and treats HTTP validation errors as online responses',()=>{
   assert.match(html,/function validatePracticeClassGrade\(c,grade\)/);
-  assert.match(html,/managedTeacherClasses\(\)\.filter\(c=>!classGrade\(c\)\|\|String\(classGrade\(c\)\)===String\(catalogGrade\)\)/);
+  assert.match(html,/managedTeacherClasses\(\)\.filter\(c=>String\(classGrade\(c\)\)===String\(catalogGrade\)\)/);
   assert.match(html,/error\.status=r\.status/);
   assert.match(html,/setBadge\(Number\.isInteger\(e\.status\)\)/);
 });
