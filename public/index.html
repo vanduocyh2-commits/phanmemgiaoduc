@@ -2338,7 +2338,7 @@ function progress(){const selected=qsel('progress-class');const c=teacherClasses
 
  let practiceImportDraft=[];
  function practiceGeminiRequirements(){
-  const pool=standaloneQuestionPool(),need={NB:10,TH:5,VD:10,VDC:5},counts={};
+  const pool=standaloneQuestionPool(),need={NB:Number(qsel('lp2-practice-NB')||5),TH:Number(qsel('lp2-practice-TH')||3),VD:Number(qsel('lp2-practice-VD')||2),VDC:Number(qsel('lp2-practice-VDC')||0)},counts={};
   for(const level of Object.keys(need))counts[level]=pool.filter(q=>String(q.level||'').toUpperCase()===level).length;
   return {need,counts,missing:Object.fromEntries(Object.keys(need).map(k=>[k,Math.max(0,need[k]-counts[k])]))};
  }
@@ -2397,7 +2397,7 @@ Viết nội dung câu hỏi tự luận.
 Đáp án: Hướng dẫn chấm / các ý cần đạt
 Giải thích:
 Lời giải tham khảo.`;
-  const prompt=`Bạn là chuyên gia biên soạn câu hỏi Toán THCS/THPT. Hãy tạo đúng các câu hỏi còn thiếu cho thông tin dưới đây. Không bịa tên bài/chương; bám sát kiến thức bài học. Câu hỏi phải rõ ràng, có đáp án chính xác và lời giải. Tránh trùng lặp nội dung và tránh câu hỏi mơ hồ. Giữ nguyên công thức toán bằng LaTeX nếu cần.\n\nPHẠM VI:\n${meta.join('\n')}\n\nSỐ CÂU CÒN THIẾU ĐỂ TẠO BỘ 3 BÀI KHÔNG TRÙNG:\n${missing}\n\nYÊU CẦU ĐỊNH DẠNG:\n- Chỉ dùng loại: mcq, tf, short, essay.\n- Mức độ: NB, TH, VD, VDC.\n- mcq bắt buộc đủ A, B, C, D và Đáp án A/B/C/D.\n- tf bắt buộc đủ 4 mệnh đề và Đáp án gồm 4 giá trị Đúng/Sai.\n- short phải có đáp án; essay phải có hướng dẫn chấm.\n- Mỗi câu bắt đầu bằng tiêu đề ## Câu số.\n- Tuân thủ chính xác mẫu ở cuối file; không thêm lời dẫn ngoài các khối câu hỏi.\n- Phải tạo đầy đủ tất cả câu hỏi còn thiếu theo đúng số lượng từng mức độ; không chỉ đưa ví dụ hoặc hướng dẫn.\n- Kết quả chỉ gồm các khối câu hỏi theo mẫu, không có lời mở đầu, kết luận hay nhận xét.\n- Hãy tạo tệp kết quả tên cau-hoi-bo-sung.md chứa nguyên văn toàn bộ câu hỏi, giữ nguyên tiếng Việt và công thức LaTeX. Nếu Gemini hỗ trợ tạo tệp đính kèm/tải xuống, hãy tạo tệp .md và cung cấp liên kết tải.\n- Đồng thời hiển thị toàn bộ nội dung trong câu trả lời để có thể sao chép. Nếu phiên này không hỗ trợ tạo tệp, phải nói rõ không tạo được tệp đính kèm và vẫn xuất đầy đủ nội dung thuần văn bản; tuyệt đối không chỉ báo đã tạo tệp.\n- Đánh số liên tục từ ## Câu 1, không tự ý thay đổi số lượng, loại câu hoặc mức độ.\n\nMẪU:\n${format}\n`;
+  const prompt=`Bạn là chuyên gia biên soạn câu hỏi Toán THCS/THPT. Hãy tạo đúng các câu hỏi còn thiếu cho thông tin dưới đây. Không bịa tên bài/chương; bám sát kiến thức bài học. Câu hỏi phải rõ ràng, có đáp án chính xác và lời giải. Tránh trùng lặp nội dung và tránh câu hỏi mơ hồ. Giữ nguyên công thức toán bằng LaTeX nếu cần.\n\nPHẠM VI:\n${meta.join('\n')}\n\nSỐ CÂU CÒN THIẾU ĐỂ TẠO MỘT BÀI LUYỆN TẬP ĐÚNG CẤU HÌNH:\n${missing}\n\nYÊU CẦU SỐ LƯỢNG CHÍNH XÁC: NB '+req.need.NB+', TH '+req.need.TH+', VD '+req.need.VD+', VDC '+req.need.VDC+'. Chỉ tạo số câu còn thiếu ở từng mức; mức có số lượng cần bổ sung bằng 0 thì không tạo câu. Tuyệt đối không đổi mức độ để đủ tổng số.\n\nYÊU CẦU ĐỊNH DẠNG:\n- Chỉ dùng loại: mcq, tf, short, essay.\n- Mức độ: NB, TH, VD, VDC.\n- mcq bắt buộc đủ A, B, C, D và Đáp án A/B/C/D.\n- tf bắt buộc đủ 4 mệnh đề và Đáp án gồm 4 giá trị Đúng/Sai.\n- short phải có đáp án; essay phải có hướng dẫn chấm.\n- Mỗi câu bắt đầu bằng tiêu đề ## Câu số.\n- Tuân thủ chính xác mẫu ở cuối file; không thêm lời dẫn ngoài các khối câu hỏi.\n- Phải tạo đầy đủ tất cả câu hỏi còn thiếu theo đúng số lượng từng mức độ; không chỉ đưa ví dụ hoặc hướng dẫn.\n- Kết quả chỉ gồm các khối câu hỏi theo mẫu, không có lời mở đầu, kết luận hay nhận xét.\n- Hãy tạo tệp kết quả tên cau-hoi-bo-sung.md chứa nguyên văn toàn bộ câu hỏi, giữ nguyên tiếng Việt và công thức LaTeX. Nếu Gemini hỗ trợ tạo tệp đính kèm/tải xuống, hãy tạo tệp .md và cung cấp liên kết tải.\n- Đồng thời hiển thị toàn bộ nội dung trong câu trả lời để có thể sao chép. Nếu phiên này không hỗ trợ tạo tệp, phải nói rõ không tạo được tệp đính kèm và vẫn xuất đầy đủ nội dung thuần văn bản; tuyệt đối không chỉ báo đã tạo tệp.\n- Đánh số liên tục từ ## Câu 1, không tự ý thay đổi số lượng, loại câu hoặc mức độ.\n\nMẪU:\n${format}\n`;
   if(ext==='copy'||ext==='copy-open'){
    const geminiTab=ext==='copy-open'?window.open('https://gemini.google.com/app','_blank'):null;
    if(geminiTab)geminiTab.opener=null;
@@ -2472,7 +2472,9 @@ Lời giải tham khảo.`;
   const reader=new FileReader();
   reader.onload=()=>{
    try{
-    const parsed=parsePracticeGeminiText(reader.result),p=practiceDraft||practiceBlank();
+    const parsed=parsePracticeGeminiText(reader.result),p=practiceDraft||practiceBlank(),requirements=practiceGeminiRequirements();
+    const actualCounts=Object.fromEntries(['NB','TH','VD','VDC'].map(level=>[level,parsed.questions.filter(q=>q.level===level).length]));
+    const countMismatches=['NB','TH','VD','VDC'].filter(level=>actualCounts[level]!==requirements.missing[level]).map(level=>level+': cần '+requirements.missing[level]+' câu, tệp có '+actualCounts[level]+' câu');
     const norm=v=>String(v??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').toLocaleLowerCase('vi').replace(/\s+/g,' ').trim();
     const existing=new Set((state.questionBank||[]).map(q=>questionBankIdentity(q)));
     const unique=[],duplicates=[];
@@ -2485,10 +2487,10 @@ Lời giải tham khảo.`;
     practiceImportDraft=unique;
     const host=$('lp2-gemini-import-preview');if(!host)return;
     host.innerHTML='<div class="ts-note"><b>Kiểm tra tệp: '+esc(file.name)+'</b><p>Đọc được '+parsed.total+' khối câu hỏi · Hợp lệ '+parsed.questions.length+' · Câu trùng '+duplicates.length+' · Lỗi '+parsed.errors.length+'</p>'+
-     (parsed.errors.length?'<p style="color:#b91c1c"><b>Cần sửa:</b><br>'+parsed.errors.map(esc).join('<br>')+'</p>':'')+
+     '<p><b>Phân bố theo cấu hình:</b> NB '+actualCounts.NB+'/'+requirements.missing.NB+' · TH '+actualCounts.TH+'/'+requirements.missing.TH+' · VD '+actualCounts.VD+'/'+requirements.missing.VD+' · VDC '+actualCounts.VDC+'/'+requirements.missing.VDC+'</p>'+\n     (countMismatches.length?'<p style="color:#b91c1c"><b>Sai số lượng hoặc mức độ:</b><br>'+countMismatches.map(esc).join('<br>')+'. Hệ thống không cho lưu tệp sai cấu hình.</p>':'')+\n     (parsed.errors.length?'<p style="color:#b91c1c"><b>Cần sửa:</b><br>'+parsed.errors.map(esc).join('<br>')+'</p>':'')+
      (duplicates.length?'<p class="ts-help">Các câu trùng sẽ không được lưu thêm.</p>':'')+
      '<div class="ts-table"><table><thead><tr><th>#</th><th>Mức</th><th>Dạng</th><th>Nội dung</th><th>Đáp án / hướng dẫn chấm</th></tr></thead><tbody>'+unique.slice(0,30).map((q,i)=>'<tr><td>'+(i+1)+'</td><td>'+esc(q.level)+'</td><td>'+esc(q.type)+'</td><td>'+MathBridge.inline(q.text||'')+'</td><td>'+MathBridge.inline(q.answer||'')+'</td></tr>').join('')+'</tbody></table></div>'+
-     (unique.length?'<button type="button" class="ts-btn" onclick="TS.commitPracticeGeminiImport()">✓ Xác nhận lưu '+unique.length+' câu vào ngân hàng</button>':'<p class="ts-help">Không có câu mới hợp lệ để lưu.</p>')+
+     (unique.length&&!parsed.errors.length&&!countMismatches.length?'<button type="button" class="ts-btn" onclick="TS.commitPracticeGeminiImport()">✓ Xác nhận lưu '+unique.length+' câu đúng cấu hình vào ngân hàng</button>':'<p class="ts-help">Chưa thể lưu: cần đủ câu hợp lệ và đúng chính xác số lượng ở từng mức độ.</p>')+
      '<button type="button" class="ts-btn ts-secondary" onclick="TS.cancelPracticeGeminiImport()">Hủy bản xem trước</button></div>';
    }catch(error){toast(error.message||'Không đọc được tệp.');}
    finally{input.value='';}
@@ -2540,9 +2542,9 @@ Lời giải tham khảo.`;
   const levels=['NB','TH','VD','VDC'],rank={NB:0,TH:1,VD:2,VDC:3},used=new Set(),chosen=[];
   const shuffle=rows=>{const a=[...rows];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
   for(const level of levels){const need=Number(counts[level])||0;if(!need)continue;const eligible=pool.filter(q=>!used.has(String(q.id))),fresh=eligible.filter(q=>!historyIds.has(String(q.id))),dist=q=>Math.abs((rank[String(q.level||'NB').toUpperCase()]??0)-rank[level]);
-   const exact=shuffle(fresh.filter(q=>String(q.level||'NB').toUpperCase()===level)),near=shuffle(fresh.filter(q=>String(q.level||'NB').toUpperCase()!==level).sort((a,b)=>dist(a)-dist(b)));
-   const reused=allowReuse?shuffle(eligible.filter(q=>historyIds.has(String(q.id))).sort((a,b)=>dist(a)-dist(b))):[];
-   const picked=[...exact,...near,...reused].slice(0,need);picked.forEach(q=>{used.add(String(q.id));chosen.push({...q,__selectionLevel:level});});
+   const exact=shuffle(fresh.filter(q=>String(q.level||'NB').toUpperCase()===level));
+   const reused=allowReuse?shuffle(eligible.filter(q=>historyIds.has(String(q.id))&&String(q.level||'NB').toUpperCase()===level)):[];
+   const picked=[...exact,...reused].slice(0,need);picked.forEach(q=>{used.add(String(q.id));chosen.push({...q,__selectionLevel:level});});
    if(picked.length<need&&repeatPerAttempt&&Number(repeatPerAttempt[level])>0){const distinct=eligible.length;if(distinct<Number(repeatPerAttempt[level]))throw new Error('Bài mỗi ngày cần '+repeatPerAttempt[level]+' câu khác nhau ở mức '+level+' nhưng phạm vi bài học chỉ có '+distinct+' câu.');const repeatSource=[...picked,...eligible.filter(q=>!picked.some(x=>String(x.id)===String(q.id)))];let cursor=0;while(picked.length<need){const q=repeatSource[cursor++%repeatSource.length];picked.push(q);chosen.push({...q,__selectionLevel:level});}}
    if(picked.length<need)throw new Error('Phạm vi khối, môn, chương và bài hiện chỉ có '+(Number(counts[level])||0)+' câu phù hợp; còn thiếu '+(need-picked.length)+' câu.');
   }return chosen;
