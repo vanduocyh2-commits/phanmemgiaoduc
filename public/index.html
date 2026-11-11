@@ -2413,7 +2413,7 @@ Lời giải tham khảo.`;
     host.innerHTML='<div class="ts-note"><b>Kiểm tra tệp: '+esc(file.name)+'</b><p>Đọc được '+parsed.total+' khối câu hỏi · Hợp lệ '+parsed.questions.length+' · Câu trùng '+duplicates.length+' · Lỗi '+parsed.errors.length+'</p>'+
      (parsed.errors.length?'<p style="color:#b91c1c"><b>Cần sửa:</b><br>'+parsed.errors.map(esc).join('<br>')+'</p>':'')+
      (duplicates.length?'<p class="ts-help">Các câu trùng sẽ không được lưu thêm.</p>':'')+
-     '<div class="ts-table"><table><thead><tr><th>#</th><th>Mức</th><th>Dạng</th><th>Nội dung</th><th>Đáp án</th></tr></thead><tbody>'+unique.slice(0,30).map((q,i)=>'<tr><td>'+(i+1)+'</td><td>'+q.level+'</td><td>'+q.type+'</td><td>'+MathBridge.inline(esc(q.text))+'</td><td>'+esc(q.answer)+'</td></tr>').join('')+'</tbody></table></div>'+
+     '<div class="ts-table"><table><thead><tr><th>#</th><th>Mức</th><th>Dạng</th><th>Nội dung</th><th>Đáp án / hướng dẫn chấm</th></tr></thead><tbody>'+unique.slice(0,30).map((q,i)=>'<tr><td>'+(i+1)+'</td><td>'+esc(q.level)+'</td><td>'+esc(q.type)+'</td><td>'+MathBridge.inline(q.text||'')+'</td><td>'+MathBridge.inline(q.answer||'')+'</td></tr>').join('')+'</tbody></table></div>'+
      (unique.length?'<button type="button" class="ts-btn" onclick="TS.commitPracticeGeminiImport()">✓ Xác nhận lưu '+unique.length+' câu vào ngân hàng</button>':'<p class="ts-help">Không có câu mới hợp lệ để lưu.</p>')+
      '<button type="button" class="ts-btn ts-secondary" onclick="TS.cancelPracticeGeminiImport()">Hủy bản xem trước</button></div>';
    }catch(error){toast(error.message||'Không đọc được tệp.');}
