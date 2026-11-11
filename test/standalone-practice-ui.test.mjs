@@ -88,3 +88,16 @@ test('practice-set attempts use a single-question interactive quiz player',()=>{
   assert.match(html,/\.practice-quiz-layout/);
   assert.match(html,/\.practice-quiz-question \.exam-options/);
 });
+
+test('standalone practice renderer safely initializes its host before rendering',()=>{
+  const start=html.indexOf('function practiceWorkspace(){');
+  const end=html.indexOf('function changePracticeCatalogGrade',start);
+  assert.ok(start>=0&&end>start,'practice workspace boundaries exist');
+  const renderer=html.slice(start,end);
+  assert.match(renderer,/if\(state\.sessionRole==='teacher'&&!\$\('ts-panel'\)\)/);
+  assert.match(renderer,/const host=panelHost\(\)/);
+  assert.match(renderer,/if\(!host\)\{/);
+  assert.match(renderer,/host\.innerHTML=/);
+  assert.match(renderer,/host\.querySelector\(/);
+  assert.doesNotMatch(renderer,/panelHost\(\)\.innerHTML|panelHost\(\)\.querySelector/);
+});
