@@ -1,6 +1,23 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
+    <script>
+    (function () {
+        var roles = ['admin', 'teacher', 'student', 'parent'];
+        window.app = window.app || {};
+        window.app.switchGatewayTab = function (tab) {
+            if (roles.indexOf(tab) === -1) return;
+            roles.forEach(function (role) {
+                var button = document.getElementById('gw-tab-' + role);
+                var form = document.getElementById('gateway-form-' + role);
+                if (button) button.className = role === tab
+                    ? 'py-2 px-1 rounded-xl text-[10px] sm:text-xs font-extrabold transition bg-indigo-600 text-white shadow-sm flex items-center justify-center gap-1'
+                    : 'py-2 px-1 rounded-xl text-[10px] sm:text-xs font-extrabold transition text-slate-600 hover:text-slate-900 flex items-center justify-center gap-1';
+                if (form) form.classList.toggle('hidden', role !== tab);
+            });
+        };
+    })();
+    </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cổng Thông Tin Giáo Dục Toàn Diện - Thầy Bùi Văn Được</title>
@@ -1273,13 +1290,13 @@ const attSel = (c,s) => attendanceSelector(c,s);
                 else if(['student','parent'].includes(d.role)&&d.cur){const {s}=find(d.cur.cid,d.cur.sbd);if(s){cur=d.cur;enter(d.role,s.name)}}
             }catch(e){}
         }
-        window.app = {openTuitionReminder,
+        window.app = Object.assign(window.app || {}, {openTuitionReminder,
             switchGatewayTab, handleAdminAuth, handleTeacherAuth, handleStudentAuth, handleParentAuth, logoutCurrentAccount,
             switchAdminTab, openModal, closeModal, showNotification, addNewClass, deleteClass, addStudent, deleteStudent, archiveStudent, openStudentArchive, importStudents,
             setAttendance, toggleAttendanceLock, scheduleSubject, updateScheduleSubjects, addSchedule, editSchedule, deleteSchedule, sendSystemNotification, deleteNotification, deleteAllNotifications,
             changeManagedClass, changeFinanceFilter, toggleFeeStudent, toggleFeeClass, selectFeeVisible,selectFeeAll,applyFeeBulkChanges,previewBulkFees,changeTuitionExtra,editFeeRate, saveFeeRate, printFinance, studentFeeDetails, renderAdminStudentsTable, renderAdminFinance, updateStudentFeeStatus, saveTuitionPayment, rememberTuitionNote, saveTuitionNote, updateFeeAmount, openTaxExport, exportFinance,
             renderTeacher, addGrade, deleteGrade, changePassword, editClass, editStudent, addAccount, editAccount, deleteAccount, exportBackup, importBackup
-        };
+        });
 
 
         let teacherWorkspaceMounted=false;
