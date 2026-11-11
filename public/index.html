@@ -1538,7 +1538,7 @@ document.addEventListener('input',event=>{if(event.target?.id?.startsWith('qbg-m
   const typeSummary=['mcq','tf','short','essay'].map(type=>({mcq:'Trắc nghiệm',tf:'Đúng/Sai',short:'Trả lời ngắn',essay:'Tự luận'}[type])+': '+['NB','TH','VD','VDC'].map(level=>level+' '+levelActual[type+'|'+level]+(required?' / '+required.matrix[type][level]:'' )).join(', ')).join(' · ');
   host.innerHTML='<div class="ts-note"><b>Kiểm tra tệp: '+esc(fileName)+'</b><p>Đọc được '+parsed.total+' khối · Hợp lệ '+parsed.questions.length+' · Trùng '+duplicates.length+' · Lỗi '+parsed.errors.length+'</p><p><b>Thống kê đủ 4 phần:</b> '+esc(typeSummary)+'</p>'+
    (duplicates.length?'<p class="ts-help">Câu trùng không được lưu.</p>':'')+
-   (parsed.errors.length?'<p style="color:#b91c1c"><b>Các câu lỗi (được bỏ qua):</b><br>'+parsed.errors.map(esc).join('<br>')+'</p>':'')+
+   (parsed.errors.length?'<p style="color:#b91c1c"><b>Các câu lỗi cấu trúc (được bỏ qua):</b><br>'+parsed.errors.map(esc).join('<br>')+'</p>':'')+(parsed.warnings?.length?'<p style="color:#a16207"><b>Các lưu ý cần giáo viên rà soát (không chặn nhập):</b><br>'+parsed.warnings.map(esc).join('<br>')+'</p>':'')+
    '<div class="ts-table"><table><thead><tr><th>#</th><th>Mức</th><th>Dạng</th><th>Nội dung</th><th>Đáp án</th></tr></thead><tbody>'+unique.slice(0,40).map((q,i)=>'<tr><td>'+(i+1)+'</td><td>'+esc(q.level)+'</td><td>'+esc(q.type)+'</td><td>'+MathBridge.inline(q.text||'')+'</td><td>'+MathBridge.inline(q.answer||'')+'</td></tr>').join('')+'</tbody></table></div>'+
    (unique.length?'<button type="button" class="ts-btn" onclick="TS.commitBankGeminiImport()">✓ Lưu '+unique.length+' câu mới vào ngân hàng</button>':'<p class="ts-help">Không có câu mới hợp lệ để lưu.</p>')+
    '<button type="button" class="ts-btn ts-secondary" onclick="TS.cancelBankGeminiImport()">Hủy xem trước</button></div>';
@@ -2598,7 +2598,7 @@ Lời giải tham khảo.`;
   const text=String(raw||'').replace(/^\uFEFF/,'').replace(/\r/g,'').trim();
   const blocks=text.split(/^\s*##\s*Câu\s*\d+[^\n]*\n/gim).slice(1);
   if(!blocks.length)throw Error('Không tìm thấy tiêu đề “## Câu 1”. Hãy dùng biểu mẫu .md/.txt đã tải.');
-  const questions=[],errors=[];
+  const questions=[],errors=[],warnings=[];
   const read=(block,key)=>{const re=new RegExp('(?:^|\\n)\\s*'+key+'\\s*:\\s*([\\s\\S]*?)(?=\\n\\s*(?:Loại|Dạng|Mức độ|Điểm|Nội dung|Câu hỏi|A|B|C|D|Mệnh đề\\s*[1-4]|Đáp án|Giải thích|Lời giải)\\s*:|$)','i');return (block.match(re)?.[1]||'').trim();};
   blocks.forEach((block,index)=>{
    const typeRaw=read(block,'(?:Loại|Dạng)').toLowerCase(),validType=/^(?:mcq|tf|short|essay|trắc nghiệm|đúng sai|tự luận|trả lời ngắn)$/.test(typeRaw),type=typeRaw.includes('đúng')||typeRaw==='tf'?'tf':typeRaw.includes('tự luận')||typeRaw==='essay'?'essay':typeRaw.includes('ngắn')||typeRaw==='short'?'short':'mcq';
@@ -2612,13 +2612,13 @@ Lời giải tham khảo.`;
    if(!q.text)problems.push('thiếu nội dung');
    if(!Number.isFinite(q.points)||q.points<=0||q.points>10)problems.push('điểm không hợp lệ');
    if(type==='mcq'&&(q.options.some(v=>!v)||!['A','B','C','D'].includes(q.answer.toUpperCase())))problems.push('thiếu 4 phương án hoặc đáp án A/B/C/D');
-   if(type==='mcq'&&q.explanation){const stated=[...q.explanation.matchAll(/(?:đáp án|chọn)\s*(?:là\s*)?([ABCD])\b/gi)].map(m=>m[1].toUpperCase());if(stated.some(v=>v!==q.answer))problems.push('đáp án mâu thuẫn với lời giải');if(/\b(?:xin lỗi|sửa lại|khoan|kiểm tra lại)\b/i.test(q.explanation))problems.push('lời giải có dấu hiệu tự đính chính, cần rà soát');}
+   if(type==='mcq'&&q.explanation){const stated=[...q.explanation.matchAll(/(?:đáp án|chọn)\s*(?:là\s*)?([ABCD])\b/gi)].map(m=>m[1].toUpperCase());if(stated.some(v=>v!==q.answer))problems.push('đáp án mâu thuẫn với lời giải');if(/\\b(?:xin lỗi|sửa lại|khoan|kiểm tra lại)\\b/i.test(q.explanation))warnings.push('Câu '+(index+1)+': lời giải có câu diễn đạt tự rà soát; cần giáo viên đọc lại, không tự động loại câu.');}
    if(type==='tf'&&(q.statements.some(v=>!v)||q.tfAnswers.length!==4||q.tfAnswers.some(v=>!['Đúng','Sai'].includes(v))))problems.push('thiếu 4 mệnh đề hoặc đáp án Đúng/Sai');
    if(type==='short'&&!q.answer)problems.push('thiếu đáp án');
    if(type==='essay'&&!q.answer)problems.push('thiếu hướng dẫn chấm');
    if(problems.length)errors.push('Câu '+(index+1)+': '+problems.join(', '));else questions.push(q);
   });
-  return {questions,errors,total:blocks.length};
+  return {questions,errors,warnings,total:blocks.length};
  }
  function previewPracticeGeminiImport(input){
   if(!staff())return;
@@ -2646,7 +2646,7 @@ Lời giải tham khảo.`;
     host.innerHTML='<div class="ts-note"><b>Kiểm tra tệp: '+esc(file.name)+'</b><p>Đọc được '+parsed.total+' khối câu hỏi · Hợp lệ '+parsed.questions.length+' · Câu trùng '+duplicates.length+' · Lỗi '+parsed.errors.length+'</p>'+
      '<p><b>Số câu trong tệp / số câu đã cấu hình:</b> NB '+actualCounts.NB+'/'+requirements.need.NB+' · TH '+actualCounts.TH+'/'+requirements.need.TH+' · VD '+actualCounts.VD+'/'+requirements.need.VD+' · VDC '+actualCounts.VDC+'/'+requirements.need.VDC+'</p>'+
      (countMismatches.length?'<p style="color:#b91c1c"><b>Sai số lượng hoặc mức độ:</b><br>'+countMismatches.map(esc).join('<br>')+'. Hệ thống không cho lưu tệp sai cấu hình.</p>':'')+
-     (parsed.errors.length?'<p style="color:#b91c1c"><b>Cần sửa:</b><br>'+parsed.errors.map(esc).join('<br>')+'</p>':'')+
+     (parsed.errors.length?'<p style="color:#b91c1c"><b>Lỗi cấu trúc cần sửa:</b><br>'+parsed.errors.map(esc).join('<br>')+'</p>':'')+(parsed.warnings?.length?'<p style="color:#a16207"><b>Lưu ý để giáo viên xem lại (không chặn lưu):</b><br>'+parsed.warnings.map(esc).join('<br>')+'</p>':'')+
      (duplicates.length?'<p class="ts-help">Các câu trùng sẽ không được lưu thêm.</p>':'')+
      '<div class="ts-table"><table><thead><tr><th>#</th><th>Mức</th><th>Dạng</th><th>Nội dung</th><th>Đáp án / hướng dẫn chấm</th></tr></thead><tbody>'+unique.slice(0,30).map((q,i)=>'<tr><td>'+(i+1)+'</td><td>'+esc(q.level)+'</td><td>'+esc(q.type)+'</td><td>'+MathBridge.inline(q.text||'')+'</td><td>'+MathBridge.inline(q.answer||'')+'</td></tr>').join('')+'</tbody></table></div>'+
      (unique.length&&!parsed.errors.length&&!countMismatches.length?'<button type="button" class="ts-btn" onclick="TS.commitPracticeGeminiImport()">✓ Xác nhận lưu '+unique.length+' câu đúng cấu hình vào ngân hàng</button>':'<p class="ts-help">Chưa thể lưu: cần đủ câu hợp lệ và đúng chính xác số lượng ở từng mức độ.</p>')+
