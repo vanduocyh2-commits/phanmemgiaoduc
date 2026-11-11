@@ -32,3 +32,25 @@ test('exam identity is unique, stable on edits, and generates a readable title',
   assert.equal(edited.examUid, first.examUid);
   assert.equal(edited.title, 'Tên giáo viên đặt');
 });
+
+
+test('backfills legacy bank, exam and attempt snapshots with one stable code per question ID', async () => {
+  const { synchronizeQuestionCodes } = await import('../question-identifiers.mjs');
+  const bankQuestion = { id: 'q-legacy-1', subject: 'Toán', grade: 9, chapterOrder: 2, lessonOrder: 1, level: 'NB' };
+  const examQuestion = { ...bankQuestion };
+  const standalone = { id: 'q-legacy-2', text: 'Question', subject: 'Toán', grade: 9, chapterOrder: 2, lessonOrder: 1, level: 'TH' };
+  const state = {
+    questionBank: [bankQuestion],
+    learningExams: [{ subject: 'Toán', grade: 9, questions: [examQuestion, standalone] }],
+    assignments: [{ snapshot: { subject: 'Toán', grade: 9, questions: [{ ...bankQuestion }] } }],
+    learningAttempts: [{ examSnapshot: { subject: 'Toán', grade: 9, questions: [{ ...bankQuestion }, { ...standalone }] } }]
+  };
+  assert.equal(synchronizeQuestionCodes(state), 2);
+  const code = state.questionBank[0].questionCode;
+  assert.match(code, /^T9-2\.1-NB-001$/);
+  assert.equal(state.learningExams[0].questions[0].questionCode, code);
+  assert.equal(state.assignments[0].snapshot.questions[0].questionCode, code);
+  assert.equal(state.learningAttempts[0].examSnapshot.questions[0].questionCode, code);
+  assert.equal(state.learningExams[0].questions[1].questionCode, state.learningAttempts[0].examSnapshot.questions[1].questionCode);
+  assert.equal(synchronizeQuestionCodes(state), 0);
+});
