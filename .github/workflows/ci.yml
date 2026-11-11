@@ -22,4 +22,18 @@ jobs:
       - run: node --check portal-server.mjs
       - run: node --check public/student-visual-math-editor.js
       - run: node --check supabase-store.mjs
+      - name: Check inline module scripts in public entry
+        run: |
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+          html = Path('public/index.html').read_text(encoding='utf-8')
+          scripts = re.findall(r'<script\\b[^>]*type=[\"\\']module[\"\\'][^>]*>([\\s\\S]*?)</script>', html, re.I)
+          if not scripts:
+              raise SystemExit('No inline module scripts found')
+          for index, script in enumerate(scripts, 1):
+              Path(f'/tmp/portal-inline-{index}.mjs').write_text(script, encoding='utf-8')
+          print(f'Extracted {len(scripts)} inline module script(s)')
+          PY
+          for file in /tmp/portal-inline-*.mjs; do node --check \"$file\"; done
       - run: npm test
