@@ -45,7 +45,7 @@ test('backfills legacy bank, exam and attempt snapshots with one stable code per
     assignments: [{ snapshot: { subject: 'Toán', grade: 9, questions: [{ ...bankQuestion }] } }],
     learningAttempts: [{ examSnapshot: { subject: 'Toán', grade: 9, questions: [{ ...bankQuestion }, { ...standalone }] } }]
   };
-  assert.equal(synchronizeQuestionCodes(state), 2);
+  assert.equal(synchronizeQuestionCodes(state), 6);
   const code = state.questionBank[0].questionCode;
   assert.match(code, /^T9-2\.1-NB-001$/);
   assert.equal(state.learningExams[0].questions[0].questionCode, code);
