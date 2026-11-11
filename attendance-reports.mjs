@@ -175,7 +175,7 @@ export function buildAttendanceReport(d, actor, allowedClassIds, input = {}) {
     headers,
     rows,
     totals,
-    widths: [7, 17, 32, ...dates.map(() => 13), 12, 10, 10, 10, 10, 10, 13, 17]
+    widths: [7, 17, 32, ...dates.map(() => 13), 12, 10, 10, 10, 10, 10, 10, 13, 17]
   };
   return {
     filename: 'DIEM_DANH_THANG_' + safeName(classLabel) + '_' + month + '.xlsx',
