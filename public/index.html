@@ -1464,7 +1464,8 @@ const TS = (() => {
  }
  function questionBankIdentity(q){
   const norm=v=>String(v??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').toLocaleLowerCase('vi').replace(/\s+/g,' ').trim();
-  return JSON.stringify({grade:norm(q.grade),subject:norm(q.subject),curriculum:norm(q.curriculum||'GDPT 2018'),textbook:norm(q.textbook),chapter:norm(q.chapter),lesson:norm(q.lesson),type:norm(q.type),text:norm(q.text),options:(q.options||q.statements||[]).map(norm),answer:norm(q.answer),tfAnswers:(q.tfAnswers||[]).map(norm)});
+  // Compare normalized question stems within the same curriculum scope; option/answer edits do not bypass deduplication.
+  return JSON.stringify({grade:norm(q.grade),subject:norm(q.subject),curriculum:norm(q.curriculum||'GDPT 2018'),textbook:norm(q.textbook),chapter:norm(q.chapter),lesson:norm(q.lesson),type:norm(q.type),text:norm(q.text)});
  }
  function saveQuestionDraftsToBank(examId,examTitle){
   state.questionBank=Array.isArray(state.questionBank)?state.questionBank:[];
@@ -2338,9 +2339,16 @@ function progress(){const selected=qsel('progress-class');const c=teacherClasses
 
  let practiceImportDraft=[];
  function practiceGeminiRequirements(){
-  const pool=standaloneQuestionPool(),need={NB:Number(qsel('lp2-practice-NB')||5),TH:Number(qsel('lp2-practice-TH')||3),VD:Number(qsel('lp2-practice-VD')||2),VDC:Number(qsel('lp2-practice-VDC')||0)},counts={};
-  for(const level of Object.keys(need))counts[level]=pool.filter(q=>String(q.level||'').toUpperCase()===level).length;
-  return {need,counts,missing:Object.fromEntries(Object.keys(need).map(k=>[k,Math.max(0,need[k]-counts[k])]))};
+  const pool=standaloneQuestionPool(),levels=['NB','TH','VD','VDC'],need={},counts={};
+  for(const level of levels){
+   const field=$('lp2-practice-'+level),raw=field?String(field.value??'').trim():'';
+   const value=raw===''?0:Number(raw);
+   if(!Number.isInteger(value)||value<0||value>100)throw Error('Số câu '+level+' phải là số nguyên từ 0 đến 100.');
+   need[level]=value;
+   counts[level]=pool.filter(q=>String(q.level||'').toUpperCase()===level).length;
+  }
+  if(!levels.some(level=>need[level]>0))throw Error('Hãy nhập số câu lớn hơn 0 ở ít nhất một mức độ.');
+  return {need,counts,missing:{...need}};
  }
  function downloadPracticeGeminiTemplate(ext='md'){
   if(!staff())return;
@@ -2349,7 +2357,7 @@ function progress(){const selected=qsel('progress-class');const c=teacherClasses
    'KHỐI: '+(p.grade||''),'MÔN: '+(p.subject||''),'CHƯƠNG TRÌNH: '+(p.curriculum||'GDPT 2018'),
    'BỘ SÁCH: '+(p.textbook||''),'CHƯƠNG: '+(p.chapter||''),'BÀI: '+(p.lesson||'')
   ];
-  const missing=Object.entries(req.missing).filter(([,n])=>n>0).map(([k,n])=>'- '+k+': '+n+' câu').join('\n')||'- Ngân hàng đã đủ số lượng tối thiểu cho bộ 3 bài; có thể tạo thêm câu dự phòng.';
+  const requested=Object.entries(req.need).filter(([,n])=>n>0).map(([k,n])=>'- '+k+': '+n+' câu').join('\n');
   const format=`## Câu 1
 Loại: mcq
 Mức độ: NB
@@ -2397,7 +2405,7 @@ Viết nội dung câu hỏi tự luận.
 Đáp án: Hướng dẫn chấm / các ý cần đạt
 Giải thích:
 Lời giải tham khảo.`;
-  const prompt=`Bạn là chuyên gia biên soạn câu hỏi Toán THCS/THPT. Hãy tạo đúng các câu hỏi còn thiếu cho thông tin dưới đây. Không bịa tên bài/chương; bám sát kiến thức bài học. Câu hỏi phải rõ ràng, có đáp án chính xác và lời giải. Tránh trùng lặp nội dung và tránh câu hỏi mơ hồ. Giữ nguyên công thức toán bằng LaTeX nếu cần.\n\nPHẠM VI:\n${meta.join('\n')}\n\nSỐ CÂU CÒN THIẾU ĐỂ TẠO MỘT BÀI LUYỆN TẬP ĐÚNG CẤU HÌNH:\n${missing}\n\nYÊU CẦU SỐ LƯỢNG CHÍNH XÁC: NB '+req.need.NB+', TH '+req.need.TH+', VD '+req.need.VD+', VDC '+req.need.VDC+'. Chỉ tạo số câu còn thiếu ở từng mức; mức có số lượng cần bổ sung bằng 0 thì không tạo câu. Tuyệt đối không đổi mức độ để đủ tổng số.\n\nYÊU CẦU ĐỊNH DẠNG:\n- Chỉ dùng loại: mcq, tf, short, essay.\n- Mức độ: NB, TH, VD, VDC.\n- mcq bắt buộc đủ A, B, C, D và Đáp án A/B/C/D.\n- tf bắt buộc đủ 4 mệnh đề và Đáp án gồm 4 giá trị Đúng/Sai.\n- short phải có đáp án; essay phải có hướng dẫn chấm.\n- Mỗi câu bắt đầu bằng tiêu đề ## Câu số.\n- Tuân thủ chính xác mẫu ở cuối file; không thêm lời dẫn ngoài các khối câu hỏi.\n- Phải tạo đầy đủ tất cả câu hỏi còn thiếu theo đúng số lượng từng mức độ; không chỉ đưa ví dụ hoặc hướng dẫn.\n- Kết quả chỉ gồm các khối câu hỏi theo mẫu, không có lời mở đầu, kết luận hay nhận xét.\n- Hãy tạo tệp kết quả tên cau-hoi-bo-sung.md chứa nguyên văn toàn bộ câu hỏi, giữ nguyên tiếng Việt và công thức LaTeX. Nếu Gemini hỗ trợ tạo tệp đính kèm/tải xuống, hãy tạo tệp .md và cung cấp liên kết tải.\n- Đồng thời hiển thị toàn bộ nội dung trong câu trả lời để có thể sao chép. Nếu phiên này không hỗ trợ tạo tệp, phải nói rõ không tạo được tệp đính kèm và vẫn xuất đầy đủ nội dung thuần văn bản; tuyệt đối không chỉ báo đã tạo tệp.\n- Đánh số liên tục từ ## Câu 1, không tự ý thay đổi số lượng, loại câu hoặc mức độ.\n\nMẪU:\n${format}\n`;
+  const prompt=`Bạn là chuyên gia biên soạn câu hỏi Toán THCS/THPT. Hãy tạo câu hỏi MỚI theo đúng số lượng giáo viên cấu hình dưới đây, kể cả khi ngân hàng câu hỏi đã đủ hoặc thừa. Không bịa tên bài/chương; bám sát kiến thức bài học. Câu hỏi phải rõ ràng, có đáp án chính xác và lời giải. Tránh trùng lặp nội dung và tránh câu hỏi mơ hồ. Giữ nguyên công thức toán bằng LaTeX nếu cần.\n\nPHẠM VI:\n${meta.join('\n')}\n\nSỐ CÂU PHẢI TẠO THEO CẤU HÌNH GIÁO VIÊN:\n${requested}\n\nYÊU CẦU SỐ LƯỢNG CHÍNH XÁC: NB ${req.need.NB}, TH ${req.need.TH}, VD ${req.need.VD}, VDC ${req.need.VDC}. Đây là số câu PHẢI TẠO MỚI ở từng mức, KHÔNG phải số câu còn thiếu trong ngân hàng. Mức có số lượng bằng 0 thì không tạo câu. Tuyệt đối không đổi mức độ để đủ tổng số. Hệ thống sẽ tự lọc câu trùng khi nhập nên vẫn phải tạo đủ số câu theo cấu hình.\n\nYÊU CẦU ĐỊNH DẠNG:\n- Chỉ dùng loại: mcq, tf, short, essay.\n- Mức độ: NB, TH, VD, VDC.\n- mcq bắt buộc đủ A, B, C, D và Đáp án A/B/C/D.\n- tf bắt buộc đủ 4 mệnh đề và Đáp án gồm 4 giá trị Đúng/Sai.\n- short phải có đáp án; essay phải có hướng dẫn chấm.\n- Mỗi câu bắt đầu bằng tiêu đề ## Câu số.\n- Tuân thủ chính xác mẫu ở cuối file; không thêm lời dẫn ngoài các khối câu hỏi.\n- Phải tạo đầy đủ số câu MỚI đúng theo cấu hình NB/TH/VD/VDC ở trên; không trừ số câu đã có trong ngân hàng, không chỉ đưa ví dụ hoặc hướng dẫn.\n- Kết quả chỉ gồm các khối câu hỏi theo mẫu, không có lời mở đầu, kết luận hay nhận xét.\n- Hãy tạo tệp kết quả tên cau-hoi-bo-sung.md chứa nguyên văn toàn bộ câu hỏi, giữ nguyên tiếng Việt và công thức LaTeX. Nếu Gemini hỗ trợ tạo tệp đính kèm/tải xuống, hãy tạo tệp .md và cung cấp liên kết tải.\n- Đồng thời hiển thị toàn bộ nội dung trong câu trả lời để có thể sao chép. Nếu phiên này không hỗ trợ tạo tệp, phải nói rõ không tạo được tệp đính kèm và vẫn xuất đầy đủ nội dung thuần văn bản; tuyệt đối không chỉ báo đã tạo tệp.\n- Đánh số liên tục từ ## Câu 1, không tự ý thay đổi số lượng, loại câu hoặc mức độ.\n\nMẪU:\n${format}\n`;
   if(ext==='copy'||ext==='copy-open'){
    const geminiTab=ext==='copy-open'?window.open('https://gemini.google.com/app','_blank'):null;
    if(geminiTab)geminiTab.opener=null;
@@ -2477,7 +2485,7 @@ Lời giải tham khảo.`;
    try{
     const parsed=parsePracticeGeminiText(reader.result),p=practiceDraft||practiceBlank(),requirements=practiceGeminiRequirements();
     const actualCounts=Object.fromEntries(['NB','TH','VD','VDC'].map(level=>[level,parsed.questions.filter(q=>q.level===level).length]));
-    const countMismatches=['NB','TH','VD','VDC'].filter(level=>actualCounts[level]!==requirements.missing[level]).map(level=>level+': cần '+requirements.missing[level]+' câu, tệp có '+actualCounts[level]+' câu');
+    const countMismatches=['NB','TH','VD','VDC'].filter(level=>actualCounts[level]!==requirements.need[level]).map(level=>level+': yêu cầu '+requirements.need[level]+' câu, tệp có '+actualCounts[level]+' câu');
     const norm=v=>String(v??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').toLocaleLowerCase('vi').replace(/\s+/g,' ').trim();
     const existing=new Set((state.questionBank||[]).map(q=>questionBankIdentity(q)));
     const unique=[],duplicates=[];
@@ -2487,10 +2495,10 @@ Lời giải tham khảo.`;
      if(existing.has(key)){duplicates.push(row);continue;}
      existing.add(key);unique.push(row);
     }
-    practiceImportDraft=unique;
+    practiceImportDraft=(!parsed.errors.length&&!countMismatches.length)?unique:[];
     const host=$('lp2-gemini-import-preview');if(!host)return;
     host.innerHTML='<div class="ts-note"><b>Kiểm tra tệp: '+esc(file.name)+'</b><p>Đọc được '+parsed.total+' khối câu hỏi · Hợp lệ '+parsed.questions.length+' · Câu trùng '+duplicates.length+' · Lỗi '+parsed.errors.length+'</p>'+
-     '<p><b>Số câu trong tệp / số câu cần bổ sung:</b> NB '+actualCounts.NB+'/'+requirements.missing.NB+' · TH '+actualCounts.TH+'/'+requirements.missing.TH+' · VD '+actualCounts.VD+'/'+requirements.missing.VD+' · VDC '+actualCounts.VDC+'/'+requirements.missing.VDC+'</p>'+
+     '<p><b>Số câu trong tệp / số câu đã cấu hình:</b> NB '+actualCounts.NB+'/'+requirements.need.NB+' · TH '+actualCounts.TH+'/'+requirements.need.TH+' · VD '+actualCounts.VD+'/'+requirements.need.VD+' · VDC '+actualCounts.VDC+'/'+requirements.need.VDC+'</p>'+
      (countMismatches.length?'<p style="color:#b91c1c"><b>Sai số lượng hoặc mức độ:</b><br>'+countMismatches.map(esc).join('<br>')+'. Hệ thống không cho lưu tệp sai cấu hình.</p>':'')+
      (parsed.errors.length?'<p style="color:#b91c1c"><b>Cần sửa:</b><br>'+parsed.errors.map(esc).join('<br>')+'</p>':'')+
      (duplicates.length?'<p class="ts-help">Các câu trùng sẽ không được lưu thêm.</p>':'')+
