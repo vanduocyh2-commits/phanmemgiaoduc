@@ -2458,7 +2458,7 @@ Lời giải tham khảo.`;
    if(!q.text)problems.push('thiếu nội dung');
    if(!Number.isFinite(q.points)||q.points<=0||q.points>10)problems.push('điểm không hợp lệ');
    if(type==='mcq'&&(q.options.some(v=>!v)||!['A','B','C','D'].includes(q.answer.toUpperCase())))problems.push('thiếu 4 phương án hoặc đáp án A/B/C/D');
-   if(type==='mcq'&&q.explanation){const stated=[...q.explanation.matchAll(/(?:đáp án|chọn)\\s*(?:là\\s*)?([ABCD])\\b/gi)].map(m=>m[1].toUpperCase());if(stated.some(v=>v!==q.answer))problems.push('đáp án mâu thuẫn với lời giải');if(/\\b(?:xin lỗi|sửa lại|khoan|kiểm tra lại)\\b/i.test(q.explanation))problems.push('lời giải có dấu hiệu tự đính chính, cần rà soát');}
+   if(type==='mcq'&&q.explanation){const stated=[...q.explanation.matchAll(/(?:đáp án|chọn)\s*(?:là\s*)?([ABCD])\b/gi)].map(m=>m[1].toUpperCase());if(stated.some(v=>v!==q.answer))problems.push('đáp án mâu thuẫn với lời giải');if(/\b(?:xin lỗi|sửa lại|khoan|kiểm tra lại)\b/i.test(q.explanation))problems.push('lời giải có dấu hiệu tự đính chính, cần rà soát');}
    if(type==='tf'&&(q.statements.some(v=>!v)||q.tfAnswers.length!==4||q.tfAnswers.some(v=>!['Đúng','Sai'].includes(v))))problems.push('thiếu 4 mệnh đề hoặc đáp án Đúng/Sai');
    if(type==='short'&&!q.answer)problems.push('thiếu đáp án');
    if(type==='essay'&&!q.answer)problems.push('thiếu hướng dẫn chấm');
