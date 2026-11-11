@@ -3190,17 +3190,21 @@ async function saveLessonToLibrary(){const id=await saveLesson(false);if(!id)ret
   const source=(state.questionBank||[]).filter(q=>q&&q.id!=null&&(!scope.grade||norm(q.grade)===norm(scope.grade))&&(!scope.subject||norm(q.subject)===norm(scope.subject))&&(!scope.curriculum||norm(q.curriculum||'GDPT 2018')===norm(scope.curriculum))&&(!scope.textbook||norm(q.textbook||'Kết nối tri thức với cuộc sống')===norm(scope.textbook))&&(!scope.chapter||norm(q.chapter)===norm(scope.chapter))&&(!scope.lesson||norm(q.lesson)===norm(scope.lesson)));
   const attempts=(state.learningAttempts||[]).filter(t=>String(t.sbd)===String(cur?.sbd)&&(state.assignments||[]).some(a=>a.id===t.assignmentId&&a.lessonPractice&&a.bankSource&&norm(a.bankSource.grade)===norm(scope.grade)&&norm(a.bankSource.subject)===norm(scope.subject)&&norm(a.bankSource.textbook||'Kết nối tri thức với cuộc sống')===norm(scope.textbook||'Kết nối tri thức với cuộc sống')&&norm(a.bankSource.chapter)===norm(scope.chapter)&&norm(a.bankSource.lesson)===norm(scope.lesson))),usedBefore=new Map();
   for(const t of attempts)for(const q of t.examSnapshot?.questions||[]){let id=String(q.sourceBankId??q.bankQuestionId??'');if(!id){const match=(state.questionBank||[]).find(row=>row.type===q.type&&norm(row.text)===norm(q.text)&&norm(row.chapter)===norm(scope.chapter)&&norm(row.lesson)===norm(scope.lesson));if(match)id=String(match.id);}if(id&&!usedBefore.has(id))usedBefore.set(id,Number(t.startedAt)||0);}
-  const groups=new Map();for(const q of base.questions){const key=[q.type,q.level||'NB',q.chapter||scope.chapter||'',q.lesson||scope.lesson||''].join('|');if(!groups.has(key))groups.set(key,{sample:q,count:0});groups.get(key).count++;}
+  const groups=new Map();for(const q of base.questions){const key=[q.type,q.level||'NB',q.chapter||scope.chapter||'',q.lesson||scope.lesson||''].join('|');if(!groups.has(key))groups.set(key,{sample:q,count:0,baseRows:[]});const group=groups.get(key);group.count++;group.baseRows.push(q);}
   const used=new Set(),questions=[],rank={NB:0,TH:1,VD:2,VDC:3};
   const shuffle=rows=>{const a=[...rows];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
-  for(const {sample,count} of groups.values()){
+  for(const {sample,count,baseRows} of groups.values()){
    const target=String(sample.level||'NB').toUpperCase(),candidates=source.filter(q=>q.type===sample.type&&norm(q.chapter||scope.chapter)===norm(sample.chapter||scope.chapter)&&norm(q.lesson||scope.lesson)===norm(sample.lesson||scope.lesson)&&!used.has(String(q.id)));
    const fresh=candidates.filter(q=>!usedBefore.has(String(q.id))),distance=q=>Math.abs((rank[String(q.level||'NB').toUpperCase()]??0)-(rank[target]??0));
    const exact=shuffle(fresh.filter(q=>String(q.level||'NB').toUpperCase()===target)),other=shuffle(fresh.filter(q=>String(q.level||'NB').toUpperCase()!==target).sort((a,b)=>distance(a)-distance(b)));
    const reused=shuffle(candidates.filter(q=>usedBefore.has(String(q.id))).sort((a,b)=>distance(a)-distance(b)||(usedBefore.get(String(a.id))||0)-(usedBefore.get(String(b.id))||0)));
    const chosen=[...exact,...other,...reused].slice(0,count);
-   if(chosen.length<count)throw new Error('Ngân hàng hiện không có đủ câu cùng khối, môn, chương và bài để tạo '+base.questions.length+' câu.');
-   chosen.forEach(q=>{used.add(String(q.id));const item=copy(q);for(const k of ['owner','_bankKey','sourceExamId','sourceExamTitle','createdAt','updatedAt','bankId'])delete item[k];item.sourceBankId=String(q.id);item.id=uid('attemptq');item.points=Number(sample.points)||Number(q.points)||1;questions.push(item);});
+   // Student clients may not hold the full teacher question bank. The assignment snapshot
+   // already contains valid bank questions, so use it to fill any unavailable random slots.
+   const selected=[...chosen],selectedIds=new Set(chosen.map(q=>String(q.id??q.sourceBankId??'')));
+   if(selected.length<count){for(const fallback of baseRows){if(selected.length>=count)break;const id=String(fallback.sourceBankId??fallback.bankQuestionId??fallback.id??'');if(id&&selectedIds.has(id))continue;selected.push(fallback);if(id)selectedIds.add(id);}}
+   if(selected.length<count)throw new Error('Đề đã lưu không đủ câu dự phòng. Giáo viên cần tạo lại bài luyện tập từ ngân hàng câu hỏi.');
+   selected.forEach(q=>{const item=copy(q);for(const k of ['owner','_bankKey','sourceExamId','sourceExamTitle','createdAt','updatedAt','bankId'])delete item[k];item.sourceBankId=String(q.sourceBankId??q.bankQuestionId??q.id??'');item.id=uid('attemptq');item.points=Number(sample.points)||Number(q.points)||1;questions.push(item);});
   }
   const order={mcq:0,tf:1,short:2,essay:3};questions.sort((a,b)=>(order[a.type]??9)-(order[b.type]??9));
   if(questions.length!==base.questions.length)throw new Error('Không thể sinh đủ câu theo ma trận đã cấu hình.');
