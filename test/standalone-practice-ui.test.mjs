@@ -123,3 +123,44 @@ test('three-level practice reports success only after hosted state save is confi
   const flush=html.slice(html.indexOf('async function onlineFlushNow()'),html.indexOf('async function onlineLogin'));
   assert.match(flush,/catch\(e\)\{onlineDirty=true;setBadge\(false\);toast\('Chưa lưu lên máy chủ: '\+e\.message\);throw e;\}/);
 });
+
+
+test('practice delivery validates class grade and treats HTTP validation errors as online responses',()=>{
+  assert.match(html,/function validatePracticeClassGrade\(c,grade\)/);
+  assert.match(html,/managedTeacherClasses\(\)\.filter\(c=>!classGrade\(c\)\|\|String\(classGrade\(c\)\)===String\(catalogGrade\)\)/);
+  assert.match(html,/error\.status=r\.status/);
+  assert.match(html,/setBadge\(Number\.isInteger\(e\.status\)\)/);
+});
+
+test('standalone practice, three-level practice and daily sequences await server confirmation',()=>{
+  for(const name of ['createStandalonePractice','createThreeLevelPracticeSet','createStandaloneSequence']){
+    const start=html.indexOf('async function '+name+'()');
+    assert.ok(start>=0,name+' is asynchronous');
+    const next=html.indexOf('function ',start+20);
+    const body=html.slice(start,next<0?undefined:next);
+    assert.match(body,/await preparePracticeDelivery\(\)/);
+    assert.match(body,/await commitPracticeDelivery\(/);
+  }
+  assert.match(html,/state\.notifications=state\.notifications\.filter\(x=>!assignmentIds\.has\(x\.assignmentId\)\)/);
+});
+
+test('student portal groups daily sequence days and practice sets separately',()=>{
+  assert.match(html,/a\.practiceSetId\?'set:'\+a\.practiceSetId:a\.sequenceId\?'sequence:'\+a\.sequenceId/);
+  assert.match(html,/Ngày '\+\(a\.sequenceDay\|\|i\+1\)/);
+  assert.match(html,/sequenceTitle\|\|items\[0\]\?\.practiceSetTitle/);
+});
+
+test('teacher practice history filters by grade, class and subject and previews the saved source exam',()=>{
+  assert.match(html,/function practiceHistoryAssignments\(\)/);
+  assert.match(html,/id="lp2-history-grade"/);
+  assert.match(html,/id="lp2-history-class"/);
+  assert.match(html,/id="lp2-history-subject"/);
+  assert.match(html,/function previewPracticeAssignment\(id\)/);
+  assert.match(html,/state\.learningExams\|\|\[\]\)\.find\(x=>x\.id===a\.examId\)/);
+});
+
+test('server refuses new teacher assignments to classes outside the teacher assignment scope',()=>{
+  const server=readFileSync(new URL('../portal-server.mjs',import.meta.url),'utf8');
+  assert.match(server,/teacherCanCreate=m\.role!=='teacher'\|\|allowed\.has\(incoming\.classId\)\|\|!!\(old&&old\.createdBy===m\.username\)/);
+  assert.match(server,/Lớp nhận bài chưa được phân công cho tài khoản giáo viên/);
+});
