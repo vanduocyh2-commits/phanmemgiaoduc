@@ -61,7 +61,7 @@ export async function mountAttendanceHistory(){
  select.append(option('Đang tải lịch sử điểm danh…',''));sync();
  try{const response=await fetch('/api/attendance/history?className='+encodeURIComponent(className),{credentials:'same-origin',cache:'no-store'}),result=await response.json();if(!response.ok)throw Error(result.error||'Không tải được lịch sử điểm danh.');if(!date.isConnected||classes.value!==className||mounts.get(date)?.root!==root)return;data=result;
  installExport();
- select.replaceChildren();select.append(option(result.sessions.length?'Chọn ngày đã lưu để xem / điểm danh lại':'Chưa có ngày điểm danh đã lưu',''));for(const row of result.sessions)select.append(option('Buổi học thứ '+row.lessonNo+' · '+attendanceDayLabel(row.date)+' · '+((Number(row.present)||0)+(Number(row.late)||0))+'/'+row.total+' đã học'+(row.absent?' · '+row.absent+' vắng':'')+(row.late?' · '+row.late+' muộn':'')+(row.makeup?' · '+row.makeup+' học bù':'')+(row.locked?' · ĐÃ KHÓA':''),row.date));}
+ select.replaceChildren();select.append(option(result.sessions.length?'Chọn ngày đã lưu để xem / điểm danh lại':'Chưa có ngày điểm danh đã lưu',''));for(const row of result.sessions)select.append(option('Buổi học thứ '+row.lessonNo+' · '+attendanceDayLabel(row.date)+' · '+((Number(row.present)||0)+(Number(row.late)||0)+(Number(row.makeup)||0))+'/'+row.total+' đã học'+(row.absent?' · '+row.absent+' vắng':'')+(row.late?' · '+row.late+' muộn':'')+(row.makeup?' · '+row.makeup+' học bù':'')+(row.locked?' · ĐÃ KHÓA':''),row.date));}
  catch(e){if(!date.isConnected)return;error=e.message;select.replaceChildren(option('Không tải được lịch sử',''));}
  finally{loading=false;if(date.isConnected&&mounts.get(date)?.root===root)sync();}
 }

@@ -27,7 +27,8 @@ test('attendance save persists excused, unexcused and unclassified absence reaso
  ]});
  const records=d.classes[0].students.map(s=>s.attendanceRecords[0]);
  assert.deepEqual(records.slice(0,3).map(attendanceReason),['excused','unexcused','unclassified']);
- const summary=summarizeAttendance(records);
+ const perStudent=d.classes[0].students.map(student=>summarizeAttendance(student.attendanceRecords));
+ const summary=perStudent.reduce((total,row)=>{for(const key of ['present','absent','excused','unexcused','unclassified','attended','marked'])total[key]=(total[key]||0)+row[key];return total;},{});
  assert.deepEqual({present:summary.present,absent:summary.absent,excused:summary.excused,unexcused:summary.unexcused,unclassified:summary.unclassified,attended:summary.attended,marked:summary.marked},
   {present:1,absent:3,excused:1,unexcused:1,unclassified:1,attended:1,marked:4});
  const history=attendanceHistory(d,teacher,['c1'],{classId:'c1'}).sessions[0];
