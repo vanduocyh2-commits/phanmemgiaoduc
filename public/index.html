@@ -2447,15 +2447,18 @@ Lời giải tham khảo.`;
   const questions=[],errors=[];
   const read=(block,key)=>{const re=new RegExp('(?:^|\\n)\\s*'+key+'\\s*:\\s*([\\s\\S]*?)(?=\\n\\s*(?:Loại|Dạng|Mức độ|Điểm|Nội dung|Câu hỏi|A|B|C|D|Mệnh đề\\s*[1-4]|Đáp án|Giải thích|Lời giải)\\s*:|$)','i');return (block.match(re)?.[1]||'').trim();};
   blocks.forEach((block,index)=>{
-   const typeRaw=read(block,'(?:Loại|Dạng)').toLowerCase(),type=typeRaw.includes('đúng')||typeRaw==='tf'?'tf':typeRaw.includes('tự luận')||typeRaw==='essay'?'essay':typeRaw.includes('ngắn')||typeRaw==='short'?'short':'mcq';
-   const levelRaw=read(block,'Mức độ').toUpperCase(),level=/VDC|VẬN DỤNG CAO/.test(levelRaw)?'VDC':/VD|VẬN DỤNG/.test(levelRaw)?'VD':/TH|THÔNG HIỂU/.test(levelRaw)?'TH':'NB';
+   const typeRaw=read(block,'(?:Loại|Dạng)').toLowerCase(),validType=/^(?:mcq|tf|short|essay|trắc nghiệm|đúng sai|tự luận|trả lời ngắn)$/.test(typeRaw),type=typeRaw.includes('đúng')||typeRaw==='tf'?'tf':typeRaw.includes('tự luận')||typeRaw==='essay'?'essay':typeRaw.includes('ngắn')||typeRaw==='short'?'short':'mcq';
+   const levelRaw=read(block,'Mức độ').toUpperCase(),validLevel=/^(?:NB|NHẬN BIẾT|TH|THÔNG HIỂU|VD|VẬN DỤNG|VDC|VẬN DỤNG CAO)$/.test(levelRaw),level=/VDC|VẬN DỤNG CAO/.test(levelRaw)?'VDC':/VD|VẬN DỤNG/.test(levelRaw)?'VD':/TH|THÔNG HIỂU/.test(levelRaw)?'TH':'NB';
    const q={type,level,points:Number(read(block,'Điểm')||1),text:read(block,'(?:Nội dung|Câu hỏi)'),answer:read(block,'Đáp án'),explanation:read(block,'(?:Giải thích|Lời giải)')};
    if(type==='mcq'){q.options=['A','B','C','D'].map(k=>read(block,k));q.answer=q.answer.toUpperCase();}
    if(type==='tf'){q.statements=[1,2,3,4].map(n=>read(block,'Mệnh đề\\s*'+n));q.tfAnswers=tfAnswersFrom(q.answer);q.answer=tfCode(q.tfAnswers);}
    const problems=[];
+   if(!validType)problems.push('loại câu không hợp lệ');
+   if(!validLevel)problems.push('thiếu hoặc sai mức độ (chỉ NB/TH/VD/VDC)');
    if(!q.text)problems.push('thiếu nội dung');
    if(!Number.isFinite(q.points)||q.points<=0||q.points>10)problems.push('điểm không hợp lệ');
    if(type==='mcq'&&(q.options.some(v=>!v)||!['A','B','C','D'].includes(q.answer.toUpperCase())))problems.push('thiếu 4 phương án hoặc đáp án A/B/C/D');
+   if(type==='mcq'&&q.explanation){const stated=[...q.explanation.matchAll(/(?:đáp án|chọn)\\s*(?:là\\s*)?([ABCD])\\b/gi)].map(m=>m[1].toUpperCase());if(stated.some(v=>v!==q.answer))problems.push('đáp án mâu thuẫn với lời giải');if(/\\b(?:xin lỗi|sửa lại|khoan|kiểm tra lại)\\b/i.test(q.explanation))problems.push('lời giải có dấu hiệu tự đính chính, cần rà soát');}
    if(type==='tf'&&(q.statements.some(v=>!v)||q.tfAnswers.length!==4||q.tfAnswers.some(v=>!['Đúng','Sai'].includes(v))))problems.push('thiếu 4 mệnh đề hoặc đáp án Đúng/Sai');
    if(type==='short'&&!q.answer)problems.push('thiếu đáp án');
    if(type==='essay'&&!q.answer)problems.push('thiếu hướng dẫn chấm');
@@ -2487,7 +2490,7 @@ Lời giải tham khảo.`;
     practiceImportDraft=unique;
     const host=$('lp2-gemini-import-preview');if(!host)return;
     host.innerHTML='<div class="ts-note"><b>Kiểm tra tệp: '+esc(file.name)+'</b><p>Đọc được '+parsed.total+' khối câu hỏi · Hợp lệ '+parsed.questions.length+' · Câu trùng '+duplicates.length+' · Lỗi '+parsed.errors.length+'</p>'+
-     '<p><b>Phân bố theo cấu hình:</b> NB '+actualCounts.NB+'/'+requirements.missing.NB+' · TH '+actualCounts.TH+'/'+requirements.missing.TH+' · VD '+actualCounts.VD+'/'+requirements.missing.VD+' · VDC '+actualCounts.VDC+'/'+requirements.missing.VDC+'</p>'+
+     '<p><b>Số câu trong tệp / số câu cần bổ sung:</b> NB '+actualCounts.NB+'/'+requirements.missing.NB+' · TH '+actualCounts.TH+'/'+requirements.missing.TH+' · VD '+actualCounts.VD+'/'+requirements.missing.VD+' · VDC '+actualCounts.VDC+'/'+requirements.missing.VDC+'</p>'+
      (countMismatches.length?'<p style="color:#b91c1c"><b>Sai số lượng hoặc mức độ:</b><br>'+countMismatches.map(esc).join('<br>')+'. Hệ thống không cho lưu tệp sai cấu hình.</p>':'')+
      (parsed.errors.length?'<p style="color:#b91c1c"><b>Cần sửa:</b><br>'+parsed.errors.map(esc).join('<br>')+'</p>':'')+
      (duplicates.length?'<p class="ts-help">Các câu trùng sẽ không được lưu thêm.</p>':'')+
