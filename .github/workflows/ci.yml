@@ -37,4 +37,3 @@ jobs:
           PY
           for file in /tmp/portal-inline-*.mjs; do node --check "$file"; done
       - run: npm test
-      - run: npm test
