@@ -164,3 +164,16 @@ test('server refuses new teacher assignments to classes outside the teacher assi
   assert.match(server,/teacherCanCreate=m\.role!=='teacher'\|\|!incoming\.lessonPractice\|\|allowed\.has\(incoming\.classId\)\|\|!!\(old&&old\.createdBy===m\.username\)/);
   assert.match(server,/Bài luyện tập mới phải giao cho lớp được phân công/);
 });
+
+
+test('student practice keeps per-question explanations while ordinary exam snapshots can still hide them',()=>{
+  assert.match(html,/function studentExamSnapshot\(ex,\{includeExplanations=false\}=\{\}\)/);
+  assert.match(html,/if\(!includeExplanations\)for\(const q of snapshot\.questions\|\|\[\]\)delete q\.explanation/);
+  assert.equal([...html.matchAll(/snapshot:studentExamSnapshot\(ex,\{includeExplanations:true\}\)/g)].length,5);
+});
+
+test('student sequence cards hide locked days and display the saved question count',()=>{
+  assert.match(html,/examStatus\(a\)==='Đang mở'&&sequenceUnlocked\(a\)/);
+  assert.match(html,/a\.sequenceId&&!sequenceUnlocked\(a\)\?'🔒 Chờ hoàn thành ngày trước'/);
+  assert.match(html,/\(\(a\.snapshot\?\.questions\|\|\[\]\)\.length\)\+' câu'/);
+});
