@@ -3837,10 +3837,10 @@ window.app.logoutCurrentAccount=logoutCurrentAccount;
         function openStudentSupport(kind='general',id=''){if(!['student','parent'].includes(state.sessionRole)||!cur||!find(cur.cid,cur.sbd).s)return;renderStudentSupport();const panel=$('student-support-panel');if(!panel.hidden&&kind==='general'){closeStudentSupport();return;}panel.hidden=false;$('student-support-button').setAttribute('aria-expanded','true');markSupportRepliesRead();renderSupportReplyBadge();if(state.sessionRole==='parent'){parentTeacherFeedbackForm();return;}$('student-support-form').innerHTML=`<label>Nội dung cần hỗ trợ<select id="student-report-context" class="ts-input"><option value="general">Hỗ trợ chung</option>${state.assignments.filter(a=>a.classId===cur.cid&&classAssignmentAccess(a,cur.sbd)).map(a=>`<option value="assignment:${a.id}">${esc(a.snapshot.title)}</option>`).join('')}${state.centerLessons.filter(l=>l.published&&l.classIds.includes(cur.cid)).map(l=>`<option value="lesson:${l.id}">${esc(l.title)}</option>`).join('')}</select></label><label>Mô tả lỗi<textarea id="student-report-message" class="ts-input" rows="4" maxlength="2000" placeholder="Nhập vấn đề em cần giáo viên hỗ trợ"></textarea></label><button id="student-report-send" class="ts-btn">Gửi giáo viên</button><p id="student-report-status" class="ts-help" role="status"></p>`;const context=kind+':'+id;if([...$('student-report-context').options].some(o=>o.value===context))$('student-report-context').value=context;$('student-report-send').onclick=async()=>{const value=$('student-report-context').value,[type,target]=value.split(':'),message=$('student-report-message').value.trim(),s=find(cur.cid,cur.sbd).s;if(!message||message.length>2000)return $('student-report-status').textContent='Nhập mô tả lỗi từ 1–2000 ký tự.';const entry={id:uid('report'),classId:cur.cid,sbd:cur.sbd,name:s.name,kind:type,lessonId:type==='lesson'?target:null,assignmentId:type==='assignment'?target:null,message,status:'new',reply:'',createdAt:new Date().toISOString()};state.learningReports.push(entry);$('student-report-send').disabled=true;persist();try{if(hosted){await onlineFlush();if(onlineDirty)throw Error('Chưa gửi được, vui lòng kiểm tra kết nối.');}$('student-report-message').value='';$('student-report-status').textContent='Đã gửi báo lỗi tới giáo viên.';renderStudentSupport();}catch(e){$('student-report-status').textContent=e.message;}finally{$('student-report-send').disabled=false;}};}
         async function reportExamQuestion(questionId,questionCode,questionNumber){
             if(state.sessionRole!=='student'||!cur||!attempt?.assignmentId){toast('Phiên làm bài chưa sẵn sàng. Em tải lại đề rồi thử lại nhé.');return;}
-            const a=state.assignments.find(x=>x.id===attempt.assignmentId&&x.classId===cur.cid);
-            const q=a?.snapshot?.questions?.find(x=>x.id===questionId);
+            const activeAttemptId=attempt.id,assignmentId=attempt.assignmentId,classId=cur.cid,sbd=cur.sbd;
+            const a=state.assignments.find(x=>x.id===assignmentId&&x.classId===classId),q=a?.snapshot?.questions?.find(x=>String(x.id)===String(questionId));
             if(!a||!q){toast('Không xác định được câu hỏi trong đề đã giao. Em tải lại đề để đồng bộ dữ liệu.');return;}
-            if(state.learningReports.some(r=>r.kind==='question_error'&&r.assignmentId===a.id&&r.questionId===questionId&&r.attemptId===attempt.id&&r.sbd===cur.sbd)){toast('Em đã báo lỗi câu này trong lượt làm hiện tại.');return;}
+            if(state.learningReports.some(r=>r.kind==='question_error'&&r.assignmentId===a.id&&r.questionId===q.id&&r.attemptId===activeAttemptId&&r.sbd===sbd)){toast('Em đã báo lỗi câu này trong lượt làm hiện tại.');return;}
             const message=await new Promise(resolve=>{
                 const overlay=document.createElement('div');overlay.className='qcard-modal';overlay.style.cssText='position:fixed;inset:0;z-index:100000;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(15,23,42,.58)';
                 const panel=document.createElement('section');panel.className='qcard-dialog';panel.setAttribute('role','dialog');panel.setAttribute('aria-modal','true');panel.setAttribute('aria-labelledby','question-report-title');panel.style.cssText='width:min(100%,520px);max-height:90vh;overflow:auto;background:#fff;border-radius:16px;padding:20px;box-shadow:0 20px 60px rgba(0,0,0,.25)';
@@ -3853,21 +3853,28 @@ window.app.logoutCurrentAccount=logoutCurrentAccount;
                 const send=document.createElement('button');send.type='button';send.className='ts-btn';send.textContent='Gửi báo lỗi';
                 actions.append(cancel,send);panel.append(title,hint,area,status,actions);overlay.appendChild(panel);document.body.appendChild(overlay);
                 let settled=false;const finish=value=>{if(settled)return;settled=true;overlay.remove();resolve(value);};
-                cancel.addEventListener('click',()=>finish(null));
-                overlay.addEventListener('click',event=>{if(event.target===overlay)finish(null);});
+                cancel.addEventListener('click',()=>finish(null));overlay.addEventListener('click',event=>{if(event.target===overlay)finish(null);});
                 send.addEventListener('click',()=>{const value=area.value.trim();if(!value||value.length>2000){status.textContent='Nhập mô tả lỗi từ 1 đến 2.000 ký tự.';area.focus();return;}finish(value);});
                 area.addEventListener('keydown',event=>{if(event.key==='Escape'){event.preventDefault();finish(null);}});
-                document.body.appendChild(overlay);area.focus();
+                area.focus();
             });
             if(message===null)return;
-            const s=find(cur.cid,cur.sbd)?.s;if(!s){toast('Không tìm thấy thông tin học sinh để gửi báo lỗi.');return;}
-            const entry={id:uid('report'),classId:cur.cid,sbd:cur.sbd,name:s.name,kind:'question_error',assignmentId:a.id,questionId:q.id,questionCode:q.questionCode||questionCode||'',questionNumber,attemptId:attempt.id,message,status:'new',reply:'',createdAt:new Date().toISOString()};
-            state.learningReports.push(entry);persist();
+            if(!cur||cur.cid!==classId||cur.sbd!==sbd||attempt?.id!==activeAttemptId){toast('Phiên làm bài đã thay đổi. Em mở lại đề rồi gửi báo lỗi nhé.');return;}
+            const pupil=find(classId,sbd)?.s;if(!pupil){toast('Không tìm thấy thông tin học sinh để gửi báo lỗi.');return;}
+            const entry={id:uid('report'),classId,sbd,name:pupil.name,kind:'question_error',assignmentId:a.id,questionId:q.id,questionCode:q.questionCode||questionCode||'',questionNumber,attemptId:activeAttemptId,message,status:'new',reply:'',createdAt:new Date().toISOString()};
+            const statusLine=document.createElement('span');statusLine.setAttribute('role','status');statusLine.style.cssText='display:block;color:#475569;font-size:12px;margin-top:6px';statusLine.textContent='Đang gửi báo lỗi…';
+            const reportButton=[...document.querySelectorAll('.question-report-actions button')].find(b=>b.getAttribute('onclick')?.includes(String(questionId)));
+            reportButton?.insertAdjacentElement('afterend',statusLine);
             try{
-                if(hosted){await onlineFlush();if(onlineDirty||onlineBusy)throw Error('Chưa đồng bộ được báo lỗi. Kiểm tra kết nối rồi thử gửi lại.');}
+                if(hosted){await onlineFlush();if(onlineDirty||onlineBusy)throw Error('Chưa đồng bộ được lượt làm bài. Kiểm tra mạng rồi thử gửi lại.');}
+                state.learningReports.push(entry);persist();
+                if(hosted){await onlineFlush();if(onlineDirty||onlineBusy)throw Error('Máy chủ chưa xác nhận lưu báo lỗi. Em thử gửi lại sau nhé.');}
+                if(statusLine.isConnected)statusLine.textContent='✓ Đã gửi báo lỗi tới giáo viên.';
                 toast('Đã gửi báo lỗi câu hỏi tới giáo viên.');
             }catch(e){
-                state.learningReports=state.learningReports.filter(r=>r.id!==entry.id);persist();toast('Chưa gửi được báo lỗi: '+e.message);
+                state.learningReports=state.learningReports.filter(r=>r.id!==entry.id);persist();
+                if(statusLine.isConnected)statusLine.textContent='Chưa gửi được: '+e.message;
+                toast('Chưa gửi được báo lỗi: '+e.message);
             }
         }
         function studentGeneralReport(kind='general',id=''){openStudentSupport(kind,id);}
