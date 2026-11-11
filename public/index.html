@@ -3844,7 +3844,7 @@ window.app.logoutCurrentAccount=logoutCurrentAccount;
                 overlay.addEventListener('click',event=>{if(event.target===overlay)finish(null);});
                 send.addEventListener('click',()=>{const value=area.value.trim();if(!value||value.length>2000){status.textContent='Nhập mô tả lỗi từ 1 đến 2.000 ký tự.';area.focus();return;}finish(value);});
                 area.addEventListener('keydown',event=>{if(event.key==='Escape'){event.preventDefault();finish(null);}});
-                area.focus();
+                document.body.appendChild(overlay);area.focus();
             });
             if(message===null)return;
             const s=find(cur.cid,cur.sbd)?.s;if(!s){toast('Không tìm thấy thông tin học sinh để gửi báo lỗi.');return;}
