@@ -2310,9 +2310,36 @@ Lời giải tham khảo.`;
   if(ext==='copy'||ext==='copy-open'){
    const geminiTab=ext==='copy-open'?window.open('https://gemini.google.com/app','_blank'):null;
    if(geminiTab)geminiTab.opener=null;
-   const fallback=()=>{try{const field=document.createElement('textarea');field.value=prompt;field.setAttribute('readonly','');field.style.position='fixed';field.style.opacity='0';field.style.left='-9999px';document.body.appendChild(field);field.select();const ok=document.execCommand('copy');field.remove();return Promise.resolve(ok);}catch(e){return Promise.resolve(false);}};
+   const fallback=()=>{
+    try{
+     document.getElementById('lp2-gemini-copy-fallback')?.remove();
+     const panel=document.createElement('div');
+     panel.id='lp2-gemini-copy-fallback';
+     panel.style.cssText='position:fixed;z-index:2147483000;left:16px;right:16px;bottom:16px;max-width:900px;margin:auto;padding:14px;background:#fff;border:2px solid #7c3aed;border-radius:12px;box-shadow:0 8px 32px rgba(15,23,42,.28);color:#1e293b';
+     const title=document.createElement('div');
+     title.textContent='Trình duyệt chưa cho phép sao chép tự động. Câu lệnh đã được đưa vào ô bên dưới: nhấn Ctrl+C để sao chép.';
+     title.style.cssText='font-weight:700;margin-bottom:8px;line-height:1.5';
+     const field=document.createElement('textarea');
+     field.value=prompt;field.readOnly=true;field.setAttribute('aria-label','Câu lệnh Gemini cần sao chép');
+     field.style.cssText='display:block;width:100%;height:190px;box-sizing:border-box;padding:10px;border:1px solid #cbd5e1;border-radius:8px;background:#f8fafc;color:#0f172a;font:13px/1.5 monospace;white-space:pre;overflow:auto';
+     const actions=document.createElement('div');
+     actions.style.cssText='display:flex;gap:8px;flex-wrap:wrap;margin-top:9px';
+     const copyButton=document.createElement('button');
+     copyButton.type='button';copyButton.textContent='Thử sao chép lại';
+     copyButton.style.cssText='padding:9px 14px;border:0;border-radius:8px;background:#7c3aed;color:#fff;font-weight:700;cursor:pointer';
+     copyButton.onclick=()=>{field.focus();field.select();try{if(document.execCommand('copy')){toast('Đã sao chép câu lệnh. Thầy sang Gemini và nhấn Ctrl+V.');panel.remove();return;}}catch(e){}toast('Chưa sao chép được tự động. Ô câu lệnh vẫn đang được chọn; thầy nhấn Ctrl+C.');};
+     const closeButton=document.createElement('button');
+     closeButton.type='button';closeButton.textContent='Đóng';
+     closeButton.style.cssText='padding:9px 14px;border:1px solid #cbd5e1;border-radius:8px;background:#f1f5f9;color:#334155;cursor:pointer';
+     closeButton.onclick=()=>panel.remove();
+     actions.append(copyButton,closeButton);panel.append(title,field,actions);document.body.appendChild(panel);
+     field.focus();field.select();
+     try{if(document.execCommand('copy')){panel.remove();return Promise.resolve(true);}}catch(e){}
+     return Promise.resolve(false);
+    }catch(e){return Promise.resolve(false);}
+   };
    const copied=navigator.clipboard?.writeText?navigator.clipboard.writeText(prompt).then(()=>true).catch(fallback):fallback();
-   copied.then(ok=>toast(ok?(ext==='copy-open'?(geminiTab?'Đã sao chép câu lệnh và mở Gemini. Sang tab Gemini, nhấn Ctrl+V.':'Đã sao chép câu lệnh. Trình duyệt chặn mở tab Gemini; hãy mở Gemini thủ công.'):'Đã sao chép câu lệnh Gemini. Hãy mở Gemini và nhấn Ctrl+V.'):'Không thể tự sao chép. Hãy thử lại hoặc dùng nút tải biểu mẫu.'));
+   copied.then(ok=>toast(ok?(ext==='copy-open'?(geminiTab?'Đã sao chép câu lệnh và mở Gemini. Sang tab Gemini, nhấn Ctrl+V.':'Đã sao chép câu lệnh. Trình duyệt chặn mở tab Gemini; hãy mở Gemini thủ công.'):'Đã sao chép câu lệnh Gemini. Hãy mở Gemini và nhấn Ctrl+V.'):'Chưa tự sao chép được. Câu lệnh đã hiện trong ô trên màn hình và được chọn sẵn; thầy nhấn Ctrl+C rồi sang Gemini nhấn Ctrl+V.'));
    return;
   }
   const fileExt=ext==='txt'?'txt':'md';
