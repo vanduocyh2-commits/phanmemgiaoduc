@@ -56,3 +56,23 @@ test('server grading maps a selected MCQ letter to the matching option text in t
  assert.equal(d.learningSubmissions[0].details[0].points,5);
  assert.equal(d.learningSubmissions[0].score,10);
 });
+
+test('batch grading uses the correct per-student exam code and shuffled A-D key for all five questions',()=>{
+ const d=seed(),baseAnswers=['A','B','C','D','A'],variantAnswers=['B','D','A','C','D'];
+ const orders=[[2,0,3,1],[3,2,0,1],[2,0,3,1],[2,0,3,1],[1,2,3,0]];
+ const base=baseAnswers.map((answer,i)=>({id:'mcq_'+(i+1),type:'mcq',level:'NB',text:'Câu '+(i+1),options:['A','B','C','D'].map(letter=>'C'+(i+1)+'-'+letter),answer,points:2}));
+ const variant=base.map((q,i)=>({...q,options:orders[i].map(index=>q.options[index]),answer:variantAnswers[i]}));
+ d.classes[0].students.push({sbd:'S2',name:'Bình',fees:{}});
+ d.learningExams[0].questions=base;
+ d.assignments[0].students=['S1','S2'];
+ d.assignments[0].studentCodes={S1:'101',S2:'102'};
+ d.assignments[0].snapshot={...structuredClone(d.learningExams[0]),presentation:{code:'101'},answerVariants:{'101':base,'102':variant}};
+ batchGrade(d,teacher,{assignmentId:'a1',rows:[
+  {sbd:'S1',answers:baseAnswers},
+  {sbd:'S2',answers:variantAnswers}
+ ]});
+ const first=d.learningSubmissions.find(row=>row.sbd==='S1'),second=d.learningSubmissions.find(row=>row.sbd==='S2');
+ assert.equal(first.examCode,'101');assert.equal(first.score,10);
+ assert.equal(second.examCode,'102');assert.equal(second.score,10);
+ assert.deepEqual(second.details.map(row=>row.points),[2,2,2,2,2]);
+});
