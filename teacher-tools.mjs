@@ -34,7 +34,7 @@ export function answersMatchQuestion(question,expected,actual){
  if(question?.type!=='mcq')return answersMatch(expected,actual,question?.type);
  const selected=String(actual??'').trim().toUpperCase();
  if(!/^[ABCD]$/.test(selected))return answersMatch(expected,actual,'mcq');
- const options=Array.isArray(question.options)?question.options:[];
+ const options=Array.isArray(question.options)?question.options:[],optionValue=value=>String(value??'').replace(/^[ABCD]\\s*[.):：-]\\s*/i,'').trim();
  return String(expected??'').split('|').some(raw=>{
   const value=String(raw??'').trim();
   if(!value)return false;
@@ -42,9 +42,9 @@ export function answersMatchQuestion(question,expected,actual){
   const labeled=value.match(/^([ABCD])\s*[.):：-]\s*(.+)$/i);
   if(labeled){
    const letter=labeled[1].toUpperCase(),option=options['ABCD'.indexOf(letter)];
-   if(option!==undefined&&answersMatch(labeled[2],option,'short'))return selected===letter;
+   if(option!==undefined&&answersMatch(labeled[2],optionValue(option),'short'))return selected===letter;
   }
-  const optionIndex=options.findIndex(option=>answersMatch(option,value,'short'));
+  const optionIndex=options.findIndex(option=>answersMatch(optionValue(option),value,'short'));
   return optionIndex>=0?selected==='ABCD'[optionIndex]:answersMatch(value,actual,'mcq');
  });
 }
