@@ -39,7 +39,7 @@ export function answersMatchQuestion(question,expected,actual){
   const value=String(raw??'').trim();
   if(!value)return false;
   if(/^[ABCD]$/i.test(value))return selected===value.toUpperCase();
-  const labeled=value.match(/^([ABCD])\\s*[.):：-]\\s*(.+)$/i);
+  const labeled=value.match(/^([ABCD])\s*[.):：-]\s*(.+)$/i);
   if(labeled){
    const letter=labeled[1].toUpperCase(),option=options['ABCD'.indexOf(letter)];
    if(option!==undefined&&answersMatch(labeled[2],option,'short'))return selected===letter;
