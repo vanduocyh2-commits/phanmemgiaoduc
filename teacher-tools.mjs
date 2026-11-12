@@ -34,7 +34,7 @@ export function answersMatchQuestion(question,expected,actual){
  if(question?.type!=='mcq')return answersMatch(expected,actual,question?.type);
  const selected=String(actual??'').trim().toUpperCase();
  if(!/^[ABCD]$/.test(selected))return answersMatch(expected,actual,'mcq');
- const options=Array.isArray(question.options)?question.options:[],optionValue=value=>String(value??'').replace(/^[ABCD]\\s*[.):：-]\\s*/i,'').trim();
+ const options=Array.isArray(question.options)?question.options:[],optionValue=value=>String(value??'').replace(/^[ABCD]\s*[.):：-]\s*/i,'').trim();
  return String(expected??'').split('|').some(raw=>{
   const value=String(raw??'').trim();
   if(!value)return false;
