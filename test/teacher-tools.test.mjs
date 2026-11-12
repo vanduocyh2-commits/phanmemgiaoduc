@@ -1,5 +1,5 @@
 import {test} from 'node:test';import assert from 'node:assert/strict';
-import {parseAnswerRows,questionsFromKey,activeAttempt,canAttempt} from '../teacher-tools.mjs';
+import {parseAnswerRows,questionsFromKey,activeAttempt,canAttempt,answersMatchQuestion} from '../teacher-tools.mjs';
 import {emptyState,applyChanges,batchGrade,regradeExam,deleteCenterClass,deleteCenterStudent,saveClassAttendance,recordExamEvents,sequencePrerequisiteComplete} from '../portal-server.mjs';
 const teacher={role:'teacher',username:'gv',account:{id:'t1'}},student={role:'student',cid:'c1',sbd:'S1'};
 function seed(){const d=emptyState('password123');d.classes=[{id:'c1',name:'10A',teacherId:'t1',students:[{sbd:'S1',name:'An',fees:{}}]},{id:'c2',name:'10B',teacherId:'t2',students:[{sbd:'S2',name:'Bình',fees:{}}]}];d.learningExams=[{id:'e1',owner:'gv',title:'Test',duration:45,questions:questionsFromKey([['Câu','Đáp án','Điểm','Loại'],[1,'A',5,'TN'],[2,'ĐSĐS',5,'ĐS']])}];d.assignments=[{id:'a1',examId:'e1',classId:'c1',students:['S1'],maxAttempts:2,assessmentType:'test',snapshot:structuredClone(d.learningExams[0])}];return d;}
@@ -39,4 +39,20 @@ test('daily sequence stays locked until the same student has a graded submission
  assert.equal(d.learningAttempts.some(row=>row.id==='try-day2'),true);
  assert.equal(sequencePrerequisiteComplete(d,{sequenceId:'seq1',sequenceDay:1},'c1','S1'),true);
  assert.equal(sequencePrerequisiteComplete(d,{sequenceId:'seq1',sequenceDay:3},'c1','S1'),false);
+});
+
+test('MCQ matcher accepts answer text or a letter-plus-option key for the selected option',()=>{
+ const q={type:'mcq',options:['3','4','5','6']};
+ assert.equal(answersMatchQuestion(q,'5','C'),true);
+ assert.equal(answersMatchQuestion(q,'C.5','C'),true);
+ assert.equal(answersMatchQuestion(q,'C','C'),true);
+ assert.equal(answersMatchQuestion(q,'5','B'),false);
+ assert.equal(answersMatchQuestion(q,'7','C'),false);
+});
+test('server grading maps a selected MCQ letter to the matching option text in the answer key',()=>{
+ const d=seed(),q=d.learningExams[0].questions[0];
+ q.options=['3','4','5','6'];q.answer='5';d.assignments[0].snapshot=structuredClone(d.learningExams[0]);
+ batchGrade(d,teacher,{assignmentId:'a1',rows:[{sbd:'S1',answers:['C','ĐSĐS']}]});
+ assert.equal(d.learningSubmissions[0].details[0].points,5);
+ assert.equal(d.learningSubmissions[0].score,10);
 });
