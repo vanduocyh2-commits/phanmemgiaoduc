@@ -30,6 +30,24 @@ export function parseKeyPayload(text){text=String(text||'').trim();if(!text||tex
 export function validateAnswerVariants(ex){if(ex.answerVariants===undefined)return;const entries=Object.entries(ex.answerVariants||{});if(!entries.length||entries.length>64||!Array.isArray(ex.questions))throw Error('Bảng mã đề không hợp lệ.');for(const [code,qs]of entries){if(!/^\d{3,4}$/.test(code)||!Array.isArray(qs)||qs.length!==ex.questions.length||qs.some((q,i)=>q.id!==ex.questions[i].id||q.type!==ex.questions[i].type||!Number.isFinite(q.points)||Math.abs(q.points-ex.questions[i].points)>.001)||Math.abs(qs.reduce((n,q)=>n+q.points,0)-10)>.001)throw Error('Các mã đề cần cùng số câu, loại câu và thang điểm 10.');}}
 
 export function answersMatch(expected,actual,type){const norm=v=>String(v??'').trim().toLowerCase().replace(/\s+/g,' ').replace(/,/g,'.'),a=norm(expected),b=norm(actual),numeric=/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/;if(type==='short'&&numeric.test(a)&&numeric.test(b))return Math.abs(Number(a)-Number(b))<=1e-9;return a===b;}
+export function answersMatchQuestion(question,expected,actual){
+ if(question?.type!=='mcq')return answersMatch(expected,actual,question?.type);
+ const selected=String(actual??'').trim().toUpperCase();
+ if(!/^[ABCD]$/.test(selected))return answersMatch(expected,actual,'mcq');
+ const options=Array.isArray(question.options)?question.options:[];
+ return String(expected??'').split('|').some(raw=>{
+  const value=String(raw??'').trim();
+  if(!value)return false;
+  if(/^[ABCD]$/i.test(value))return selected===value.toUpperCase();
+  const labeled=value.match(/^([ABCD])\\s*[.):：-]\\s*(.+)$/i);
+  if(labeled){
+   const letter=labeled[1].toUpperCase(),option=options['ABCD'.indexOf(letter)];
+   if(option!==undefined&&answersMatch(labeled[2],option,'short'))return selected===letter;
+  }
+  const optionIndex=options.findIndex(option=>answersMatch(option,value,'short'));
+  return optionIndex>=0?selected==='ABCD'[optionIndex]:answersMatch(value,actual,'mcq');
+ });
+}
 export function examCodes(ex){const files=Object.keys(ex.variantAttachments||{});return [...new Set([...files,...Object.keys(ex.answerVariants||{})])].sort((a,b)=>a.localeCompare(b,'en',{numeric:true}));}
 export function studentExamCode(d,a,sbd){const saved=(d.learningAttempts||[]).find(t=>t.assignmentId===a.id&&t.classId===a.classId&&t.sbd===sbd&&t.examCode)||(d.learningSubmissions||[]).find(t=>t.assignmentId===a.id&&t.classId===a.classId&&t.sbd===sbd&&t.examCode);if(saved)return String(saved.examCode);const assigned=a.studentCodes?.[sbd];if(assigned&&examCodes(a.snapshot).includes(String(assigned)))return String(assigned);const codes=examCodes(a.snapshot),requested=String(a.snapshot.presentation?.code||'101'),base=codes.length&&!codes.includes(requested)?codes[0]:requested;if(codes.length<2||a.codePolicy==='fixed'||a.codePolicy!=='automatic'&&Object.keys(a.snapshot.variantAttachments||{}).length<2)return base;let n=2166136261;for(const c of a.id+'|'+sbd)n=Math.imul(n^c.charCodeAt(0),16777619)>>>0;return codes[n%codes.length];}
 export function studentSnapshot(d,a,sbd){const code=studentExamCode(d,a,sbd),ex=JSON.parse(JSON.stringify(a.snapshot));ex.presentation={...(ex.presentation||{}),code};ex.code=code;if(ex.variantAttachments?.[code])ex.attachment=ex.variantAttachments[code];if(Object.keys(ex.variantAttachments||{}).length>1){const v=ex.variantContent?.[code]||{};ex.content=v.content||'';ex.sourceIntro=v.sourceIntro||'';ex.sourceQuestionContent=!!v.sourceQuestionContent;}if(ex.answerVariants?.[code])ex.questions=ex.answerVariants[code];delete ex.variantAttachments;delete ex.answerVariants;delete ex.answerAttachment;delete ex.answerNotes;delete ex.variantAnswerFiles;delete ex.variantAnswerNotes;delete ex.variantContent;delete ex.variantEdits;delete ex.folderImportReport;for(const q of ex.questions||[]){delete q.answer;delete q.tfAnswers;delete q.explanation;}return ex;}
