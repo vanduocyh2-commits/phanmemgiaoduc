@@ -16,12 +16,37 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Deploy through SSH
+      - name: Backup VPS local changes, then deploy
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
-            set -e
+            set -euo pipefail
+            sudo -n bash <<'ROOT'
+            set -euo pipefail
+            REPO=/opt/phanmemgiaoduc
+            BACKUP_ROOT=/opt/phanmemgiaoduc-backups
+            test -d "$REPO/.git"
+            install -d -o centerapp -g centerapp -m 0750 "$BACKUP_ROOT"
+            STAMP=$(date -u +%Y%m%dT%H%M%SZ)
+            BACKUP="$BACKUP_ROOT/pre-deploy-$STAMP"
+            install -d -o centerapp -g centerapp -m 0750 "$BACKUP"
+            chown centerapp:centerapp "$BACKUP"
+            runuser -u centerapp -- env REPO="$REPO" BACKUP="$BACKUP" bash -euo pipefail -c '
+              cd "$REPO"
+              git status --short > "$BACKUP/status-before.txt"
+              git diff HEAD --binary > "$BACKUP/tracked-changes.patch"
+              git ls-files --others --exclude-standard -z > "$BACKUP/untracked-files.list"
+              if [ -s "$BACKUP/untracked-files.list" ]; then
+                tar --null -T "$BACKUP/untracked-files.list" -czf "$BACKUP/untracked-files.tar.gz"
+              fi
+              if [ -n "$(git status --porcelain)" ]; then
+                git stash push --include-untracked -m "automatic-backup-before-deploy-$STAMP"
+              fi
+              git status --short > "$BACKUP/status-after-stash.txt"
+            '
+            echo "LOCAL_BACKUP_CREATED=$BACKUP"
             sudo -n /usr/local/sbin/phanmemgiaoduc-deploy
+            ROOT
