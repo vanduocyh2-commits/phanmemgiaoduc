@@ -25,8 +25,8 @@ jobs:
           script: |
             set -e
             echo "=== VPS working tree preflight ==="
-            sudo -n -u centerapp git -C /opt/phanmemgiaoduc status --short || true
-            sudo -n -u centerapp git -C /opt/phanmemgiaoduc diff --stat || true
-            sudo -n -u centerapp git -C /opt/phanmemgiaoduc diff --cached --stat || true
+            git -C /opt/phanmemgiaoduc status --short || true
+            git -C /opt/phanmemgiaoduc diff --stat || true
+            git -C /opt/phanmemgiaoduc diff --cached --stat || true
             echo "=== Starting guarded deployment ==="
             sudo -n /usr/local/sbin/phanmemgiaoduc-deploy
