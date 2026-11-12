@@ -396,7 +396,7 @@ const feedbackDeleteRoute=/^\/api\/feedback\/([-\w]+)$/.exec(p);if(feedbackDelet
   if(!m||!['teacher','admin'].includes(m.role))return send(res,403,{error:'Chỉ giáo viên hoặc quản trị được sử dụng AI chấm bài.'});
   if(!env.GEMINI_API_KEY)return send(res,503,{error:'Máy chủ chưa cấu hình GEMINI_API_KEY. Hãy thêm khóa trong biến môi trường VPS.'});
   const input=await jsonBody(req),submissionId=String(input.submissionId||''),qid=String(input.qid||'');
-  if(!/^[-\\w]{5,120}$/.test(submissionId)||!/^[-\\w]{1,160}$/.test(qid))return send(res,400,{error:'Mã bài nộp hoặc mã câu hỏi không hợp lệ.'});
+  if(!/^[-\w]{5,120}$/.test(submissionId)||!/^[-\w]{1,160}$/.test(qid))return send(res,400,{error:'Mã bài nộp hoặc mã câu hỏi không hợp lệ.'});
   const submission=d.learningSubmissions.find(row=>row.id===submissionId);
   const assignment=submission&&d.assignments.find(row=>row.id===submission.assignmentId);
   if(!submission||!assignment||submission.classId!==assignment.classId||m.role==='teacher'&&!classesFor(d,m).some(c=>c.id===submission.classId))return send(res,403,{error:'Không có quyền chấm bài nộp này.'});
