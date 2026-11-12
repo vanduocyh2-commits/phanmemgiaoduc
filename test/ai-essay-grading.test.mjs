@@ -38,7 +38,7 @@ test('calls Gemini with JSON schema and returns a validated suggestion',async()=
  assert.match(request.url,/models\/gemini-test:generateContent/);
  const body=JSON.parse(request.options.body);
  assert.equal(body.generationConfig.responseMimeType,'application/json');
- assert.match(body.contents[0].parts[0].text,/Không tự đặt ra yêu cầu đó để trừ điểm/);
+ assert.match(body.contents[0].parts[0].text,/không tự đặt ra yêu cầu đó để trừ điểm/i);
 });
 
 test('retries transient Gemini 503 and succeeds on the next attempt',async()=>{
