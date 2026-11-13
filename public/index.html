@@ -1437,40 +1437,40 @@ const TS = (() => {
   }
  } async function bankQcCopyPromptAndOpen(){const p=$('bank-qc-prompt')?.value||bankQcBuildPrompt();if(!p)return;try{await navigator.clipboard.writeText(p);window.open('https://gemini.google.com/app','_blank','noopener');toast('Đã sao chép lệnh kiểm định. Dán vào Gemini.');}catch(e){const el=$('bank-qc-prompt');el?.focus();el?.select();toast('Hãy Ctrl+C để sao chép lệnh.');}}
 function bankQcNormalizeJSONText(raw){
- let text=String(raw??'').replace(/^\\uFEFF/,'').trim();
+ let text=String(raw??'').replace(/^\uFEFF/,'').trim();
  const tick=String.fromCharCode(96);
  if(text.startsWith(tick+tick+tick)){
-  text=text.replace(new RegExp('^'+tick+tick+tick+'[^\\\\r\\\\n]*\\\\r?\\\\n'),'');
-  text=text.replace(new RegExp('\\\\r?\\\\n?'+tick+tick+tick+'\\\\s*$'),'');
+  text=text.replace(new RegExp('^'+tick+tick+tick+'[^\\r\\n]*\\r?\\n'),'');
+  text=text.replace(new RegExp('\\r?\\n?'+tick+tick+tick+'\\s*$'),'');
  }
- const first=text.search(/[\\[{]/);
+ const first=text.search(/[\[{]/);
  if(first>0)text=text.slice(first);
  let inString=false,out='';
- const latexCommands=/^(?:frac|dfrac|tfrac|sqrt|text|mathrm|mathbf|mathbb|mathcal|mathsf|left|right|begin|end|neq|leq|geq|times|cdot|pi|theta|alpha|beta|gamma|Delta|sum|int|infty|partial|log|ln|sin|cos|tan|overline|underline|vec|cases|quad|qquad|displaystyle|operatorname|angle|rightarrow|Rightarrow|to|approx|pm|cdots|ldots|lim|in|notin|subset|cup|cap|perp|parallel|emptyset|forall|exists)\\b/;
+ const latexCommands=/^(?:frac|dfrac|tfrac|sqrt|text|mathrm|mathbf|mathbb|mathcal|mathsf|left|right|begin|end|neq|leq|geq|times|cdot|pi|theta|alpha|beta|gamma|Delta|sum|int|infty|partial|log|ln|sin|cos|tan|overline|underline|vec|cases|quad|qquad|displaystyle|operatorname|angle|rightarrow|Rightarrow|to|approx|pm|cdots|ldots|lim|in|notin|subset|cup|cap|perp|parallel|emptyset|forall|exists)\b/;
  for(let i=0;i<text.length;i++){
   const ch=text[i];
   if(!inString){out+=ch;if(ch==='"')inString=true;continue;}
   if(ch==='"'){out+=ch;inString=false;continue;}
-  if(ch!=='\\\\'){out+=ch;continue;}
+  if(ch!=='\\'){out+=ch;continue;}
   const next=text[i+1]||'';
-  if(!next){out+='\\\\\\\\';continue;}
-  if(next==='"'||next==='\\\\'||next==='/'){out+='\\\\'+next;i++;continue;}
-  if(next==='u'&&/^[0-9a-fA-F]{4}$/.test(text.slice(i+2,i+6))){out+='\\\\u'+text.slice(i+2,i+6);i+=5;continue;}
+  if(!next){out+='\\\\';continue;}
+  if(next==='"'||next==='\\'||next==='/'){out+='\\'+next;i++;continue;}
+  if(next==='u'&&/^[0-9a-fA-F]{4}$/.test(text.slice(i+2,i+6))){out+='\\u'+text.slice(i+2,i+6);i+=5;continue;}
   if(/[bfnrt]/.test(next)&&!latexCommands.test(text.slice(i+1))){
-   out+='\\\\'+next;i++;continue;
+   out+='\\'+next;i++;continue;
   }
-  out+='\\\\\\\\';
+  out+='\\\\';
  }
  return out;
 }
 function bankQcParseJSON(raw){
  const clean=bankQcNormalizeJSONText(raw);
- try{return {data:JSON.parse(clean),repaired:clean!==String(raw??'').replace(/^\\uFEFF/,'').trim(),clean};}
+ try{return {data:JSON.parse(clean),repaired:clean!==String(raw??'').replace(/^\uFEFF/,'').trim(),clean};}
  catch(error){
-  const match=String(error?.message||'').match(/position\\s+(\\d+)/i);
+  const match=String(error?.message||'').match(/position\s+(\d+)/i);
   if(match){
-   const pos=Number(match[1]),before=clean.slice(0,pos),line=before.split('\\n').length,column=pos-(before.lastIndexOf('\\n')+1)+1;
-   const excerpt=clean.slice(Math.max(0,pos-35),Math.min(clean.length,pos+35)).replace(/\\n/g,' ');
+   const pos=Number(match[1]),before=clean.slice(0,pos),line=before.split('\n').length,column=pos-(before.lastIndexOf('\n')+1)+1;
+   const excerpt=clean.slice(Math.max(0,pos-35),Math.min(clean.length,pos+35)).replace(/\n/g,' ');
    throw new Error('JSON còn lỗi tại dòng '+line+', cột '+column+'. Đoạn gần lỗi: '+excerpt);
   }
   throw new Error('JSON chưa đúng định dạng: '+(error?.message||String(error)));
@@ -1480,7 +1480,7 @@ function bankQcParseJSON(raw){
   if(!staff())return;
   const file=input?.files?.[0],status=$('bank-qc-file-status'),target=$('bank-qc-result');
   if(!file)return;
-  if(!/\\.json$/i.test(file.name)&&file.type!=='application/json'){
+  if(!/\.json$/i.test(file.name)&&file.type!=='application/json'){
    input.value='';
    if(status)status.textContent='Tệp không đúng định dạng JSON. Vui lòng chọn tệp .json.';
    return toast('Chỉ chấp nhận tệp JSON (.json).');
