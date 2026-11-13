@@ -31,21 +31,52 @@ export function validateAnswerVariants(ex){if(ex.answerVariants===undefined)retu
 
 export function answersMatch(expected,actual,type){const norm=v=>String(v??'').normalize('NFKC').replace(/[−–—﹣－]/g,'-').trim().toLowerCase().replace(/\s+/g,' ').replace(/\s*,\s*/g,',').replace(/,/g,'.'),a=norm(expected),b=norm(actual),numeric=/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/;if(type==='short'&&numeric.test(a)&&numeric.test(b))return Math.abs(Number(a)-Number(b))<=1e-9;return a===b;}
 export function answersMatchQuestion(question,expected,actual){
+ // Quy về cùng một lựa chọn: chữ cái A-D hoặc nội dung phương án.
+ // Chấp nhận cả dữ liệu cũ lưu chữ cái lẫn dữ liệu lưu nguyên nội dung.
  if(question?.type!=='mcq')return answersMatch(expected,actual,question?.type);
- const selected=String(actual??'').trim().toUpperCase();
- if(!/^[ABCD]$/.test(selected))return answersMatch(expected,actual,'mcq');
- const options=Array.isArray(question.options)?question.options:[],optionValue=value=>String(value??'').replace(/^[ABCD]\s*[.):：-]\s*/i,'').trim();
- return String(expected??'').split('|').some(raw=>{
-  const value=String(raw??'').trim();
-  if(!value)return false;
-  if(/^[ABCD]$/i.test(value))return selected===value.toUpperCase();
-  const labeled=value.match(/^([ABCD])\s*[.):：-]\s*(.+)$/i);
+ const letters='ABCD';
+ const options=Array.isArray(question.options)?question.options:[];
+ const optionText=option=>{
+  const value=option&&typeof option==='object'
+   ? option.text??option.content??option.value??option.label??''
+   : option;
+  return String(value??'')
+   .replace(/<[^>]*>/g,' ')
+   .replace(/^[\s]*[ABCD]\s*[.):：]\s*/i,'')
+   .replace(/^[\s]*[-–—•]\s+(?=[^0-9])/,'')
+   .replace(/\s+/g,' ').trim();
+ };
+ const same=(a,b)=>{
+  const clean=value=>String(value??'').normalize('NFKC')
+   .replace(/[−–—﹣－]/g,'-').replace(/\s+/g,' ')
+   .replace(/\s*,\s*/g,',').trim().toLowerCase();
+  return !!clean(a)&&clean(a)===clean(b);
+ };
+ const resolve=value=>{
+  const raw=String(value??'').trim();
+  if(!raw)return null;
+  const labeled=raw.match(/^([ABCD])\s*[.):：-]\s*(.+)$/i);
+  if(/^[ABCD]$/i.test(raw))return {letter:raw.toUpperCase(),text:optionText(options[letters.indexOf(raw.toUpperCase())])};
   if(labeled){
-   const letter=labeled[1].toUpperCase(),option=options['ABCD'.indexOf(letter)];
-   if(option!==undefined&&answersMatch(labeled[2],optionValue(option),'short'))return selected===letter;
+   const letter=labeled[1].toUpperCase(),text=optionText(options[letters.indexOf(letter)]);
+   if(!labeled[2]||!text||same(labeled[2],text))return {letter,text};
+   // Nếu nội dung đi kèm nhãn không khớp, vẫn thử tìm theo nội dung thực.
   }
-  const optionIndex=options.findIndex(option=>answersMatch(optionValue(option),value,'short'));
-  return optionIndex>=0?selected==='ABCD'[optionIndex]:answersMatch(value,actual,'mcq');
+  const index=options.findIndex(option=>same(optionText(option),raw));
+  if(index>=0)return {letter:letters[index],text:optionText(options[index])};
+  return {letter:null,text:raw};
+ };
+ const actualValue=resolve(actual);
+ if(!actualValue)return false;
+ return String(expected??'').split('|').some(raw=>{
+  const expectedValue=resolve(raw);
+  if(!expectedValue)return false;
+  if(expectedValue.letter&&actualValue.letter&&expectedValue.letter===actualValue.letter)return true;
+  if(expectedValue.text&&actualValue.text&&same(expectedValue.text,actualValue.text))return true;
+  // Một phía là chữ cái, phía còn lại là nội dung phương án tương ứng.
+  if(expectedValue.letter&&same(optionText(options[letters.indexOf(expectedValue.letter)]),actual))return true;
+  if(actualValue.letter&&same(optionText(options[letters.indexOf(actualValue.letter)]),raw))return true;
+  return same(expectedValue.text,actualValue.text);
  });
 }
 export function examCodes(ex){const files=Object.keys(ex.variantAttachments||{});return [...new Set([...files,...Object.keys(ex.answerVariants||{})])].sort((a,b)=>a.localeCompare(b,'en',{numeric:true}));}
