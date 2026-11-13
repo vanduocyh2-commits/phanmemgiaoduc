@@ -14,16 +14,14 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Copy source review archive and deployment diagnostics from VPS
+      - name: Copy live source files and read-only diagnostics from VPS
         env:
           VPS_HOST: ${{ secrets.VPS_HOST }}
           VPS_USER: ${{ secrets.VPS_USER }}
-          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
         run: |
           set -euo pipefail
           test -n "$VPS_HOST"
           test -n "$VPS_USER"
-          test -n "$VPS_SSH_KEY"
 
           mkdir -p "$HOME/.ssh"
           chmod 700 "$HOME/.ssh"
@@ -33,30 +31,18 @@ jobs:
 
           ssh -i "$RUNNER_TEMP/vps_key" -o BatchMode=yes "$VPS_USER@$VPS_HOST" '
             set -eu
-            SRC=/root/phanmemgiaoduc-code-review.zip
-            TMP=/tmp/phanmemgiaoduc-code-review-gha.zip
-            DIAG=/tmp/phanmemgiaoduc-vps-deploy-diagnostic.txt
-
-            if test -r "$SRC"; then
-              cp "$SRC" "$TMP"
-            else
-              sudo -n install -m 0644 "$SRC" "$TMP"
-            fi
-            chmod 0644 "$TMP"
-
+            for f in portal-server.mjs teacher-tools.mjs public/index.html; do
+              test -r "/opt/phanmemgiaoduc/$f"
+            done
             {
               echo "=== VPS deployment diagnostic (read-only) ==="
               date -Is
               hostname
               echo
-              echo "=== Production code files ==="
+              echo "=== Production code file metadata ==="
               for f in portal-server.mjs teacher-tools.mjs public/index.html; do
-                if test -f "/opt/phanmemgiaoduc/$f"; then
-                  stat -c "%n size=%s bytes mtime=%y" "/opt/phanmemgiaoduc/$f"
-                  sha256sum "/opt/phanmemgiaoduc/$f"
-                else
-                  echo "MISSING /opt/phanmemgiaoduc/$f"
-                fi
+                stat -c "%n size=%s bytes mtime=%y" "/opt/phanmemgiaoduc/$f"
+                sha256sum "/opt/phanmemgiaoduc/$f"
               done
               echo
               echo "=== Clean checkout ==="
@@ -67,32 +53,24 @@ jobs:
               git -C /opt/phanmemgiaoduc rev-parse HEAD 2>&1 || true
               git -C /opt/phanmemgiaoduc status --short 2>&1 || true
               echo
-              echo "=== Deploy script (sensitive assignment lines omitted) ==="
-              if test -r /usr/local/sbin/phanmemgiaoduc-deploy; then
-                sed -E "/(PASSWORD|TOKEN|SECRET|PRIVATE|DATABASE_URL|SUPABASE|SSH_KEY|API_KEY)/Id" /usr/local/sbin/phanmemgiaoduc-deploy
-              else
-                sudo -n sh -c "sed -E \"/(PASSWORD|TOKEN|SECRET|PRIVATE|DATABASE_URL|SUPABASE|SSH_KEY|API_KEY)/Id\" /usr/local/sbin/phanmemgiaoduc-deploy" 2>&1 || true
-              fi
-              echo
-              echo "=== Backup directory ==="
-              ls -ld /root/phanmemgiaoduc-localchanges-20261113-022233 2>&1 || true
-              ls -lh /root/phanmemgiaoduc-localchanges-20261113-022233 2>&1 || true
+              echo "=== Deployment script permissions ==="
+              stat -c "%A %U:%G %n" /usr/local/sbin/phanmemgiaoduc-deploy 2>&1 || true
               echo
               echo "=== Running service ==="
               systemctl is-active phanmemgiaoduc.service 2>&1 || true
               systemctl show -p ExecStart phanmemgiaoduc.service 2>&1 || true
-            } > "$DIAG" 2>&1
-            chmod 0644 "$DIAG"
+            } > /tmp/phanmemgiaoduc-vps-deploy-diagnostic.txt 2>&1
           '
 
-          scp -i "$RUNNER_TEMP/vps_key" -o BatchMode=yes "$VPS_USER@$VPS_HOST:/tmp/phanmemgiaoduc-code-review-gha.zip" "$RUNNER_TEMP/phanmemgiaoduc-code-review.zip"
-          scp -i "$RUNNER_TEMP/vps_key" -o BatchMode=yes "$VPS_USER@$VPS_HOST:/tmp/phanmemgiaoduc-vps-deploy-diagnostic.txt" "$RUNNER_TEMP/phanmemgiaoduc-vps-deploy-diagnostic.txt"
-          mkdir -p snapshot
-          cp "$RUNNER_TEMP/phanmemgiaoduc-code-review.zip" snapshot/
-          cp "$RUNNER_TEMP/phanmemgiaoduc-vps-deploy-diagnostic.txt" snapshot/
+          mkdir -p snapshot/production/public
+          scp -i "$RUNNER_TEMP/vps_key" -o BatchMode=yes "$VPS_USER@$VPS_HOST:/opt/phanmemgiaoduc/portal-server.mjs" snapshot/production/
+          scp -i "$RUNNER_TEMP/vps_key" -o BatchMode=yes "$VPS_USER@$VPS_HOST:/opt/phanmemgiaoduc/teacher-tools.mjs" snapshot/production/
+          scp -i "$RUNNER_TEMP/vps_key" -o BatchMode=yes "$VPS_USER@$VPS_HOST:/opt/phanmemgiaoduc/public/index.html" snapshot/production/public/
+          scp -i "$RUNNER_TEMP/vps_key" -o BatchMode=yes "$VPS_USER@$VPS_HOST:/tmp/phanmemgiaoduc-vps-deploy-diagnostic.txt" snapshot/
+
           rm -f "$RUNNER_TEMP/vps_key"
 
-      - name: Upload snapshot for review
+      - name: Upload production snapshot for review
         uses: actions/upload-artifact@v4
         with:
           name: vps-source-review-snapshot
