@@ -1388,7 +1388,7 @@ const TS = (() => {
    '<label>Thứ tự bài<input id="qlo-'+i+'" type="number" min="1" max="999" class="ts-input" value="'+(Number(q.lessonOrder||draft.lessonOrder)||1)+'" onchange="TS.capture()"></label>'+
   '</div><p class="ts-help">Mức độ nhận thức được chọn ở đầu thẻ câu hỏi. Khi lưu đề, câu này được đưa vào đúng môn → chương → bài trong ngân hàng câu hỏi.</p></details>';
  }
- let questionBankFilters={grade:'',subject:'',curriculum:'',textbook:'',chapter:'',lesson:'',level:'',search:''};
+ let questionBankFilters={grade:'',subject:'',curriculum:'',textbook:'',chapter:'',lesson:'',level:'',search:'',code:''};
  let bankQcStatusFilter='';
 
  function bankQcNorm(v){return String(v??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').toLocaleLowerCase('vi').replace(/\s+/g,' ').trim();}
@@ -1431,6 +1431,7 @@ const TS = (() => {
    .filter(q=>!questionBankFilters.level||q.level===questionBankFilters.level)
    .filter(q=>!bankQcStatusFilter||(bankQcStatusFilter==='unverified'?!['verified','failed','needs_review'].includes(q.qc?.status):q.qc?.status===bankQcStatusFilter))
    .filter(q=>!questionBankFilters.search||[q.questionCode,q.text,q.subject,q.curriculum,q.textbook,q.chapter,q.lesson,q.sourceExamTitle].join(' ').toLocaleLowerCase('vi').includes(questionBankFilters.search.toLocaleLowerCase('vi')))
+   .filter(q=>!questionBankFilters.code||String(q.questionCode||'').toLocaleLowerCase('vi').includes(questionBankFilters.code.toLocaleLowerCase('vi')))
    .sort((a,b)=>String(a.grade||'99').localeCompare(String(b.grade||'99'),'vi',{numeric:true})||String(a.subject||'').localeCompare(String(b.subject||''),'vi')||String(a.textbook||'').localeCompare(String(b.textbook||''),'vi')||(Number(a.chapterOrder)||999)-(Number(b.chapterOrder)||999)||(Number(a.lessonOrder)||999)-(Number(b.lessonOrder)||999)||String(a.level||'').localeCompare(String(b.level||'')));
   let group='';
   const entries=rows.slice(0,100).map(q=>{
@@ -1441,7 +1442,7 @@ const TS = (() => {
   return '<section class="ts-box question-bank-section"><div class="ts-row"><div><h3>Ngân hàng câu hỏi</h3><p class="ts-help">Tìm và sử dụng câu hỏi theo Khối → Môn → Chương trình → Bộ sách → Chương → Bài → Mức độ.</p></div><span class="ts-tag">'+all.length+' câu đã lưu</span></div>'+
    bankGeminiBuilderHTML()+bankQcPanelHTML(all)+
    '<div class="ts-note">📌 Câu hỏi được dùng chung trong toàn bộ ngân hàng của cùng <b>khối + môn</b>. Bộ sách, chương và bài chỉ là thông tin phân loại; không giới hạn việc đưa câu hỏi sang đề ở chương/bài khác.</div>'+
-   '<div class="ts-grid">'+select('grade','Khối',values('grade'))+select('subject','Môn',values('subject'))+select('curriculum','Chương trình',values('curriculum'))+select('textbook','Bộ sách',values('textbook'))+select('chapter','Chương',values('chapter'))+select('lesson','Bài',values('lesson'))+select('level','Mức độ',levels)+'<label>Tìm nội dung<input id="qbf-search" class="ts-input" value="'+esc(questionBankFilters.search)+'" placeholder="Nhập từ khóa câu hỏi…"></label></div>'+
+   '<div class="ts-grid">'+select('grade','Khối',values('grade'))+select('subject','Môn',values('subject'))+select('curriculum','Chương trình',values('curriculum'))+select('textbook','Bộ sách',values('textbook'))+select('chapter','Chương',values('chapter'))+select('lesson','Bài',values('lesson'))+select('level','Mức độ',levels)+'<label>Tìm nội dung<input id="qbf-search" class="ts-input" value="'+esc(questionBankFilters.search)+'" placeholder="Nhập từ khóa câu hỏi…"></label><label>Lọc theo mã câu hỏi<input id="qbf-code" class="ts-input" value="'+esc(questionBankFilters.code||'')+'" placeholder="Ví dụ: T9-1.1-NB-161"></label></div>'+
    (bankQcStatusFilter?'<div class="ts-note" style="margin:10px 0">Đang lọc kiểm định: <b>'+esc(({verified:'Đã duyệt',failed:'Xác nhận sai',needs_review:'Cần xem lại',unverified:'Chưa kiểm định'}[bankQcStatusFilter]||''))+'</b> · <button type="button" class="ts-btn ts-secondary" onclick="TS.bankQcSetStatus(\'\')">Bỏ lọc kiểm định</button></div>':'')+
    '<div class="ts-row"><button type="button" class="ts-btn" onclick="TS.filterQuestionBank()">Lọc câu hỏi</button><button type="button" class="ts-btn ts-secondary" onclick="TS.showWholeGradeSubjectBank()">Xem toàn bộ câu hỏi môn này của khối</button><button type="button" class="ts-btn ts-secondary" onclick="TS.clearQuestionBankFilter()">Xóa lọc</button><span class="ts-help">'+rows.length+' câu phù hợp</span></div>'+
    '<div class="question-bank-list">'+(entries||'<p class="ts-help">Chưa có câu hỏi phù hợp. Hãy tạo hoặc nhập câu hỏi để bổ sung vào ngân hàng.</p>')+(rows.length>100?'<p class="ts-help">Đang hiển thị 100 câu đầu tiên; hãy lọc theo môn, chương hoặc bài.</p>':'')+'</div></section>';
@@ -1615,13 +1616,13 @@ function copyBankGeminiRepairPromptAndOpen(){
   const host=$('question-bank-panel');if(host)host.innerHTML=TS.renderQuestionBankContents();
  }
  function filterQuestionBank(){
-  for(const key of ['grade','subject','curriculum','textbook','chapter','lesson','level','search'])questionBankFilters[key]=$('qbf-'+key)?.value||'';
+  for(const key of ['grade','subject','curriculum','textbook','chapter','lesson','level','search','code'])questionBankFilters[key]=$('qbf-'+key)?.value||'';
   const host=$('question-bank-panel');if(host)host.innerHTML=TS.renderQuestionBankContents();
  }
- function clearQuestionBankFilter(){questionBankFilters={grade:'',subject:'',curriculum:'',textbook:'',chapter:'',lesson:'',level:'',search:''};const host=$('question-bank-panel');if(host)host.innerHTML=TS.renderQuestionBankContents();}
+ function clearQuestionBankFilter(){questionBankFilters={grade:'',subject:'',curriculum:'',textbook:'',chapter:'',lesson:'',level:'',search:'',code:''};const host=$('question-bank-panel');if(host)host.innerHTML=TS.renderQuestionBankContents();}
  function showWholeGradeSubjectBank(){
   for(const key of ['grade','subject'])questionBankFilters[key]=$('qbf-'+key)?.value||questionBankFilters[key]||'';
-  for(const key of ['curriculum','textbook','chapter','lesson','level','search'])questionBankFilters[key]='';
+  for(const key of ['curriculum','textbook','chapter','lesson','level','search','code'])questionBankFilters[key]='';
   const host=$('question-bank-panel');if(host)host.innerHTML=TS.renderQuestionBankContents();
   toast('Đang hiển thị câu hỏi dùng chung của toàn khối và môn đã chọn.');
  }
