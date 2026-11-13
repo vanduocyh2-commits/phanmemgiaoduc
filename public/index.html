@@ -1481,7 +1481,7 @@ const TS = (() => {
   const entries=rows.slice(0,100).map(q=>{
    const key=['Khối '+q.grade,q.subject,q.curriculum,q.textbook,'Chương '+(Number(q.chapterOrder)||1)+': '+q.chapter,'Bài '+(Number(q.lessonOrder)||1)+': '+q.lesson].join(' · ');
    const heading=key===group?'':'<h4 class="ts-note question-bank-group">'+esc(key)+'</h4>';group=key;
-   return heading+'<article class="question-bank-row"><div><div class="ts-row"><b>'+esc((q.type||'').toUpperCase())+' · '+esc(q.level||'NB')+' · '+(Number(q.points)||0)+'đ</b><span class="ts-tag">'+esc(q.qc?.status==='verified'?'Đã duyệt':q.qc?.status==='failed'?'Đã xác nhận sai':q.qc?.status==='needs_review'?'Cần xem lại':q.qc?.status==='awaiting_teacher'?'Chờ giáo viên duyệt':'Chưa kiểm định')+'</span></div><small class="question-bank-code" style="display:inline-block;margin:5px 0 7px;padding:3px 8px;border-radius:6px;background:#eef2ff;color:#3730a3;font-weight:700">Mã câu: '+esc(q.questionCode||'Chưa được cấp mã')+'</small><div class="question-bank-excerpt">'+MathBridge.inline(q.text||'')+'</div><small>Nguồn đề: '+esc(q.sourceExamTitle||'Ngân hàng câu hỏi')+'</small>'+(q.qc?.reason?'<p class="ts-help">AI: '+esc(q.qc.reason)+'</p>':'')+(q.qc?.structuralIssues?.length?'<p class="ts-help">Lỗi: '+esc(q.qc.structuralIssues.join('; '))+'</p>':'')+(q.qc?.status!=='verified'?'<p class="ts-help" style="color:#92400e;background:#fffbeb;padding:7px 9px;border-radius:7px;margin-top:7px">🔒 Chưa thể đưa vào đề. '+(q.qc?.aiStatus==='correct'?'AI đã xác nhận đúng; giáo viên cần nhấn “Duyệt” bên dưới.':'Câu hỏi cần được kiểm định lại bằng AI và giáo viên duyệt trước khi sử dụng.')+'</p><button type="button" class="ts-btn ts-secondary" onclick="TS.bankQcGoToPanel()">↗ Đến phần kiểm định câu hỏi</button>':'')+'</div><button type="button" class="ts-btn ts-secondary" onclick="TS.editBankQuestion(\''+esc(q.id)+'\')">✎ Sửa câu</button>'+(q.qc?.aiStatus==='correct'&&q.qc?.status!=='verified'?'<button type="button" class="ts-btn" onclick="TS.bankQcApprove(\''+esc(q.id)+'\')">✓ Duyệt</button>':'')+'<button type="button" class="ts-btn" onclick="TS.addBankQuestion(\''+esc(q.id)+'\')" '+(q.qc?.status==='verified'?'':'disabled title="Cần kiểm định và giáo viên duyệt trước"')+'>＋ Đưa vào đề</button><button type="button" class="ts-btn ts-secondary" onclick="TS.deleteBankQuestion(\''+esc(q.id)+'\')">🗑 Xóa</button></article>';
+   return heading+'<article class="question-bank-row"><div><div class="ts-row"><b>Câu hỏi</b><span class="ts-tag">'+esc(q.qc?.status==='verified'?'Đã duyệt':q.qc?.status==='failed'?'Đã xác nhận sai':q.qc?.status==='needs_review'?'Cần xem lại':q.qc?.status==='awaiting_teacher'?'Chờ giáo viên duyệt':'Chưa kiểm định')+'</span></div><small class="question-bank-code" style="display:inline-block;margin:5px 0 7px;padding:3px 8px;border-radius:6px;background:#eef2ff;color:#3730a3;font-weight:700">Mã câu: '+esc(q.questionCode||'Chưa được cấp mã')+'</small><div class="question-bank-excerpt">'+MathBridge.inline(q.text||'')+'</div><small>Nguồn đề: '+esc(q.sourceExamTitle||'Ngân hàng câu hỏi')+'</small>'+(q.qc?.reason?'<p class="ts-help">AI: '+esc(q.qc.reason)+'</p>':'')+(q.qc?.structuralIssues?.length?'<p class="ts-help">Lỗi: '+esc(q.qc.structuralIssues.join('; '))+'</p>':'')+(q.qc?.status!=='verified'?'<p class="ts-help" style="color:#92400e;background:#fffbeb;padding:7px 9px;border-radius:7px;margin-top:7px">🔒 Chưa thể đưa vào đề. '+(q.qc?.aiStatus==='correct'?'AI đã xác nhận đúng; giáo viên cần nhấn “Duyệt” bên dưới.':'Câu hỏi cần được kiểm định lại bằng AI và giáo viên duyệt trước khi sử dụng.')+'</p><button type="button" class="ts-btn ts-secondary" onclick="TS.bankQcGoToPanel()">↗ Đến phần kiểm định câu hỏi</button>':'')+'</div><button type="button" class="ts-btn ts-secondary" onclick="TS.editBankQuestion(\''+esc(q.id)+'\')">✎ Sửa câu</button>'+(q.qc?.aiStatus==='correct'&&q.qc?.status!=='verified'?'<button type="button" class="ts-btn" onclick="TS.bankQcApprove(\''+esc(q.id)+'\')">✓ Duyệt</button>':'')+'<button type="button" class="ts-btn" onclick="TS.addBankQuestionByCode(\''+esc(q.questionCode||'')+'\')" '+(q.qc?.status==='verified'?'':'disabled title="Cần kiểm định và giáo viên duyệt trước"')+'>＋ Đưa vào đề</button><button type="button" class="ts-btn ts-secondary" onclick="TS.deleteBankQuestion(\''+esc(q.id)+'\')">🗑 Xóa</button></article>';
   }).join('');
   return '<section class="ts-box question-bank-section"><div class="ts-row"><div><h3>Ngân hàng câu hỏi</h3><p class="ts-help">Tìm và sử dụng câu hỏi theo Khối → Môn → Chương trình → Bộ sách → Chương → Bài → Mức độ.</p></div><span class="ts-tag">'+all.length+' câu đã lưu</span></div>'+
    bankGeminiBuilderHTML()+bankQcPanelHTML(all)+
@@ -1740,8 +1740,16 @@ function copyBankGeminiRepairPromptAndOpen(){
   if(!confirm('Xóa câu '+(item.questionCode||'')+' khỏi ngân hàng?'+(linked||assigned?' Câu đã được sao chép vào '+(linked+assigned)+' đề/bản giao; các bản sao và bài đã làm sẽ được giữ nguyên.':'')+' Thao tác này không thể hoàn tác.'))return;
   state.questionBank=state.questionBank.filter(q=>String(q.id)!==String(id));put();const host=$('question-bank-panel');if(host)host.innerHTML=TS.renderQuestionBankContents();toast('Đã xóa câu hỏi khỏi ngân hàng. Các đề và bài đã giao được giữ nguyên.');
  }
+ function addBankQuestionByCode(code){
+  const normalize=value=>String(value??'').normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').replace(/đ/g,'d').toLocaleUpperCase('vi').replace(/[^A-Z0-9]/g,'');
+  const wanted=normalize(code);
+  if(!wanted)return toast('Câu hỏi chưa có Mã câu nên chưa thể đưa vào đề.');
+  const item=(state.questionBank||[]).find(q=>normalize(q.questionCode)===wanted);
+  if(!item)return toast('Không tìm thấy câu hỏi theo Mã câu: '+code);
+  return addBankQuestion(item.id);
+ }
  function addBankQuestion(id){
-  readQuestions();const item=(state.questionBank||[]).find(q=>q.id===id);if(!item)return toast('Câu hỏi không còn trong ngân hàng.');
+  readQuestions();const item=(state.questionBank||[]).find(q=>String(q.id)===String(id));if(!item)return toast('Câu hỏi không còn trong ngân hàng.');
   if(item.qc?.status!=='verified')return toast('Câu hỏi chưa được kiểm định và giáo viên duyệt.');
   const owner=activeAccount?.username||onlineMember?.username,own=state.sessionRole==='admin'||item.owner===owner;
   const q=copy(item);q.id=uid('q');q.bankId=own?item.id:'';q.sourceBankId=item.id;
@@ -1749,8 +1757,11 @@ function copyBankGeminiRepairPromptAndOpen(){
   renderQuestions();capture();toast('Đã đưa câu hỏi vào đề đang soạn.');
  }
  function questionBankIdentity(q){
-  const norm=v=>String(v??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').toLocaleLowerCase('vi').replace(/\s+/g,' ').trim();
-  return JSON.stringify({grade:norm(q.grade),subject:norm(q.subject),curriculum:norm(q.curriculum||'GDPT 2018'),textbook:norm(q.textbook),chapter:norm(q.chapter),lesson:norm(q.lesson),type:norm(q.type),text:norm(q.text),options:(q.options||q.statements||[]).map(norm),answer:norm(q.answer),tfAnswers:(q.tfAnswers||[]).map(norm)});
+  const norm=v=>String(v??'').normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').replace(/đ/g,'d').toLocaleUpperCase('vi').replace(/[^A-Z0-9]/g,'');
+  const code=norm(q.questionCode||q.code||'');
+  if(code)return 'question-code:'+code;
+  const clean=v=>String(v??'').normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').replace(/đ/g,'d').toLocaleLowerCase('vi').replace(/\\s+/g,' ').trim();
+  return JSON.stringify({grade:clean(q.grade),subject:clean(q.subject),curriculum:clean(q.curriculum||'GDPT 2018'),textbook:clean(q.textbook),chapter:clean(q.chapter),lesson:clean(q.lesson),type:clean(q.type),text:clean(q.text),options:(q.options||q.statements||[]).map(clean),answer:clean(q.answer),tfAnswers:(q.tfAnswers||[]).map(clean)});
  }
  function saveQuestionDraftsToBank(examId,examTitle){
   state.questionBank=Array.isArray(state.questionBank)?state.questionBank:[];
@@ -1763,7 +1774,7 @@ function copyBankGeminiRepairPromptAndOpen(){
    if(draft.bankGenerated&&q.sourceBankId){q.bankId=q.sourceBankId;continue;}
    const linked=(state.questionBank||[]).find(x=>x.id===q.bankId),canUpdate=linked&&(state.sessionRole==='admin'||linked.owner===owner);
    const key=questionBankIdentity(q);
-   const duplicate=canUpdate?linked:(state.questionBank||[]).find(x=>(x._bankKey||questionBankIdentity(x))===key);
+   const codeKey=q.questionCode?questionBankIdentity(q):'',duplicate=canUpdate?linked:(state.questionBank||[]).find(x=>codeKey?questionBankIdentity(x)===codeKey:(x._bankKey||questionBankIdentity(x))===key);
    const mayEdit=duplicate&&(state.sessionRole==='admin'||duplicate.owner===owner);
    const id=duplicate?duplicate.id:uid('qb');
    if(duplicate&&!mayEdit){q.bankId=id;continue;}
