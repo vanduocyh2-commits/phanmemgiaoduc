@@ -59,8 +59,9 @@ export function answersMatchQuestion(question,expected,actual){
    .replace(/\\(?:leq|le)/g,'≤').replace(/\\(?:geq|ge)/g,'≥')
    .replace(/\\(?:neq|ne)/g,'≠')
    .replace(/[−–—﹣－]/g,'-')
-   .replace(/\s+/g,' ')
    .replace(/\s*,\s*/g,',')
+   .replace(/\s*([+\-=*/<>≤≥≠])\s*/g,'$1')
+   .replace(/\s+/g,' ')
    .replace(/^\s*\$+|\$+\s*$/g,'')
    .trim().toLowerCase();
   const x=clean(a),y=clean(b);
