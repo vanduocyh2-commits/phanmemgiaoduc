@@ -117,8 +117,8 @@ test('short numeric answers normalize Unicode minus while retaining decimal-comm
 
 test('MCQ matcher compares mathematical options across TeX delimiters and HTML markup',()=>{
  const q={type:'mcq',options:['<span>2x + y = 0</span>','x - 2y = 3','3x + y = -1','x + y = 2']};
- assert.equal(answersMatchQuestion(q,'\\\\(2x+y=0\\\\)','A'),true);
+ assert.equal(answersMatchQuestion(q,'\\(2x+y=0\\)','A'),true);
  assert.equal(answersMatchQuestion(q,'2x + y = 0','A'),true);
- assert.equal(answersMatchQuestion(q,'\\\\[2x+y=0\\\\]','B'),false);
- assert.equal(answersMatchQuestion(q,'\\\\(2x+y=0\\\\)','B'),false);
+ assert.equal(answersMatchQuestion(q,'\\[2x+y=0\\]','B'),false);
+ assert.equal(answersMatchQuestion(q,'\\(2x+y=0\\)','B'),false);
 });
