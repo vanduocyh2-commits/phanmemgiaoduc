@@ -1485,7 +1485,76 @@ const TS = (() => {
    '<div class="question-bank-list">'+(entries||'<p class="ts-help">Chưa có câu hỏi phù hợp. Hãy tạo hoặc nhập câu hỏi để bổ sung vào ngân hàng.</p>')+(rows.length>100?'<p class="ts-help">Đang hiển thị 100 câu đầu tiên; hãy lọc theo môn, chương hoặc bài.</p>':'')+'</div></section>';
  }
   let bankCatalogSelection={grade:'9',subject:'Toán'};
- function bankCatalogPickerHTML(){
+ function lessonQuestionSourcesStatsHTML(book,chapter,lesson){
+  const norm=value=>String(value??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').toLocaleLowerCase('vi').replace(/\s+/g,' ').trim();
+  const expected={grade:String(book.grade),subject:String(book.subject||''),textbook:String(book.textbook||'Kết nối tri thức với cuộc sống'),chapter:String(chapter.title||''),lesson:String(lesson.title||'')};
+  const get=(q,base,key)=>q?.[key]||base?.[key]||base?.bankSource?.[key]||'';
+  const matches=(q,base={})=>norm(get(q,base,'grade'))===norm(expected.grade)&&
+    norm(get(q,base,'subject'))===norm(expected.subject)&&
+    norm(get(q,base,'textbook')||'Kết nối tri thức với cuộc sống')===norm(expected.textbook)&&
+    norm(get(q,base,'chapter'))===norm(expected.chapter)&&
+    norm(get(q,base,'lesson'))===norm(expected.lesson);
+  const identity=q=>{
+    const original=q?.sourceBankId||q?.bankId||q?.questionCode;
+    if(original)return String(original);
+    return JSON.stringify([norm(q?.type),norm(q?.level||'NB'),norm(q?.text),(q?.options||q?.statements||[]).map(norm),norm(q?.answer)]);
+  };
+  const buckets={bank:new Map(),review:new Map(),practice:new Map()};
+  const add=(bucket,q,base={})=>{
+    if(!q||!matches(q,base))return;
+    const id=identity(q);
+    if(!buckets[bucket].has(id))buckets[bucket].set(id,q);
+  };
+  for(const q of (state.questionBank||[]))add('bank',q);
+  const classify=record=>{
+    const label=norm([record?.scope,record?.title,record?.note,record?.practiceSetTitle,record?.sequenceTitle,record?.practiceLevel].join(' '));
+    return record?.lessonPractice||record?.practiceSetId||record?.sequenceId||label.includes('luyen tap')||label.includes('bai tap hang ngay')||label.includes('practice')?'practice':'review';
+  };
+  const exams=Array.isArray(state.learningExams)?state.learningExams:[];
+  const savedExamIds=new Set(exams.map(ex=>String(ex?.id||'')).filter(Boolean));
+  for(const exam of exams){
+    const bucket=classify(exam),questions=Array.isArray(exam?.questions)?exam.questions:[];
+    for(const q of questions)add(bucket,q,exam);
+  }
+  for(const assignment of (state.assignments||[])){
+    const linked=[assignment?.examId,...(assignment?.examIds||[])].filter(Boolean).map(String);
+    if(linked.some(id=>savedExamIds.has(id)))continue;
+    const snapshot=assignment?.snapshot||{};
+    const base={...snapshot,...(assignment?.bankSource||{}),
+      grade:assignment?.bankSource?.grade||snapshot.grade,
+      subject:assignment?.bankSource?.subject||snapshot.subject,
+      textbook:assignment?.bankSource?.textbook||snapshot.textbook,
+      chapter:assignment?.chapter||assignment?.bankSource?.chapter||snapshot.chapter,
+      lesson:assignment?.lesson||assignment?.bankSource?.lesson||snapshot.lesson,
+      scope:snapshot.scope,title:snapshot.title,note:assignment?.note,
+      lessonPractice:assignment?.lessonPractice,practiceSetId:assignment?.practiceSetId,sequenceId:assignment?.sequenceId};
+    const bucket=classify({...assignment,...base});
+    for(const q of (snapshot.questions||[]))add(bucket,q,base);
+  }
+  const types=[['mcq','Trắc nghiệm'],['tf','Đúng / Sai'],['short','Trả lời ngắn'],['essay','Tự luận']];
+  const levels=[['NB','Nhận biết'],['TH','Thông hiểu'],['VD','Vận dụng'],['VDC','Vận dụng cao']];
+  const summarize=map=>{
+    const rows=[...map.values()];
+    const matrix=types.map(([type,label])=>{
+      const cells=levels.map(([level])=>{
+        const cell=rows.filter(q=>String(q.type||'').toLowerCase()===type&&String(q.level||'NB').toUpperCase()===level);
+        return {total:cell.length,approved:cell.filter(q=>q.qc?.status==='verified').length};
+      });
+      return {label,cells,total:cells.reduce((sum,c)=>sum+c.total,0),approved:cells.reduce((sum,c)=>sum+c.approved,0)};
+    });
+    return {total:rows.length,approved:rows.filter(q=>q.qc?.status==='verified').length,matrix,
+      unclassified:rows.filter(q=>!types.some(([type])=>String(q.type||'').toLowerCase()===type)||!levels.some(([level])=>String(q.level||'NB').toUpperCase()===level)).length};
+  };
+  const summaries={bank:summarize(buckets.bank),review:summarize(buckets.review),practice:summarize(buckets.practice)};
+  const renderTable=(label,data,isBank)=>{
+    const head='<thead><tr><th style="text-align:left;padding:5px 7px">Dạng câu</th>'+levels.map(([code,name])=>'<th style="padding:5px 6px;text-align:center" title="'+name+'">'+code+'</th>').join('')+'<th style="padding:5px 6px;text-align:center">Tổng</th></tr></thead>';
+    const body='<tbody>'+data.matrix.map(row=>'<tr><th style="text-align:left;padding:5px 7px;font-weight:600">'+row.label+'</th>'+row.cells.map(cell=>'<td style="padding:5px 6px;text-align:center;border-top:1px solid #e2e8f0">'+cell.total+(isBank?' <span style="color:#059669;font-size:10px">/ '+cell.approved+' duyệt</span>':'')+'</td>').join('')+'<td style="padding:5px 6px;text-align:center;border-top:1px solid #e2e8f0;font-weight:700">'+row.total+'</td></tr>').join('')+'</tbody>';
+    return '<section style="margin:8px 0;padding:8px;border:1px solid #e2e8f0;border-radius:8px;background:#fff"><b style="font-size:11px">'+label+': '+data.total+' câu'+(isBank?' · '+data.approved+' đã duyệt':'')+'</b><div style="overflow-x:auto;margin-top:5px"><table style="width:100%;min-width:420px;border-collapse:collapse;font-size:11px">'+head+body+'</table></div>'+(data.unclassified?'<p style="font-size:10px;color:#b45309;margin:5px 0 0">Chưa phân loại đúng 4 dạng/4 mức độ: '+data.unclassified+' câu.</p>':'')+'</section>';
+  };
+  const total=summaries.bank.total+summaries.review.total+summaries.practice.total;
+  return '<details style="margin:0 0 9px 18px;padding:6px 9px;border:1px solid #dbe3f0;border-radius:9px;background:#f8fbff"><summary style="cursor:pointer;font-size:11px;line-height:1.7;color:#334155"><b>Ngân hàng: '+summaries.bank.total+' câu · '+summaries.bank.approved+' đã duyệt</b> · Ôn tập/đề đã lưu: '+summaries.review.total+' · Luyện tập: '+summaries.practice.total+' · Xem 3 ma trận 4 dạng × 4 mức độ</summary>'+renderTable('Ngân hàng',summaries.bank,true)+renderTable('Ôn tập / đề đã lưu',summaries.review,false)+renderTable('Luyện tập',summaries.practice,false)+'<p style="font-size:10px;color:#64748b;margin:5px 0 0">Tổng theo nguồn: '+total+' lượt câu. Một câu có thể được dùng ở nhiều nguồn; bản giao và bản sao lưu của cùng một đề không bị đếm lặp.</p></details>';
+}
+function bankCatalogPickerHTML(){
   const catalog=window.KNTTQuestionBankCatalog,books=catalog?.books||[];
   const grades=[...new Set(books.map(b=>String(b.grade)))].sort((a,b)=>Number(a)-Number(b));
   const subjects=[...new Set(books.filter(b=>String(b.grade)===String(bankCatalogSelection.grade)).map(b=>b.subject).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'vi'));
@@ -1500,7 +1569,7 @@ const TS = (() => {
   const cards=list.length?list.map(book=>{
    const chapters=(book.chapters||[]).map(ch=>{
     const lessons=(ch.lessons||[]).map((lesson,index)=>{
-     const row=`<div style="display:grid;grid-template-columns:minmax(0,1fr) 32px;gap:8px;align-items:start;padding:6px 0">${pickLink(book,ch,lesson.id,lesson.title)}${pickButton(book,ch,lesson.id,'?','Chọn bài này để tạo câu lệnh')}</div>`;
+     const row=`<div style="display:grid;grid-template-columns:minmax(0,1fr) 32px;gap:8px;align-items:start;padding:6px 0">${pickLink(book,ch,lesson.id,lesson.title)}${pickButton(book,ch,lesson.id,'?','Chọn bài này để tạo câu lệnh')}</div>${lessonQuestionSourcesStatsHTML(book,ch,lesson)}`;
      const common=index===1?`<div style="display:grid;grid-template-columns:minmax(0,1fr) 32px;gap:8px;align-items:center;padding:5px 0">${pickLink(book,ch,'__common_practice__','Luyện tập chung')}${pickButton(book,ch,'__common_practice__','?','Chọn luyện tập chung')}</div>`:'';
      return row+common;
     }).join('');
@@ -2570,33 +2639,7 @@ function progress(){const selected=qsel('progress-class');const c=teacherClasses
   const classes=managedTeacherClasses().filter(c=>String(classGrade(c))===String(catalogGrade));
   if(!classes.some(c=>c.id===p.classId))p.classId=classes[0]?.id||'';
   const books=(catalog?.books||[]).filter(b=>Number(b.grade)===catalogGrade&&b.subject==='Toán');
-  const lessonBankStats=(book,chapter,lesson)=>{
-   const norm=v=>String(v??'').normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').replace(/đ/g,'d').toLocaleLowerCase('vi').replace(/\\s+/g,' ').trim();
-   const seen=new Set(),rows=(state.questionBank||[]).filter(q=>{
-    if(!q||q.id==null)return false;
-    const id=String(q.id);
-    if(seen.has(id))return false;
-    const match=norm(q.grade)===norm(book.grade)&&norm(q.subject)===norm(book.subject)&&
-     norm(q.textbook||'Kết nối tri thức với cuộc sống')===norm(book.textbook)&&
-     norm(q.chapter)===norm(chapter.title)&&norm(q.lesson)===norm(lesson.title);
-    if(match)seen.add(id);
-    return match;
-   });
-   const types=[['mcq','Trắc nghiệm'],['tf','Đúng / Sai'],['short','Trả lời ngắn'],['essay','Tự luận']];
-   const levels=[['NB','Nhận biết'],['TH','Thông hiểu'],['VD','Vận dụng'],['VDC','Vận dụng cao']];
-   const matrix=types.map(([type,label])=>{
-    const cells=levels.map(([level])=>{
-     const cell=rows.filter(q=>q.type===type&&String(q.level||'').toUpperCase()===level);
-     return {total:cell.length,approved:cell.filter(q=>q.qc?.status==='verified').length};
-    });
-    return {label,cells,total:cells.reduce((sum,c)=>sum+c.total,0),approved:cells.reduce((sum,c)=>sum+c.approved,0)};
-   });
-   const total=rows.length,approved=rows.filter(q=>q.qc?.status==='verified').length;
-   const classified=matrix.reduce((sum,row)=>sum+row.total,0),unclassified=total-classified;
-   const head='<thead><tr><th style="text-align:left;padding:5px 7px">Dạng câu</th>'+levels.map(([code,label])=>'<th style="padding:5px 6px;text-align:center" title="'+label+'">'+code+'</th>').join('')+'<th style="padding:5px 6px;text-align:center">Tổng</th></tr></thead>';
-   const body='<tbody>'+matrix.map(row=>'<tr><th style="text-align:left;padding:5px 7px;font-weight:600">'+row.label+'</th>'+row.cells.map(cell=>'<td style="padding:5px 6px;text-align:center;border-top:1px solid #e2e8f0">'+cell.total+' <span style="color:#059669;font-size:10px">/ '+cell.approved+'</span></td>').join('')+'<td style="padding:5px 6px;text-align:center;border-top:1px solid #e2e8f0;font-weight:700">'+row.total+'</td></tr>').join('')+'</tbody>';
-   return '<details style="margin:0 0 9px 18px;padding:6px 9px;border:1px solid #dbe3f0;border-radius:9px;background:#f8fbff"><summary style="cursor:pointer;font-size:11px;line-height:1.6;color:#334155"><b>Ngân hàng: '+total+' câu</b> · <span style="color:#047857">'+approved+' đã duyệt</span> · Xem ma trận 4 dạng × 4 mức độ</summary><div style="overflow-x:auto;margin-top:7px"><table style="width:100%;min-width:430px;border-collapse:collapse;font-size:11px">'+head+body+'</table><p style="font-size:10px;color:#64748b;margin:5px 0 0">Mỗi ô: tổng số câu / số câu đã duyệt. '+(unclassified?'Chưa phân loại đúng 4 dạng hoặc 4 mức độ: '+unclassified+' câu.':'Tất cả câu đã được xếp vào 4 dạng và 4 mức độ.')+'</p></div></details>';
-  };
+  const lessonBankStats=(book,chapter,lesson)=>lessonQuestionSourcesStatsHTML(book,chapter,lesson);
   const selected=!!(p.catalogBookId&&p.catalogChapterId&&p.catalogLessonId);
   const bookCards=books.length?books.map(book=>'<section class="ts-box" style="min-width:0;padding:14px;border:1px solid #dbe3f0;box-shadow:none"><h3 style="font-size:20px;color:#24618b;margin:4px 0 20px;text-transform:uppercase">TOÁN LỚP '+esc(book.grade)+' - TẬP '+esc(book.volume)+'</h3>'+(book.chapters||[]).map(ch=>{
    const lessonRows=(ch.lessons||[]).map((lesson,index)=>{const stats=lessonBankStats(book,ch,lesson);return '<div style="display:grid;grid-template-columns:minmax(0,1fr) 32px;gap:8px;align-items:start;padding:7px 0"><button type="button" class="ts-link" style="text-align:left;background:none;border:0;padding:0;color:#245d8a;line-height:1.55;cursor:pointer" onclick="TS.openPracticeLesson(\''+esc(book.id)+'\',\''+esc(ch.id)+'\',\''+esc(lesson.id)+'\')">•　'+esc(lesson.title)+'</button><button type="button" title="Chọn bài này" aria-label="Chọn '+esc(lesson.title)+'" style="width:30px;height:30px;border:0;border-radius:50%;background:#ffb56f;color:white;font-weight:700;cursor:pointer" onclick="TS.openPracticeLesson(\''+esc(book.id)+'\',\''+esc(ch.id)+'\',\''+esc(lesson.id)+'\')">?</button></div>'+stats+(index===1?'<div style="display:grid;grid-template-columns:minmax(0,1fr) 32px;gap:8px;align-items:center;padding:5px 0 7px"><button type="button" class="ts-link" style="text-align:left;background:none;border:0;padding:0;color:#245d8a;cursor:pointer" onclick="TS.openPracticeLesson(\''+esc(book.id)+'\',\''+esc(ch.id)+'\',\'__common_practice__\')">•　Luyện tập chung (sau '+(ch.lessons||[]).slice(0,2).map(x=>(String(x.title).match(/Bài\s*(\d+)/i)||[])[1]||x.order).join(', ')+')</button><button type="button" title="Chọn luyện tập chung" style="width:30px;height:30px;border:0;border-radius:50%;background:#ffb56f;color:white;cursor:pointer" onclick="TS.openPracticeLesson(\''+esc(book.id)+'\',\''+esc(ch.id)+'\',\'__common_practice__\')">?</button></div>':'');}).join('');
