@@ -1438,6 +1438,64 @@ const TS = (() => {
 
  function bankQcApprove(id){if(!staff())return;const q=(state.questionBank||[]).find(x=>String(x.id)===String(id));if(!q)return;if(q.qc?.aiStatus!=='correct')return toast('AI chưa xác nhận câu đúng.');const issues=bankQcIssues(q);if(issues.length)return toast('Chưa thể duyệt: '+issues.join('; '));q.qc={...(q.qc||{}),status:'verified',approvedAt:new Date().toISOString(),approvedBy:activeAccount?.username||onlineMember?.username||'teacher'};put();const h=$('question-bank-panel');if(h)h.innerHTML=TS.renderQuestionBankContents();toast('Đã duyệt. Câu hỏi được phép sử dụng.');}
 
+ function bankCatalogStatisticsHTML(all){
+  const catalog=window.KNTTQuestionBankCatalog,books=(catalog?.books||[]).filter(book=>
+   (!questionBankFilters.grade||String(book.grade)===String(questionBankFilters.grade))&&
+   (!questionBankFilters.subject||String(book.subject||'')===String(questionBankFilters.subject))&&
+   (!questionBankFilters.curriculum||String(book.curriculum||'')===String(questionBankFilters.curriculum))&&
+   (!questionBankFilters.textbook||String(book.textbook||'')===String(questionBankFilters.textbook)));
+  const norm=v=>String(v??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').toLocaleLowerCase('vi').replace(/\s+/g,' ').trim();
+  const types=[['mcq','Trắc nghiệm'],['tf','Đúng / Sai'],['short','Trả lời ngắn'],['essay','Tự luận']];
+  const levels=[['NB','Nhận biết'],['TH','Thông hiểu'],['VD','Vận dụng'],['VDC','Vận dụng cao']];
+  const filtered=all.filter(q=>
+   (!questionBankFilters.grade||norm(q.grade)===norm(questionBankFilters.grade))&&
+   (!questionBankFilters.subject||norm(q.subject)===norm(questionBankFilters.subject))&&
+   (!questionBankFilters.curriculum||norm(q.curriculum||'GDPT 2018')===norm(questionBankFilters.curriculum))&&
+   (!questionBankFilters.textbook||norm(q.textbook)===norm(questionBankFilters.textbook)));
+  const overallApproved=filtered.filter(q=>q.qc?.status==='verified').length;
+  const lessonRows=(book,ch,lesson)=>{
+   const wanted=norm(lesson.title||''),isCommon=wanted.startsWith('luyen tap chung'),isChapter=wanted.startsWith('bai tap cuoi chuong'),seen=new Set();
+   const rows=all.filter(q=>{
+    if(!q||q.id==null||seen.has(String(q.id)))return false;
+    const actual=norm(q.lesson||''),lessonMatch=isCommon?actual.startsWith('luyen tap chung'):isChapter?actual.startsWith('bai tap cuoi chuong'):actual===wanted;
+    const match=norm(q.grade)===norm(book.grade)&&norm(q.subject)===norm(book.subject)&&
+     norm(q.textbook||'Kết nối tri thức với cuộc sống')===norm(book.textbook||'Kết nối tri thức với cuộc sống')&&
+     norm(q.chapter)===norm(ch.title)&&lessonMatch;
+    if(match)seen.add(String(q.id));
+    return match;
+   });
+   const cells=types.map(([type,label])=>({label,cells:levels.map(([level])=>{
+    const group=rows.filter(q=>norm(q.type)===type&&String(q.level||'NB').toUpperCase()===level);
+    return {total:group.length,approved:group.filter(q=>q.qc?.status==='verified').length};
+   })}));
+   const total=rows.length,approved=rows.filter(q=>q.qc?.status==='verified').length;
+   const classified=cells.reduce((n,row)=>n+row.cells.reduce((m,c)=>m+c.total,0),0);
+   const tableHead='<thead><tr><th style="text-align:left;padding:6px 8px">Dạng câu hỏi</th>'+levels.map(([code,label])=>'<th title="'+label+'" style="padding:6px;text-align:center">'+code+'</th>').join('')+'<th style="padding:6px;text-align:center">Tổng</th></tr></thead>';
+   const tableBody='<tbody>'+cells.map(row=>'<tr><th style="text-align:left;padding:6px 8px;font-weight:600">'+row.label+'</th>'+row.cells.map(c=>'<td style="padding:6px;text-align:center;border-top:1px solid #e2e8f0">'+c.total+' <span style="color:#059669;font-size:10px">/ '+c.approved+'</span></td>').join('')+'<td style="padding:6px;text-align:center;font-weight:700;border-top:1px solid #e2e8f0">'+row.cells.reduce((n,c)=>n+c.total,0)+'</td></tr>').join('')+'</tbody>';
+   return '<details style="margin:4px 0 9px 14px;padding:7px 10px;border:1px solid #dbe3f0;border-radius:9px;background:#f8fbff"><summary style="cursor:pointer;font-size:11px;color:#334155"><b>'+esc(lesson.title)+'</b> · '+total+' câu · <span style="color:#047857">'+approved+' đã duyệt</span> · Xem ma trận</summary><div style="overflow-x:auto;margin-top:7px"><table style="width:100%;min-width:430px;border-collapse:collapse;font-size:11px">'+tableHead+tableBody+'</table><p class="ts-help" style="font-size:10px;margin:5px 0 0">Mỗi ô: tổng số câu / số câu đã duyệt. '+(total!==classified?'Chưa phân loại đúng dạng hoặc mức độ: '+(total-classified)+' câu.':'Tất cả câu đã được phân loại theo dạng và mức độ.')+'</p></div></details>';
+  };
+  let bookTotal=0,bookApproved=0;
+  const cards=books.map(book=>{
+   const chapters=(book.chapters||[]).filter(ch=>!questionBankFilters.chapter||norm(ch.title)===norm(questionBankFilters.chapter)).map(ch=>{
+    const lessons=(ch.lessons||[]).filter(lesson=>!questionBankFilters.lesson||norm(lesson.title)===norm(questionBankFilters.lesson));
+    let rows=lessons.map((lesson,index)=>lessonRows(book,ch,lesson));
+    if(lessons.length>1&&(!questionBankFilters.lesson||norm('Luyện tập chung').includes(norm(questionBankFilters.lesson))||norm(questionBankFilters.lesson).startsWith('luyen tap chung'))){
+     const nums=lessons.slice(0,2).map(x=>(String(x.title).match(/Bài\s*(\d+)/i)||[])[1]||x.order).join(', ');
+     rows.push(lessonRows(book,ch,{title:'Luyện tập chung (sau '+nums+')'}));
+    } else if(!questionBankFilters.lesson) {
+     const nums=(ch.lessons||[]).slice(0,2).map(x=>(String(x.title).match(/Bài\s*(\d+)/i)||[])[1]||x.order).join(', ');
+     rows.push(lessonRows(book,ch,{title:'Luyện tập chung (sau '+nums+')'}));
+    }
+    if(!questionBankFilters.lesson||norm(questionBankFilters.lesson).startsWith('bai tap cuoi chuong'))
+     rows.push(lessonRows(book,ch,{title:'Bài tập cuối chương '+ch.order+' - '+ch.title}));
+    return '<details style="margin:8px 0;border:1px solid #e2e8f0;border-radius:9px;padding:8px 10px"><summary style="cursor:pointer;font-size:12px;font-weight:750;color:#334155">Chương '+esc(ch.order)+'. '+esc(ch.title)+'</summary><div style="padding-top:7px">'+rows.join('')+'</div></details>';
+   }).join('');
+   return '<details style="margin:8px 0;border:1px solid #cbdcf2;border-radius:10px;padding:10px 12px;background:#fff"><summary style="cursor:pointer;font-weight:800;color:#245d8a">'+esc(book.subject)+' lớp '+esc(book.grade)+(book.volume?' · Tập '+esc(book.volume):'')+' <span style="font-weight:500;color:#64748b">('+((book.chapters||[]).length)+' chương)</span></summary><div style="padding-top:8px">'+(chapters||'<p class="ts-help">Không có nội dung khớp bộ lọc chương/bài.</p>')+'</div></details>';
+  }).join('');
+  const bookScope=books.map(b=>norm(b.grade)+'|'+norm(b.subject)+'|'+norm(b.textbook)).join(';;');
+  const visibleScope=filtered.length+' câu';
+  return '<section class="ts-box" id="bank-catalog-statistics" style="border:1px solid #cbdcf2;margin:12px 0;background:#fbfdff"><div class="ts-row"><div><h3>📊 Thống kê tổng hợp ngân hàng câu hỏi</h3><p class="ts-help">Đối chiếu theo mục lục sách: từng bài học, Luyện tập chung và Bài tập cuối chương. Mỗi ô hiển thị tổng số câu / số câu đã duyệt.</p></div><span class="ts-tag">'+visibleScope+'</span></div><div class="ts-grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:9px"><div class="ts-note"><b>Tổng câu hỏi</b><div style="font-size:22px;font-weight:800;color:#1e3a8a">'+filtered.length+'</div></div><div class="ts-note"><b>Đã duyệt</b><div style="font-size:22px;font-weight:800;color:#047857">'+overallApproved+'</div></div><div class="ts-note"><b>Chưa duyệt</b><div style="font-size:22px;font-weight:800;color:#b45309">'+(filtered.length-overallApproved)+'</div></div><div class="ts-note"><b>Đầu mục sách</b><div style="font-size:22px;font-weight:800;color:#1e3a8a">'+books.length+'</div></div></div><p class="ts-help">Dùng bộ lọc Khối / Môn / Chương trình / Bộ sách bên dưới để thu hẹp thống kê. Bảng không sửa dữ liệu và không thay đổi câu hỏi.</p>'+(cards||'<p class="ts-help">Danh mục sách chưa tải hoặc không có đầu mục khớp bộ lọc. Tổng số câu ở trên vẫn được lấy trực tiếp từ ngân hàng.</p>')+'</section>';
+ }
  function renderQuestionBankContents(){
   const all=(state.questionBank||[]).filter(q=>q&&q.id);
   const chain=['grade','subject','curriculum','textbook','chapter','lesson','level'];
@@ -1477,7 +1535,7 @@ const TS = (() => {
    return heading+'<article class="question-bank-row"><div><div class="ts-row"><b>'+esc((q.type||'').toUpperCase())+' · '+esc(q.level||'NB')+' · '+(Number(q.points)||0)+'đ</b><span class="ts-tag">'+esc(q.qc?.status==='verified'?'Đã duyệt':q.qc?.status==='failed'?'Đã xác nhận sai':q.qc?.status==='needs_review'?'Cần xem lại':q.qc?.status==='awaiting_teacher'?'Chờ giáo viên duyệt':'Chưa kiểm định')+'</span></div><small class="question-bank-code" style="display:inline-block;margin:5px 0 7px;padding:3px 8px;border-radius:6px;background:#eef2ff;color:#3730a3;font-weight:700">Mã câu: '+esc(q.questionCode||'Chưa được cấp mã')+'</small><div class="question-bank-excerpt">'+MathBridge.inline(q.text||'')+'</div><small>Nguồn đề: '+esc(q.sourceExamTitle||'Ngân hàng câu hỏi')+'</small>'+(q.qc?.reason?'<p class="ts-help">AI: '+esc(q.qc.reason)+'</p>':'')+(q.qc?.structuralIssues?.length?'<p class="ts-help">Lỗi: '+esc(q.qc.structuralIssues.join('; '))+'</p>':'')+(q.qc?.status!=='verified'?'<p class="ts-help" style="color:#92400e;background:#fffbeb;padding:7px 9px;border-radius:7px;margin-top:7px">🔒 Chưa thể đưa vào đề. '+(q.qc?.aiStatus==='correct'?'AI đã xác nhận đúng; giáo viên cần nhấn “Duyệt” bên dưới.':'Câu hỏi cần được kiểm định lại bằng AI và giáo viên duyệt trước khi sử dụng.')+'</p><button type="button" class="ts-btn ts-secondary" onclick="TS.bankQcGoToPanel()">↗ Đến phần kiểm định câu hỏi</button>':'')+'</div><button type="button" class="ts-btn ts-secondary" onclick="TS.editBankQuestion(\''+esc(q.id)+'\')">✎ Sửa câu</button>'+(q.qc?.aiStatus==='correct'&&q.qc?.status!=='verified'?'<button type="button" class="ts-btn" onclick="TS.bankQcApprove(\''+esc(q.id)+'\')">✓ Duyệt</button>':'')+'<button type="button" class="ts-btn" onclick="TS.addBankQuestion(\''+esc(q.id)+'\')" '+(q.qc?.status==='verified'?'':'disabled title="Cần kiểm định và giáo viên duyệt trước"')+'>＋ Đưa vào đề</button><button type="button" class="ts-btn ts-secondary" onclick="TS.deleteBankQuestion(\''+esc(q.id)+'\')">🗑 Xóa</button></article>';
   }).join('');
   return '<section class="ts-box question-bank-section"><div class="ts-row"><div><h3>Ngân hàng câu hỏi</h3><p class="ts-help">Tìm và sử dụng câu hỏi theo Khối → Môn → Chương trình → Bộ sách → Chương → Bài → Mức độ.</p></div><span class="ts-tag">'+all.length+' câu đã lưu</span></div>'+
-   bankGeminiBuilderHTML()+bankQcPanelHTML(all)+
+   bankCatalogStatisticsHTML(all)+bankGeminiBuilderHTML()+bankQcPanelHTML(all)+
    '<div class="ts-note">📌 Câu hỏi được dùng chung trong toàn bộ ngân hàng của cùng <b>khối + môn</b>. Bộ sách, chương và bài chỉ là thông tin phân loại; không giới hạn việc đưa câu hỏi sang đề ở chương/bài khác.</div>'+
    '<div class="ts-grid">'+select('grade','Khối',values('grade'))+select('subject','Môn',values('subject'))+select('curriculum','Chương trình',values('curriculum'))+select('textbook','Bộ sách',values('textbook'))+select('chapter','Chương',values('chapter'))+select('lesson','Bài',values('lesson'))+select('level','Mức độ',levels)+'<label>Tìm nội dung<input id="qbf-search" class="ts-input" value="'+esc(questionBankFilters.search)+'" placeholder="Nhập từ khóa câu hỏi…"></label><label>Lọc theo mã câu hỏi<input id="qbf-code" class="ts-input" value="'+esc(questionBankFilters.code||'')+'" placeholder="Ví dụ: T9-1.1-NB-161"></label></div>'+
    (bankQcStatusFilter?'<div class="ts-note" style="margin:10px 0">Đang lọc kiểm định: <b>'+esc(({verified:'Đã duyệt',failed:'Xác nhận sai',needs_review:'Cần xem lại',unverified:'Chưa kiểm định'}[bankQcStatusFilter]||''))+'</b> · <button type="button" class="ts-btn ts-secondary" onclick="TS.bankQcSetStatus(\'\')">Bỏ lọc kiểm định</button></div>':'')+
