@@ -14,6 +14,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
+      - name: Check out main source for comparison
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
       - name: Copy live source files and read-only diagnostics from VPS
         env:
           VPS_HOST: ${{ secrets.VPS_HOST }}
@@ -46,9 +51,10 @@ jobs:
                 sha256sum "/opt/phanmemgiaoduc/$f"
               done
               echo
-              echo "=== Clean checkout ==="
+              echo "=== Clean checkout ownership ==="
+              stat -c "%A %U:%G %n" /opt/phanmemgiaoduc-git-clean /opt/phanmemgiaoduc-git-clean/.git 2>&1 || true
+              stat -c "%A %U:%G %n" /opt/phanmemgiaoduc-git-clean/portal-server.mjs 2>&1 || true
               git -C /opt/phanmemgiaoduc-git-clean rev-parse HEAD 2>&1 || true
-              git -C /opt/phanmemgiaoduc-git-clean status --short 2>&1 || true
               echo
               echo "=== Production Git metadata diagnostic ==="
               git -C /opt/phanmemgiaoduc rev-parse HEAD 2>&1 || true
@@ -63,11 +69,17 @@ jobs:
             } > /tmp/phanmemgiaoduc-vps-deploy-diagnostic.txt 2>&1
           '
 
-          mkdir -p snapshot/production/public
+          mkdir -p snapshot/production/public snapshot/github/public snapshot/github/ops
           scp -i "$RUNNER_TEMP/vps_key" -o BatchMode=yes "$VPS_USER@$VPS_HOST:/opt/phanmemgiaoduc/portal-server.mjs" snapshot/production/
           scp -i "$RUNNER_TEMP/vps_key" -o BatchMode=yes "$VPS_USER@$VPS_HOST:/opt/phanmemgiaoduc/teacher-tools.mjs" snapshot/production/
           scp -i "$RUNNER_TEMP/vps_key" -o BatchMode=yes "$VPS_USER@$VPS_HOST:/opt/phanmemgiaoduc/public/index.html" snapshot/production/public/
           scp -i "$RUNNER_TEMP/vps_key" -o BatchMode=yes "$VPS_USER@$VPS_HOST:/tmp/phanmemgiaoduc-vps-deploy-diagnostic.txt" snapshot/
+          scp -i "$RUNNER_TEMP/vps_key" -o BatchMode=yes "$VPS_USER@$VPS_HOST:/usr/local/sbin/phanmemgiaoduc-deploy" snapshot/production/
+
+          cp portal-server.mjs snapshot/github/
+          cp teacher-tools.mjs snapshot/github/
+          cp public/index.html snapshot/github/public/
+          cp ops/phanmemgiaoduc-deploy.sh snapshot/github/ops/
 
           rm -f "$RUNNER_TEMP/vps_key"
 
