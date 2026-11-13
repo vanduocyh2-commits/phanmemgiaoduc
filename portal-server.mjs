@@ -347,12 +347,20 @@ export function sendDirectorFeedback(d,m,input={}){
  d.notifications.push(notice);d._revision++;return d;
 }
 export function deleteSubmissionRecord(d,actor,id){
- const sub=d.learningSubmissions.find(s=>s.id===id);
- if(!sub||!actor||!['teacher','admin'].includes(actor.role)||(actor.role==='teacher'&&!actor.allowedClassIds?.includes(sub.classId)))throw Error('Không có quyền xóa bài nộp này.');
- d.learningSubmissions=d.learningSubmissions.filter(s=>s.id!==id);
- d.gradeBook=d.gradeBook.filter(g=>g.id!=='learning_'+id);
+ const sub=(d.learningSubmissions||[]).find(s=>s.id===id);
+ if(!sub||!actor||!['teacher','admin','superadmin'].includes(actor.role)||(actor.role==='teacher'&&!actor.allowedClassIds?.includes(sub.classId)))throw Error('Không tìm thấy bài nộp hoặc tài khoản không có quyền xóa.');
+ d.learningSubmissions=(d.learningSubmissions||[]).filter(s=>s.id!==id);
+ d.gradeBook=(d.gradeBook||[]).filter(g=>g.id!=='learning_'+id);
  d.learningAttempts=(d.learningAttempts||[]).filter(t=>!(t.classId===sub.classId&&t.sbd===sub.sbd&&t.assignmentId===sub.assignmentId&&(sub.attemptId?t.id===sub.attemptId:Number(t.attemptNo||1)===Number(sub.attemptNo||1))));
  d._revision=(d._revision||0)+1;return d;
+}
+export function deleteSubmissionRecords(d,actor,ids){
+ if(!Array.isArray(ids)||!ids.length||ids.length>500||ids.some(id=>typeof id!=='string'||!id)||new Set(ids).size!==ids.length)throw Error('Chọn từ 1 đến 500 bài nộp hợp lệ.');
+ const rows=ids.map(id=>(d.learningSubmissions||[]).find(s=>s.id===id));
+ if(rows.some(s=>!s))throw Error('Một hoặc nhiều bài nộp không còn tồn tại. Hãy tải lại danh sách.');
+ if(!actor||!['teacher','admin','superadmin'].includes(actor.role)||rows.some(s=>actor.role==='teacher'&&!actor.allowedClassIds?.includes(s.classId)))throw Error('Không có quyền xóa một hoặc nhiều bài nộp đã chọn.');
+ for(const id of ids)deleteSubmissionRecord(d,actor,id);
+ return {deleted:ids.length};
 }
 export function sendParentTeacherFeedback(d,m,input={}){
  if(!m||m.role!=='parent'||m.pendingAdmission)throw Error('Hãy đăng nhập phụ huynh.');
@@ -418,7 +426,8 @@ const feedbackDeleteRoute=/^\/api\/feedback\/([-\w]+)$/.exec(p);if(feedbackDelet
   const result=await gradeEssayWithGemini({apiKey:env.GEMINI_API_KEY,model,question,answer:detail.answer||'',files:attachments});
   return send(res,200,{suggestion:result,maximum:Number(question.points),submissionId,qid,model});
  }
-const submissionDeleteRoute=/^\/api\/submissions\/([-\w]+)$/.exec(p);if(submissionDeleteRoute&&req.method==='DELETE'){if(!m||!['teacher','admin'].includes(m.role))return send(res,403,{error:'Không có quyền xóa bài nộp.'});const result=await store.mutate(current=>{const actor=member(current,raw);return deleteSubmissionRecord(current,actor&&{role:actor.role,allowedClassIds:classesFor(current,actor).map(c=>c.id)},submissionDeleteRoute[1]);});return send(res,200,{view:publicView(result,member(result,raw))});}
+if(p==='/api/submissions/bulk-delete'&&req.method==='POST'){if(!m||!['teacher','admin','superadmin'].includes(m.role))return send(res,403,{error:'Không có quyền xóa bài nộp.'});const input=await jsonBody(req);let removed;const result=await store.mutate(current=>{const actor=member(current,raw);removed=deleteSubmissionRecords(current,actor&&{role:actor.role,allowedClassIds:classesFor(current,actor).map(c=>c.id)},input.ids);return current;});return send(res,200,{...removed,view:publicView(result,member(result,raw))});}
+const submissionDeleteRoute=/^\/api\/submissions\/([-\w]+)$/.exec(p);if(submissionDeleteRoute&&req.method==='DELETE'){if(!m||!['teacher','admin','superadmin'].includes(m.role))return send(res,403,{error:'Không có quyền xóa bài nộp.'});const result=await store.mutate(current=>{const actor=member(current,raw);return deleteSubmissionRecord(current,actor&&{role:actor.role,allowedClassIds:classesFor(current,actor).map(c=>c.id)},submissionDeleteRoute[1]);});return send(res,200,{view:publicView(result,member(result,raw))});}
 const examDeleteRoute=/^\/api\/exams\/([-\w]+)$/.exec(p);if(examDeleteRoute&&req.method==='DELETE'){if(!m||!['admin','teacher'].includes(m.role))return send(res,403,{error:'Không có quyền xóa đề.'});let removed;const result=await store.mutate(current=>{const actor=member(current,raw);if(!actor||!['admin','teacher'].includes(actor.role))throw Error('Phiên đăng nhập hết hiệu lực.');removed=deleteExamData(current,{role:actor.role,username:actor.username,allowedClassIds:classesFor(current,actor).map(c=>c.id)},examDeleteRoute[1]);return current;});return send(res,200,{removed,view:publicView(result,member(result,raw))});}
 const assignmentStatusRoute=/^\/api\/assignments\/([-\w]+)\/status$/.exec(p);if(assignmentStatusRoute&&req.method==='GET'){if(!m||m.role!=='student')return send(res,403,{error:'Hãy đăng nhập học sinh.'});const available=d.assignments.some(a=>a.id===assignmentStatusRoute[1]&&a.classId===m.cid&&access(a,m.sbd)&&!a.archivedAt);return send(res,200,available?{available:true}:{available:false,view:publicView(d,m)});}
 const solutionRoute=/^\/api\/submissions\/([-\w]+)\/solutions$/.exec(p);if(solutionRoute&&req.method==='GET'){if(!m)return send(res,401,{error:'Hãy đăng nhập.'});const solution=submittedSolutions(d,m,solutionRoute[1]);if(!solution)return send(res,403,{error:'Chỉ được xem đáp án sau khi chính em đã nộp bài.'});if(!solution.available)return send(res,404,{error:'Giáo viên chưa cung cấp đáp án hoặc hướng dẫn.'});return send(res,200,{solution});}
