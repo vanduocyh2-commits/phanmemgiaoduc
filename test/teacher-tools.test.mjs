@@ -49,6 +49,13 @@ test('MCQ matcher accepts answer text or a letter-plus-option key for the select
  assert.equal(answersMatchQuestion(q,'5','B'),false);
  assert.equal(answersMatchQuestion(q,'7','C'),false);
 });
+test('MCQ matcher ignores optional spaces around semicolons in ordered-pair answers',()=>{
+ const q={type:'mcq',options:['(3; 2)','(2; 3)','(4; 1)','(1; 4)']};
+ assert.equal(answersMatchQuestion(q,'(3;2)','A'),true);
+ assert.equal(answersMatchQuestion(q,'(3; 2)','A'),true);
+ assert.equal(answersMatchQuestion(q,'(3;2)','B'),false);
+});
+
 test('server grading maps a selected MCQ letter to the matching option text in the answer key',()=>{
  const d=seed(),q=d.learningExams[0].questions[0];
  q.options=['3','4','5','6'];q.answer='5';d.assignments[0].snapshot=structuredClone(d.learningExams[0]);
