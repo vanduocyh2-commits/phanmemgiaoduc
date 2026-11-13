@@ -50,7 +50,7 @@ export function answersMatchQuestion(question,expected,actual){
   const clean=value=>String(value??'').normalize('NFKC')
    .replace(/[−–—﹣－]/g,'-').replace(/\s+/g,' ')
    .replace(/\s*,\s*/g,',').trim().toLowerCase();
-  return !!clean(a)&&clean(a)===clean(b);
+  return !!clean(a)&&clean(a).replace(/\s*;\s*/g,';')===clean(b).replace(/\s*;\s*/g,';');
  };
  const resolve=value=>{
   const raw=String(value??'').trim();
