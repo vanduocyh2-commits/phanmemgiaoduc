@@ -2441,7 +2441,7 @@ function localSubmittedSolutions(d,m,submissionId){
   let source=sourceId?(state.questionBank||[]).find(row=>String(row.id)===sourceId):null;
   if(!source&&q.questionCode)source=(state.questionBank||[]).find(row=>row.questionCode===q.questionCode);
   if(source?.type==='mcq'&&source.qc?.status==='verified'){
-   const resolved=bankQcResolveMcqAnswer(source,source.answer||source.qc?.verifiedAnswer);
+   const resolved=bankQcResolveMcqAnswer(source,source.qc?.verifiedAnswer||source.answer);
    if(resolved)return {...q,answer:resolved,options:Array.isArray(source.options)&&source.options.length===4?source.options:q.options,explanation:source.explanation||source.qc?.solution||q.explanation};
   }
   if(source?.type==='mcq'&&/^[ABCD]$/i.test(String(source.answer||'').trim())){
