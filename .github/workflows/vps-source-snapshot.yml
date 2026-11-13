@@ -98,6 +98,14 @@ except Exception as e:
     print('COMPARE_ERROR',repr(e))
 PY
               echo
+              echo "=== Sudo permissions available to deploy account ==="
+              sudo -n -l 2>&1 || true
+              echo
+              echo "=== Centerapp write permissions and clean Git ==="
+              sudo -n -u centerapp sh -c 'id; for p in /opt/phanmemgiaoduc /opt/phanmemgiaoduc/.git /opt/phanmemgiaoduc/portal-server.mjs /opt/phanmemgiaoduc/teacher-tools.mjs /opt/phanmemgiaoduc/public/index.html /opt/phanmemgiaoduc-git-clean /opt/phanmemgiaoduc-git-clean/.git; do test -w "$p" && echo "CENTERAPP_WRITABLE $p" || echo "CENTERAPP_NOT_WRITABLE $p"; done' 2>&1 || true
+              sudo -n -u centerapp git -C /opt/phanmemgiaoduc-git-clean rev-parse HEAD 2>&1 || true
+              sudo -n -u centerapp git -C /opt/phanmemgiaoduc-git-clean status --short 2>&1 || true
+              echo
               echo "=== Production Git metadata as centerapp ==="
               sudo -n -u centerapp git -C /opt/phanmemgiaoduc rev-parse HEAD 2>&1 || true
               sudo -n -u centerapp git -C /opt/phanmemgiaoduc branch --show-current 2>&1 || true
