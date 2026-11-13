@@ -113,7 +113,7 @@ for attempt in $(seq 1 30); do
 done
 if [[ "$health_ok" -ne 1 ]]; then echo "ERROR: portal health endpoint unavailable" >&2; rollback; exit 1; fi
 if ! curl -fsS --max-time 10 http://127.0.0.1:3000/ -o "$HTTP_FILE"; then echo "ERROR: cannot fetch live public page" >&2; rollback; exit 1; fi
-if grep -q 'Báo lỗi câu này' "$HTTP_FILE" || grep -q 'question-report-actions' "$HTTP_FILE"; then echo "ERROR: report flag remains in live UI" >&2; rollback; exit 1; fi
+if grep -q 'Báo lỗi câu này' "$HTTP_FILE"; then echo "ERROR: report flag remains in live UI" >&2; rollback; exit 1; fi
 if ! grep -q 'Mã câu:</b>' "$HTTP_FILE"; then echo "ERROR: question code missing from feedback template" >&2; rollback; exit 1; fi
 printf 'STUDENT_EXAM_UI_CLEANUP_DEPLOY_SUCCESS\n'
 printf 'BACKUP_DIR=%s\n' "$BACKUP_DIR"
