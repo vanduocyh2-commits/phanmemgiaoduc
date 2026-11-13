@@ -7,7 +7,7 @@ SERVER="$APP/portal-server.mjs"
 SERVICE="phanmemgiaoduc.service"
 LOCK="/run/lock/phanmemgiaoduc-deploy.lock"
 EXPECTED_BEFORE="fce81b0441a051450392e091aa52cb734af15d2f4ece951e44be61a5a1a18dd3"
-EXPECTED_AFTER="217271cc818eb8b5dff35b3b0ecacdf60961cc2e4807abb5a918d161e2eab09b"
+EXPECTED_AFTER="54f1f21d213d54c5e83f7db5ec477dfe56c813a2f86003d80f20406eba23f9b1"
 EXPECTED_SERVER="08a5b09adbaa9db31023137525df08cb2f5d7ece85676631bfc2c24fd6d6f214"
 
 if [[ "$#" -ne 0 ]]; then echo "ERROR: arguments are not allowed" >&2; exit 2; fi
@@ -99,6 +99,16 @@ replace_once(
     "standalone pool eligibility guard"
 )
 replace_once(
+    ".filter(q=>(!questionBankFilters.grade||String(q.grade)===questionBankFilters.grade)&&(!questionBankFilters.subject||q.subject===questionBankFilters.subject)).slice(0,25);",
+    ".filter(q=>(!questionBankFilters.grade||String(q.grade)===questionBankFilters.grade)&&(!questionBankFilters.subject||q.subject===questionBankFilters.subject)&&(!questionBankFilters.chapter||q.chapter===questionBankFilters.chapter)&&(!questionBankFilters.lesson||q.lesson===questionBankFilters.lesson)&&(!questionBankFilters.level||q.level===questionBankFilters.level)&&(!questionBankFilters.search||bankQcNorm([q.questionCode,q.text,q.topic].join(' ')).includes(bankQcNorm(questionBankFilters.search)))).slice(0,25);",
+    "AI recheck honors question-bank filters"
+)
+replace_once(
+    "data=rows.map(q=>({id:String(q.id),grade:q.grade,subject:q.subject,type:q.type,level:q.level,text:q.text,options:q.options||[],statements:q.statements||[],answer:q.answer,tfAnswers:q.tfAnswers||[],explanation:q.explanation||''}));",
+    "data=rows.map(q=>({id:String(q.id),questionCode:q.questionCode,grade:q.grade,subject:q.subject,type:q.type,level:q.level,text:q.text,options:q.options||[],statements:q.statements||[],answer:q.answer,tfAnswers:q.tfAnswers||[],explanation:q.explanation||''}));",
+    "include stable question code in AI recheck payload"
+)
+replace_once(
     "const rows=(state.questionBank||[]).filter(q=>q&&q.id&&q.qc?.status!=='verified').filter(q=>",
     "const rows=(state.questionBank||[]).filter(q=>q&&q.id&&(!bankQcStatusFilter||(bankQcStatusFilter==='unverified'?!['verified','failed','needs_review'].includes(q.qc?.status):q.qc?.status===bankQcStatusFilter))).filter(q=>",
     "allow rechecking previously verified questions by selected status"
@@ -115,9 +125,9 @@ replace_once(
 )
 
 new_sha = hashlib.sha256(s.encode("utf-8")).hexdigest()
-expected_after = "217271cc818eb8b5dff35b3b0ecacdf60961cc2e4807abb5a918d161e2eab09b"
-if count != 10:
-    raise SystemExit(f"ERROR: expected 10 replacements, got {count}")
+expected_after = "54f1f21d213d54c5e83f7db5ec477dfe56c813a2f86003d80f20406eba23f9b1"
+if count != 12:
+    raise SystemExit(f"ERROR: expected 12 replacements, got {count}")
 if new_sha != expected_after:
     raise SystemExit(f"ERROR: patched HTML hash mismatch: {new_sha}")
 output_path.write_text(s, encoding="utf-8")
