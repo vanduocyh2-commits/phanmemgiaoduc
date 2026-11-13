@@ -76,3 +76,23 @@ test('batch grading uses the correct per-student exam code and shuffled A-D key 
  assert.equal(second.examCode,'102');assert.equal(second.score,10);
  assert.deepEqual(second.details.map(row=>row.points),[2,2,2,2,2]);
 });
+
+test('regrading a legacy submission resolves and persists the student assigned exam code',()=>{
+ const d=seed(),baseAnswers=['A','B','C','D','A'],variantAnswers=['B','D','A','C','D'];
+ const orders=[[2,0,3,1],[3,2,0,1],[2,0,3,1],[2,0,3,1],[1,2,3,0]];
+ const base=baseAnswers.map((answer,i)=>({id:'mcq_'+(i+1),type:'mcq',level:'NB',text:'Câu '+(i+1),options:['A','B','C','D'].map(letter=>'C'+(i+1)+'-'+letter),answer,points:2}));
+ const variant=base.map((q,i)=>({...q,options:orders[i].map(index=>q.options[index]),answer:variantAnswers[i]}));
+ d.learningExams[0].questions=base;
+ d.learningExams[0].answerVariants={'101':base,'102':variant};
+ d.learningExams[0].presentation={code:'101'};
+ d.assignments[0].snapshot=structuredClone(d.learningExams[0]);
+ d.assignments[0].studentCodes={S1:'102'};
+ batchGrade(d,teacher,{assignmentId:'a1',rows:[{sbd:'S1',answers:variantAnswers}]});
+ const sub=d.learningSubmissions[0];
+ assert.equal(sub.examCode,'102');assert.equal(sub.score,10);
+ delete sub.examCode;
+ regradeExam(d,teacher,{examId:'e1'});
+ assert.equal(sub.examCode,'102');
+ assert.equal(sub.score,10);
+ assert.deepEqual(sub.details.map(row=>row.points),[2,2,2,2,2]);
+});
