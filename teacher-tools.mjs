@@ -47,10 +47,24 @@ export function answersMatchQuestion(question,expected,actual){
    .replace(/\s+/g,' ').trim();
  };
  const same=(a,b)=>{
+  // Đáp án có thể được lưu dưới dạng chữ thường, HTML hoặc TeX trong khi
+  // lựa chọn của học sinh chỉ lưu chữ cái A/B/C/D. Chuẩn hóa phần trình bày
+  // toán học trước khi ánh xạ nội dung đáp án về đúng phương án.
   const clean=value=>String(value??'').normalize('NFKC')
-   .replace(/[−–—﹣－]/g,'-').replace(/\s+/g,' ')
-   .replace(/\s*,\s*/g,',').trim().toLowerCase();
-  return !!clean(a)&&clean(a).replace(/\s*;\s*/g,';')===clean(b).replace(/\s*;\s*/g,';');
+   .replace(/<[^>]*>/g,' ')
+   .replace(/\\\\[()[\]]/g,'')
+   .replace(/\\\\(?:displaystyle|textstyle|left|right|mathrm|mathbf|mathit|operatorname)\\b/g,'')
+   .replace(/\\\\(?:,|;|!|quad|qquad)\b?/g,' ')
+   .replace(/\\\\(?:cdot|times)/g,'*')
+   .replace(/\\\\(?:leq|le)/g,'≤').replace(/\\\\(?:geq|ge)/g,'≥')
+   .replace(/\\\\(?:neq|ne)/g,'≠')
+   .replace(/[−–—﹣－]/g,'-')
+   .replace(/\\s+/g,' ')
+   .replace(/\\s*,\\s*/g,',')
+   .replace(/^\\s*\\$+|\\$+\\s*$/g,'')
+   .trim().toLowerCase();
+  const x=clean(a),y=clean(b);
+  return !!x&&x.replace(/\\s*;\\s*/g,';')===y.replace(/\\s*;\\s*/g,';');
  };
  const resolve=value=>{
   const raw=String(value??'').trim();
