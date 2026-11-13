@@ -1393,7 +1393,42 @@ const TS = (() => {
  let bankQcSelectedIds=new Set();
 
  function bankQcNorm(v){return String(v??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').toLocaleLowerCase('vi').replace(/\s+/g,' ').trim();}
- function bankQcIssues(q){const a=[],t=String(q?.type||'').toLowerCase(),ans=String(q?.answer||'').trim();if(!String(q?.text||'').trim())a.push('Thiếu nội dung');if(!['mcq','tf','short','essay'].includes(t))a.push('Dạng câu không hợp lệ');if(!ans)a.push('Thiếu đáp án/hướng dẫn chấm');if(t==='mcq'){const o=Array.isArray(q.options)?q.options.map(x=>String(x||'').trim()):[];if(o.length!==4||o.some(x=>!x))a.push('Phải có đủ 4 phương án');if(new Set(o.map(bankQcNorm)).size!==o.length)a.push('Phương án trùng');if(!['A','B','C','D'].includes(ans.toUpperCase()))a.push('Đáp án phải là A/B/C/D');}if(t==='tf'){const st=(q.statements||[]).filter(x=>String(x||'').trim()),ta=q.tfAnswers||tfAnswersFrom(ans);if(st.length!==4)a.push('Phải có đủ 4 mệnh đề');if(ta.length!==4||ta.some(x=>!['Đúng','Sai'].includes(String(x))))a.push('Đáp án Đúng/Sai phải đủ 4 giá trị');}if(!String(q?.explanation||'').trim())a.push('Thiếu lời giải đối chứng');return a;}
+ function bankQcResolveMcqAnswer(q,candidate){
+  if(!q||q.type!=='mcq')return '';
+  const options=Array.isArray(q.options)?q.options:[];
+  if(options.length!==4||options.some(x=>!String(x||'').trim()))return '';
+  const raw=String(candidate??'').trim();
+  if(!raw)return '';
+  const letterMatch=raw.match(/(?:^|[\\s(])(?:đáp án(?: đúng)?\\s*[:：]?\\s*)?([ABCD])(?=$|[\\s).,:：-])/i);
+  if(letterMatch)return letterMatch[1].toUpperCase();
+  const cleaned=raw.replace(/^\\s*(?:đáp án(?: đúng)?|verifiedAnswer)\\s*[:：-]?\\s*/i,'').trim();
+  const normalized=bankQcNorm(cleaned);
+  const exact=options.findIndex(option=>bankQcNorm(option)===normalized);
+  if(exact>=0)return 'ABCD'[exact];
+  const decorated=options.map((option,index)=>({index,norm:bankQcNorm(option)})).filter(x=>x.norm&&normalized.includes(x.norm));
+  return decorated.length===1?'ABCD'[decorated[0].index]:'';
+}
+function bankQcIssues(q){
+ const a=[],t=String(q?.type||'').toLowerCase();
+ const candidate=t==='mcq'&&q?.qc?.aiStatus==='correct'&&String(q?.qc?.verifiedAnswer||'').trim()?q.qc.verifiedAnswer:q?.answer;
+ const ans=String(candidate||'').trim();
+ if(!String(q?.text||'').trim())a.push('Thiếu nội dung');
+ if(!['mcq','tf','short','essay'].includes(t))a.push('Dạng câu không hợp lệ');
+ if(!ans)a.push('Thiếu đáp án/hướng dẫn chấm');
+ if(t==='mcq'){
+  const o=Array.isArray(q.options)?q.options.map(x=>String(x||'').trim()):[];
+  if(o.length!==4||o.some(x=>!x))a.push('Phải có đủ 4 phương án');
+  if(new Set(o.map(bankQcNorm)).size!==o.length)a.push('Phương án trùng');
+  if(!bankQcResolveMcqAnswer(q,ans))a.push('Đáp án chưa xác định được A/B/C/D từ kết quả kiểm định');
+ }
+ if(t==='tf'){
+  const st=(q.statements||[]).filter(x=>String(x||'').trim()),ta=q.tfAnswers||tfAnswersFrom(ans);
+  if(st.length!==4)a.push('Phải có đủ 4 mệnh đề');
+  if(ta.length!==4||ta.some(x=>!['Đúng','Sai'].includes(String(x))))a.push('Đáp án Đúng/Sai phải đủ 4 giá trị');
+ }
+ if(!String(q?.explanation||'').trim()&&!String(q?.qc?.solution||'').trim())a.push('Thiếu lời giải đối chứng');
+ return a;
+}
  function bankQcPanelHTML(all){const count=k=>all.filter(q=>k==='unverified'?!['verified','failed','needs_review'].includes(q.qc?.status):q.qc?.status===k).length;const card=(key,label)=>'<button type="button" class="ts-note bank-qc-stat" aria-pressed="'+(bankQcStatusFilter===key)+'" onclick="TS.bankQcSetStatus(\''+key+'\')" style="cursor:pointer;text-align:left;width:100%;border:1px solid '+(bankQcStatusFilter===key?'#7c3aed':'#a7f3d0')+';background:'+(bankQcStatusFilter===key?'#ede9fe':'#ecfdf5')+';color:'+(bankQcStatusFilter===key?'#5b21b6':'#047857')+'"><b>'+count(key)+'</b> '+label+'<small style="display:block;font-size:10px;margin-top:3px">'+(bankQcStatusFilter===key?'Đang lọc · bấm để bỏ lọc':'Bấm để xem danh sách')+'</small></button>';return '<section id="bank-qc-panel" class="ts-box" style="border:1px solid #93c5fd;background:#f8fbff;margin:14px 0"><h3>🛡 Kiểm định thông minh ngân hàng đề</h3><p class="ts-help">Quét cấu trúc tự động, sau đó yêu cầu AI giải độc lập. Chỉ câu được giáo viên duyệt mới được dùng để tạo đề.</p><div class="ts-grid">'+card('verified','Đã duyệt')+card('failed','Xác nhận sai')+card('needs_review','Cần xem lại')+card('unverified','Chưa kiểm định')+'</div><div class="ts-row" style="justify-content:flex-end;margin-top:8px"><button type="button" class="ts-btn ts-secondary" onclick="TS.bankQcSetStatus(\'\')">↺ Xóa lọc kiểm định</button></div><div class="ts-row"><button type="button" class="ts-btn" onclick="TS.bankQcScan()">① Quét lỗi cấu trúc</button><button type="button" class="ts-btn ts-secondary" onclick="TS.bankQcBuildPrompt()">② Tạo lệnh AI giải độc lập</button><button type="button" class="ts-btn ts-secondary" onclick="TS.bankQcCopyPromptAndOpen()">Sao chép &amp; mở Gemini</button></div><label class="bank-gemini-label">Lệnh kiểm định<textarea id="bank-qc-prompt" class="ts-input" rows="5" readonly></textarea></label><div class="bank-gemini-label"><span style="display:block;margin-bottom:7px">Kết quả JSON từ Gemini</span><label for="bank-qc-file" class="ts-btn ts-secondary" style="display:inline-flex;align-items:center;gap:7px;cursor:pointer">⬆ Tải lên tệp JSON<input id="bank-qc-file" type="file" accept=".json,application/json" onchange="TS.bankQcLoadJSONFile(this)" style="display:none"></label></div><p id="bank-qc-file-status" class="ts-help">Cách 1: Tải tệp .json do Gemini tạo. Nếu Gemini không đính kèm được tệp, dùng cách 2 bên dưới.</p><div style="margin:10px 0;padding:12px;border:1px solid #cbd5e1;border-radius:10px;background:#fff"><label for="bank-qc-result" style="display:block;font-weight:700;margin-bottom:7px">Cách 2: Dán nội dung JSON từ Gemini vào đây</label><textarea id="bank-qc-result" class="ts-input" rows="8" spellcheck="false" placeholder="Dán toàn bộ JSON bắt đầu bằng { &quot;results&quot;: [ ... ] }"></textarea><p class="ts-help" style="margin:6px 0 0">Nếu Gemini chỉ hiển thị mã JSON trong câu trả lời, hãy sao chép toàn bộ rồi dán vào ô này. Có thể dùng cả hai cách; tải tệp JSON sẽ tự điền nội dung vào ô.</p></div><button type="button" class="ts-btn" onclick="TS.bankQcImportAIResult()">③ Nhận kết quả AI</button><p class="ts-help">AI không tự ghi đè đáp án. Giáo viên xác nhận từng câu trước khi đưa vào đề.</p></section>';}
  function bankQcScan(){if(!staff())return;const rows=(state.questionBank||[]).filter(q=>q&&q.id),seen=new Map(),now=new Date().toISOString();let bad=0,dup=0;for(const q of rows){const key=[bankQcNorm(q.grade),bankQcNorm(q.subject),bankQcNorm(q.text)].join('|');if(key!=='||'&&seen.has(key)){q.qc={...(q.qc||{}),status:'needs_review',structuralIssues:['Có nội dung trùng với câu '+seen.get(key)],checkedAt:now};dup++;}else if(key!=='||')seen.set(key,q.id);const issues=bankQcIssues(q);if(issues.length){q.qc={...(q.qc||{}),status:'needs_review',structuralIssues:issues,checkedAt:now};bad++;}else if(!['verified','failed'].includes(q.qc?.status)){q.qc={...(q.qc||{}),status:'unverified',structuralIssues:[],checkedAt:now};}}put();const h=$('question-bank-panel');if(h)h.innerHTML=TS.renderQuestionBankContents();toast('Đã quét '+rows.length+' câu: '+bad+' câu có lỗi cấu trúc, '+dup+' câu nghi trùng.');}
  function bankQcBuildPrompt(){
@@ -1529,7 +1564,35 @@ function bankQcParseJSON(raw){
  function bankQcSetStatus(status){if(!['','verified','failed','needs_review','unverified'].includes(status))return;bankQcStatusFilter=status;const h=$('question-bank-panel');if(h)h.innerHTML=TS.renderQuestionBankContents();}
  function bankQcGoToPanel(){const panel=$('bank-qc-panel');if(panel){panel.scrollIntoView({behavior:'smooth',block:'start'});const prompt=$('bank-qc-prompt');if(prompt)prompt.focus({preventScroll:true});}toast('Tại phần kiểm định: quét cấu trúc, tạo lệnh AI, dán kết quả JSON rồi duyệt câu được AI xác nhận đúng.');}
 
- function bankQcApprove(id){if(!staff())return;const q=(state.questionBank||[]).find(x=>String(x.id)===String(id));if(!q)return;if(q.qc?.aiStatus!=='correct')return toast('AI chưa xác nhận câu đúng.');const issues=bankQcIssues(q);if(issues.length)return toast('Chưa thể duyệt: '+issues.join('; '));q.qc={...(q.qc||{}),status:'verified',approvedAt:new Date().toISOString(),approvedBy:activeAccount?.username||onlineMember?.username||'teacher'};put();const h=$('question-bank-panel');if(h)h.innerHTML=TS.renderQuestionBankContents();toast('Đã duyệt. Câu hỏi được phép sử dụng.');}
+ function bankQcApplyVerifiedAnswer(q){
+ if(!q||q.qc?.aiStatus!=='correct')return false;
+ if(q.type==='mcq'){
+  const resolved=bankQcResolveMcqAnswer(q,q.qc?.verifiedAnswer);
+  if(!resolved)return false;
+  q.qc={...(q.qc||{}),previousAnswer:q.answer};
+  q.answer=resolved;
+ }else if(q.type==='tf'){
+  const raw=String(q.qc?.verifiedAnswer||'').trim();
+  if(raw){
+   const values=tfAnswersFrom(raw);
+   if(values.length===4&&values.every(x=>['Đúng','Sai'].includes(String(x)))){q.tfAnswers=values;q.answer=tfCode(values);}
+  }
+ }else if(q.type==='short'&&String(q.qc?.verifiedAnswer||'').trim()){
+  q.answer=String(q.qc.verifiedAnswer).trim();
+ }
+ if(!String(q.explanation||'').trim()&&String(q.qc?.solution||'').trim())q.explanation=String(q.qc.solution).trim();
+ return true;
+}
+function bankQcApprove(id){
+ if(!staff())return;
+ const q=(state.questionBank||[]).find(x=>String(x.id)===String(id));if(!q)return;
+ if(q.qc?.aiStatus!=='correct')return toast('AI chưa xác nhận câu đúng.');
+ const issues=bankQcIssues(q);if(issues.length)return toast('Chưa thể duyệt: '+issues.join('; '));
+ if(!bankQcApplyVerifiedAnswer(q))return toast('Không thể chuẩn hóa đáp án đã kiểm định. Hãy kiểm tra lại kết quả Gemini.');
+ q.qc={...(q.qc||{}),status:'verified',approvedAt:new Date().toISOString(),approvedBy:activeAccount?.username||onlineMember?.username||'teacher'};
+ put();const h=$('question-bank-panel');if(h)h.innerHTML=TS.renderQuestionBankContents();
+ toast('Đã duyệt. Đáp án kiểm định đã được cập nhật vào khóa đáp án chính thức.');
+}
 
  function bankQcSelectOne(id,checked){
   const key=String(id);
@@ -1564,18 +1627,19 @@ function bankQcParseJSON(raw){
  function bankQcApproveSelected(){
   if(!staff())return;
   const selected=[...(bankQcSelectedIds||[])],map=new Map((state.questionBank||[]).map(q=>[String(q.id),q]));
-  let approved=0,skipped=0;const now=new Date().toISOString(),owner=activeAccount?.username||onlineMember?.username;
+  let approved=0,skipped=0;const now=new Date().toISOString();
   for(const id of selected){
    const q=map.get(id);if(!q){skipped++;continue;}
    if(q.qc?.status==='verified')continue;
    if(q.qc?.aiStatus!=='correct'){skipped++;continue;}
    const issues=bankQcIssues(q);if(issues.length){skipped++;continue;}
+   if(!bankQcApplyVerifiedAnswer(q)){skipped++;continue;}
    q.qc={...(q.qc||{}),status:'verified',approvedAt:now,approvedBy:activeAccount?.username||onlineMember?.username||'teacher'};
    approved++;
   }
   if(approved)put();
   bankQcSelectedIds.clear();const host=$('question-bank-panel');if(host)host.innerHTML=TS.renderQuestionBankContents();
-  toast('Đã duyệt '+approved+' câu.'+(skipped?' Bỏ qua '+skipped+' câu chưa đủ điều kiện (AI chưa xác nhận đúng hoặc còn lỗi cấu trúc).':''));
+  toast('Đã duyệt '+approved+' câu; đáp án đã được đồng bộ vào khóa chính thức.'+(skipped?' Bỏ qua '+skipped+' câu chưa đủ điều kiện kiểm định hoặc chưa chuẩn hóa được đáp án.':''));
  }
  function bankQcDeleteSelected(){
   if(!staff())return;
@@ -2373,12 +2437,13 @@ function localSubmittedSolutions(d,m,submissionId){
 
  function practiceCanonicalQuestion(q){
   if(!q||q.type!=='mcq')return q;
-  // Correct a verified curriculum answer-key error for this known question.
-  if(String(q.questionCode||'').trim()==='T9-1.1-NB-004')return {...q,answer:'B',explanation:'Phương trình bậc nhất hai ẩn có dạng ax + by = c, trong đó a và b không đồng thời bằng 0. Ở phương án B, x − 3y = 5 có x và y đều ở bậc nhất nên đây là phương trình bậc nhất hai ẩn. Các phương án A và D có bình phương của ẩn; phương án C có ẩn ở mẫu nên không phải phương trình bậc nhất hai ẩn.'};
   const sourceId=String(q.sourceBankId??q.bankQuestionId??'');
   let source=sourceId?(state.questionBank||[]).find(row=>String(row.id)===sourceId):null;
   if(!source&&q.questionCode)source=(state.questionBank||[]).find(row=>row.questionCode===q.questionCode);
-  // Chỉ dùng đáp án từ ngân hàng khi đó là khóa trắc nghiệm hợp lệ A-D.
+  if(source?.type==='mcq'&&source.qc?.status==='verified'){
+   const resolved=bankQcResolveMcqAnswer(source,source.answer||source.qc?.verifiedAnswer);
+   if(resolved)return {...q,answer:resolved,options:Array.isArray(source.options)&&source.options.length===4?source.options:q.options,explanation:source.explanation||source.qc?.solution||q.explanation};
+  }
   if(source?.type==='mcq'&&/^[ABCD]$/i.test(String(source.answer||'').trim())){
    return {...q,answer:String(source.answer).trim().toUpperCase(),options:Array.isArray(source.options)&&source.options.length===4?source.options:q.options};
   }
