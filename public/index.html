@@ -1419,7 +1419,7 @@ const TS = (() => {
     statements:Array.isArray(q.statements)?q.statements:[],answer:q.answer,
     tfAnswers:Array.isArray(q.tfAnswers)?q.tfAnswers:[],explanation:q.explanation||''
    }));
-   const prompt='Hãy đóng vai chuyên gia kiểm định Toán phổ thông. Tự giải độc lập, không tin đáp án/lời giải có sẵn. Kiểm tra dữ kiện, điều kiện, số đáp án đúng và lời giải.\\n\\nYÊU CẦU BẮT BUỘC VỀ TỆP KẾT QUẢ: Sau khi kiểm định, PHẢI tạo một tệp JSON có thể tải xuống với tên bank-ai-results.json. Nội dung tệp phải là JSON hợp lệ UTF-8, không có dấu phân cách Markdown hoặc lời giải thích bên ngoài JSON. Đồng thời hiển thị nguyên văn toàn bộ JSON trong câu trả lời để giáo viên có thể sao chép nếu không tải được tệp. Không được chỉ nói rằng đã tạo tệp; nếu không thể đính kèm tệp, phải thông báo rõ và vẫn in toàn bộ JSON.\\n\\nĐỊNH DẠNG DUY NHẤT CỦA JSON: {"results":[{"id":"GIỮ NGUYÊN ID","status":"correct|incorrect|ambiguous","verifiedAnswer":"...","reason":"...","solution":"..."}]}. Phải trả về đủ một kết quả cho MỖI id trong dữ liệu đầu vào, giữ nguyên id tuyệt đối chính xác, không tự tạo id mới, không bỏ sót câu. status chỉ được là correct, incorrect hoặc ambiguous. verifiedAnswer là đáp án AI tự giải; reason nêu căn cứ; solution trình bày lời giải độc lập. Nếu đề thiếu dữ kiện/hình hoặc không thể kết luận, đặt status là ambiguous, không đoán. Không sửa dữ liệu gốc.\\n\\nDỮ LIỆU CÂU HỎI CẦN KIỂM ĐỊNH:\\n'+JSON.stringify(data,null,2);
+   const prompt='Hãy đóng vai chuyên gia kiểm định Toán phổ thông. Tự giải độc lập, không tin đáp án/lời giải có sẵn. Kiểm tra dữ kiện, điều kiện, số đáp án đúng và lời giải.\\n\\nYÊU CẦU BẮT BUỘC VỀ TỆP KẾT QUẢ: Sau khi kiểm định, PHẢI tạo một tệp JSON có thể tải xuống với tên bank-ai-results.json. Khi ghi công thức toán, mọi dấu gạch chéo ngược trong chuỗi JSON phải được escape đúng chuẩn (ví dụ LaTeX \\frac, \\sqrt, \\begin); không được ghi dấu gạch chéo ngược đơn trực tiếp. Hãy dùng bộ tuần tự hóa JSON chuẩn, kiểm tra JSON.parse thành công trước khi xuất tệp. Nội dung tệp phải là JSON hợp lệ UTF-8, không có dấu phân cách Markdown hoặc lời giải thích bên ngoài JSON. Đồng thời hiển thị nguyên văn toàn bộ JSON trong câu trả lời để giáo viên có thể sao chép nếu không tải được tệp. Không được chỉ nói rằng đã tạo tệp; nếu không thể đính kèm tệp, phải thông báo rõ và vẫn in toàn bộ JSON.\\n\\nĐỊNH DẠNG DUY NHẤT CỦA JSON: {"results":[{"id":"GIỮ NGUYÊN ID","status":"correct|incorrect|ambiguous","verifiedAnswer":"...","reason":"...","solution":"..."}]}. Phải trả về đủ một kết quả cho MỖI id trong dữ liệu đầu vào, giữ nguyên id tuyệt đối chính xác, không tự tạo id mới, không bỏ sót câu. status chỉ được là correct, incorrect hoặc ambiguous. verifiedAnswer là đáp án AI tự giải; reason nêu căn cứ; solution trình bày lời giải độc lập. Nếu đề thiếu dữ kiện/hình hoặc không thể kết luận, đặt status là ambiguous, không đoán. Không sửa dữ liệu gốc.\\n\\nDỮ LIỆU CÂU HỎI CẦN KIỂM ĐỊNH:\\n'+JSON.stringify(data,null,2);
    const panel=$('question-bank-panel');
    const el=panel?.querySelector('#bank-qc-prompt')||$('bank-qc-prompt');
    if(!el){toast('Không tìm thấy ô Lệnh kiểm định. Hãy mở lại Ngân hàng câu hỏi rồi thử lại.');return '';}
@@ -1436,24 +1436,63 @@ const TS = (() => {
    return '';
   }
  } async function bankQcCopyPromptAndOpen(){const p=$('bank-qc-prompt')?.value||bankQcBuildPrompt();if(!p)return;try{await navigator.clipboard.writeText(p);window.open('https://gemini.google.com/app','_blank','noopener');toast('Đã sao chép lệnh kiểm định. Dán vào Gemini.');}catch(e){const el=$('bank-qc-prompt');el?.focus();el?.select();toast('Hãy Ctrl+C để sao chép lệnh.');}}
+function bankQcNormalizeJSONText(raw){
+ let text=String(raw??'').replace(/^\\uFEFF/,'').trim();
+ const tick=String.fromCharCode(96);
+ if(text.startsWith(tick+tick+tick)){
+  text=text.replace(new RegExp('^'+tick+tick+tick+'[^\\\\r\\\\n]*\\\\r?\\\\n'),'');
+  text=text.replace(new RegExp('\\\\r?\\\\n?'+tick+tick+tick+'\\\\s*$'),'');
+ }
+ const first=text.search(/[\\[{]/);
+ if(first>0)text=text.slice(first);
+ let inString=false,out='';
+ const latexCommands=/^(?:frac|dfrac|tfrac|sqrt|text|mathrm|mathbf|mathbb|mathcal|mathsf|left|right|begin|end|neq|leq|geq|times|cdot|pi|theta|alpha|beta|gamma|Delta|sum|int|infty|partial|log|ln|sin|cos|tan|overline|underline|vec|cases|quad|qquad|displaystyle|operatorname|angle|rightarrow|Rightarrow|to|approx|pm|cdots|ldots|lim|in|notin|subset|cup|cap|perp|parallel|emptyset|forall|exists)\\b/;
+ for(let i=0;i<text.length;i++){
+  const ch=text[i];
+  if(!inString){out+=ch;if(ch==='"')inString=true;continue;}
+  if(ch==='"'){out+=ch;inString=false;continue;}
+  if(ch!=='\\\\'){out+=ch;continue;}
+  const next=text[i+1]||'';
+  if(!next){out+='\\\\\\\\';continue;}
+  if(next==='"'||next==='\\\\'||next==='/'){out+='\\\\'+next;i++;continue;}
+  if(next==='u'&&/^[0-9a-fA-F]{4}$/.test(text.slice(i+2,i+6))){out+='\\\\u'+text.slice(i+2,i+6);i+=5;continue;}
+  if(/[bfnrt]/.test(next)&&!latexCommands.test(text.slice(i+1))){
+   out+='\\\\'+next;i++;continue;
+  }
+  out+='\\\\\\\\';
+ }
+ return out;
+}
+function bankQcParseJSON(raw){
+ const clean=bankQcNormalizeJSONText(raw);
+ try{return {data:JSON.parse(clean),repaired:clean!==String(raw??'').replace(/^\\uFEFF/,'').trim(),clean};}
+ catch(error){
+  const match=String(error?.message||'').match(/position\\s+(\\d+)/i);
+  if(match){
+   const pos=Number(match[1]),before=clean.slice(0,pos),line=before.split('\\n').length,column=pos-(before.lastIndexOf('\\n')+1)+1;
+   const excerpt=clean.slice(Math.max(0,pos-35),Math.min(clean.length,pos+35)).replace(/\\n/g,' ');
+   throw new Error('JSON còn lỗi tại dòng '+line+', cột '+column+'. Đoạn gần lỗi: '+excerpt);
+  }
+  throw new Error('JSON chưa đúng định dạng: '+(error?.message||String(error)));
+ }
+}
  async function bankQcLoadJSONFile(input){
   if(!staff())return;
   const file=input?.files?.[0],status=$('bank-qc-file-status'),target=$('bank-qc-result');
   if(!file)return;
   if(!/\\.json$/i.test(file.name)&&file.type!=='application/json'){
-   input.value='';if(target)target.value='';
+   input.value='';
    if(status)status.textContent='Tệp không đúng định dạng JSON. Vui lòng chọn tệp .json.';
    return toast('Chỉ chấp nhận tệp JSON (.json).');
   }
   try{
-   const raw=await file.text();
-   const clean=raw.replace(/^\\x60{3}(?:json)?\\s*/i,'').replace(/\\x60{3}\\s*$/,'').trim();
-   const parsed=JSON.parse(clean),results=Array.isArray(parsed)?parsed:parsed?.results;
+   const raw=await file.text(),parsedInfo=bankQcParseJSON(raw),parsed=parsedInfo.data;
+   const results=Array.isArray(parsed)?parsed:parsed?.results;
    if(!Array.isArray(results)||!results.length)throw new Error('Tệp JSON phải chứa mảng results có ít nhất một kết quả.');
    if(!results.every(row=>row&&typeof row==='object'&&!Array.isArray(row)&&row.id&&['correct','incorrect','ambiguous'].includes(String(row.status||'').toLowerCase())))throw new Error('Mỗi kết quả cần có id và status là correct, incorrect hoặc ambiguous.');
-   if(target)target.value=JSON.stringify(parsed);
-   if(status)status.textContent='Đã tải: '+file.name+' · '+results.length+' kết quả hợp lệ. Nhấn “③ Nhận kết quả AI” để nhập vào ngân hàng.';
-   toast('Đã đọc tệp JSON gồm '+results.length+' kết quả. Hãy nhấn “Nhận kết quả AI”.');
+   if(target)target.value=JSON.stringify(parsed,null,2);
+   if(status)status.textContent='Đã tải: '+file.name+' · '+results.length+' kết quả hợp lệ.'+(parsedInfo.repaired?' · Đã tự chuẩn hóa dấu gạch chéo trong công thức toán.':'')+' Nhấn “③ Nhận kết quả AI” để nhập vào ngân hàng.';
+   toast('Đã đọc '+results.length+' kết quả JSON'+(parsedInfo.repaired?' và tự sửa dấu gạch chéo công thức':'')+'. Hãy nhấn “Nhận kết quả AI”.');
   }catch(error){
    if(target)target.value='';
    input.value='';
@@ -1461,7 +1500,32 @@ const TS = (() => {
    toast('Tệp JSON không hợp lệ: '+(error?.message||String(error)));
   }
  }
- function bankQcImportAIResult(){if(!staff())return;const raw=$('bank-qc-result')?.value.trim()||'';if(!raw)return toast('Hãy dán kết quả Gemini.');let data;try{const clean=raw.replace(/^\x60{3}(?:json)?\s*/i,'').replace(/\x60{3}\s*$/,'').trim();data=JSON.parse(clean);if(!Array.isArray(data))data=data.results;if(!Array.isArray(data))throw Error('Thiếu results');}catch(e){return toast('JSON chưa hợp lệ: '+e.message);}const map=new Map((state.questionBank||[]).map(q=>[String(q.id),q]));let n=0;for(const r of data){const q=map.get(String(r.id||'')),st=String(r.status||'').toLowerCase();if(!q||!['correct','incorrect','ambiguous'].includes(st))continue;q.qc={...(q.qc||{}),aiStatus:st,status:st==='correct'?'awaiting_teacher':st==='incorrect'?'failed':'needs_review',verifiedAnswer:String(r.verifiedAnswer||''),reason:String(r.reason||''),solution:String(r.solution||''),checkedAt:new Date().toISOString()};n++;}put();const h=$('question-bank-panel');if(h)h.innerHTML=TS.renderQuestionBankContents();toast('Đã nhận '+n+' kết quả AI. Câu đúng đang chờ giáo viên duyệt.');}
+ function bankQcImportAIResult(){
+  if(!staff())return;
+  const raw=$('bank-qc-result')?.value||'';
+  if(!raw.trim())return toast('Hãy tải tệp hoặc dán kết quả Gemini.');
+  let data,parsedInfo;
+  try{
+   parsedInfo=bankQcParseJSON(raw);data=parsedInfo.data;
+   if(!Array.isArray(data))data=data?.results;
+   if(!Array.isArray(data)||!data.length)throw new Error('Thiếu mảng results hoặc mảng không có kết quả.');
+   if(!data.every(row=>row&&typeof row==='object'&&!Array.isArray(row)&&row.id&&['correct','incorrect','ambiguous'].includes(String(row.status||'').toLowerCase())))throw new Error('Mỗi kết quả cần có id và status là correct, incorrect hoặc ambiguous.');
+  }catch(error){return toast('JSON chưa hợp lệ: '+(error?.message||String(error)));}
+  const map=new Map((state.questionBank||[]).map(q=>[String(q.id),q]));
+  const ids=new Set();let n=0,unknown=0;
+  for(const r of data){
+   const id=String(r.id),q=map.get(id),st=String(r.status||'').toLowerCase();
+   if(ids.has(id))return toast('JSON có mã câu bị lặp: '+id+'. Chưa nhập kết quả nào.');
+   ids.add(id);
+   if(!q){unknown++;continue;}
+   q.qc={...(q.qc||{}),aiStatus:st,status:st==='correct'?'awaiting_teacher':st==='incorrect'?'failed':'needs_review',verifiedAnswer:String(r.verifiedAnswer||''),reason:String(r.reason||''),solution:String(r.solution||''),checkedAt:new Date().toISOString()};
+   n++;
+  }
+  if(!n)return toast('Không tìm thấy mã câu nào trong ngân hàng để cập nhật. Hãy kiểm tra lại ID trong JSON.');
+  if($('bank-qc-result'))$('bank-qc-result').value=JSON.stringify({results:data},null,2);
+  put();const h=$('question-bank-panel');if(h)h.innerHTML=TS.renderQuestionBankContents();
+  toast('Đã nhận '+n+' kết quả AI'+(unknown?' · bỏ qua '+unknown+' mã câu không có trong ngân hàng':'')+(parsedInfo.repaired?' · đã tự chuẩn hóa công thức toán':'')+'. Câu đúng đang chờ giáo viên duyệt.');
+ }
  function bankQcSetStatus(status){if(!['','verified','failed','needs_review','unverified'].includes(status))return;bankQcStatusFilter=status;const h=$('question-bank-panel');if(h)h.innerHTML=TS.renderQuestionBankContents();}
  function bankQcGoToPanel(){const panel=$('bank-qc-panel');if(panel){panel.scrollIntoView({behavior:'smooth',block:'start'});const prompt=$('bank-qc-prompt');if(prompt)prompt.focus({preventScroll:true});}toast('Tại phần kiểm định: quét cấu trúc, tạo lệnh AI, dán kết quả JSON rồi duyệt câu được AI xác nhận đúng.');}
 
