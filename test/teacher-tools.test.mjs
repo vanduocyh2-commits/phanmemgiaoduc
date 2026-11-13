@@ -1,5 +1,5 @@
 import {test} from 'node:test';import assert from 'node:assert/strict';
-import {parseAnswerRows,questionsFromKey,activeAttempt,canAttempt,answersMatchQuestion} from '../teacher-tools.mjs';
+import {parseAnswerRows,questionsFromKey,activeAttempt,canAttempt,answersMatch,answersMatchQuestion} from '../teacher-tools.mjs';
 import {emptyState,applyChanges,batchGrade,regradeExam,deleteCenterClass,deleteCenterStudent,saveClassAttendance,recordExamEvents,sequencePrerequisiteComplete} from '../portal-server.mjs';
 const teacher={role:'teacher',username:'gv',account:{id:'t1'}},student={role:'student',cid:'c1',sbd:'S1'};
 function seed(){const d=emptyState('password123');d.classes=[{id:'c1',name:'10A',teacherId:'t1',students:[{sbd:'S1',name:'An',fees:{}}]},{id:'c2',name:'10B',teacherId:'t2',students:[{sbd:'S2',name:'Bình',fees:{}}]}];d.learningExams=[{id:'e1',owner:'gv',title:'Test',duration:45,questions:questionsFromKey([['Câu','Đáp án','Điểm','Loại'],[1,'A',5,'TN'],[2,'ĐSĐS',5,'ĐS']])}];d.assignments=[{id:'a1',examId:'e1',classId:'c1',students:['S1'],maxAttempts:2,assessmentType:'test',snapshot:structuredClone(d.learningExams[0])}];return d;}
@@ -95,4 +95,15 @@ test('regrading a legacy submission resolves and persists the student assigned e
  assert.equal(sub.examCode,'102');
  assert.equal(sub.score,10);
  assert.deepEqual(sub.details.map(row=>row.points),[2,2,2,2,2]);
+});
+
+test('MCQ matching normalizes Unicode minus and spaces in coefficient lists',()=>{
+ const q={type:'mcq',options:['2, 1, 5, 1, −3, −1','2, 1, 5, 1, 3, 1','1, 2, 3, 4, 5, 6','0, 0, 0, 0, 0, 0']};
+ assert.equal(answersMatchQuestion(q,'2,1,5,1,-3,-1','A'),true);
+ assert.equal(answersMatchQuestion(q,'2, 1, 5, 1, −3, −1','A'),true);
+ assert.equal(answersMatchQuestion(q,'2,1,5,1,-3,-1','B'),false);
+});
+test('short numeric answers normalize Unicode minus while retaining decimal-comma behavior',()=>{
+ assert.equal(answersMatch('−3','-3','short'),true);
+ assert.equal(answersMatch('2,5','2.5','short'),true);
 });
