@@ -24,6 +24,8 @@ jobs:
       - run: node --check supabase-store.mjs
       - name: Check guarded VPS deploy script syntax
         run: bash -n ops/phanmemgiaoduc-gradefix-deploy.sh
+      - name: Check question-bank guard deploy script syntax
+        run: bash -n ops/phanmemgiaoduc-bank-qc-guard-deploy.sh
       - name: Check inline scripts in public entry
         run: |
           python3 - <<'PY'
