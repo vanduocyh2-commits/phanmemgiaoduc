@@ -5,7 +5,7 @@ FILE="$APP/public/index.html"
 SERVER="$APP/portal-server.mjs"
 LOCK="/run/lock/phanmemgiaoduc-deploy.lock"
 EXPECTED_BEFORE="54f1f21d213d54c5e83f7db5ec477dfe56c813a2f86003d80f20406eba23f9b1"
-EXPECTED_AFTER="27a7c4197b438438d42dc8369aa2e774c60fd202f67dafcdf65733e199b29106"
+EXPECTED_AFTER="96d5ca31466098562000e86785b705fba616f3814d0b58b0e1e95c19a53943a2"
 EXPECTED_SERVER="08a5b09adbaa9db31023137525df08cb2f5d7ece85676631bfc2c24fd6d6f214"
 if [[ "$#" -ne 0 ]]; then echo "ERROR: arguments are not allowed" >&2; exit 2; fi
 exec 9>"$LOCK"
@@ -54,24 +54,16 @@ if s.count(report_expr) != 1:
     raise SystemExit(f"ABORT: expected one rendered reportButton placeholder, found {s.count(report_expr)}")
 s = s.replace(report_expr, "", 1)
 
-feedback_prefix = "function practiceQuizFeedbackHTML("
-start = s.find(feedback_prefix)
-if start < 0:
-    raise SystemExit("ABORT: practice quiz feedback renderer not found")
-end = s.find("\n", start)
-if end < 0: end = len(s)
-feedback = s[start:end]
-old_score_close = "+'</div>'+(key?"
-question_code_markup = "+'</div>'+(q.questionCode?'<div><b>Mã câu:</b> '+esc(q.questionCode)+'</div>':'')+(key?"
-if feedback.count(old_score_close) != 1:
-    raise SystemExit(f"ABORT: expected one feedback score insertion point, found {feedback.count(old_score_close)}")
-feedback = feedback.replace(old_score_close, question_code_markup, 1)
-s = s[:start] + feedback + s[end:]
+old_question = """ <span class="exam-question-points">(${points} điểm)</span> ${MathBridge.inline(questionText)}"""
+new_question = """ <span class="exam-question-points">(${points} điểm)</span> ${q.questionCode?'<span class="exam-question-code" ><b>Mã câu:</b> '+esc(q.questionCode)+'</span> ':''}${MathBridge.inline(questionText)}"""
+if s.count(old_question) != 1:
+    raise SystemExit(f"ABORT: expected one question-heading insertion point, found {s.count(old_question)}")
+s = s.replace(old_question, new_question, 1)
 
 if "Báo lỗi câu này" in s or 'class="question-report-actions"' in s:
     raise SystemExit("ABORT: question report flag still exists in rendered UI source")
 digest = hashlib.sha256(s.encode("utf-8")).hexdigest()
-expected = "27a7c4197b438438d42dc8369aa2e774c60fd202f67dafcdf65733e199b29106"
+expected = "96d5ca31466098562000e86785b705fba616f3814d0b58b0e1e95c19a53943a2"
 if digest != expected:
     raise SystemExit(f"ERROR: patched HTML SHA mismatch: {digest}")
 output_path.write_text(s, encoding="utf-8")
@@ -113,7 +105,7 @@ for attempt in $(seq 1 30); do
 done
 if [[ "$health_ok" -ne 1 ]]; then echo "ERROR: portal health endpoint unavailable" >&2; rollback; exit 1; fi
 if ! curl -fsS --max-time 10 http://127.0.0.1:3000/ -o "$HTTP_FILE"; then echo "ERROR: cannot fetch live public page" >&2; rollback; exit 1; fi
-if grep -q 'Báo lỗi câu này' "$HTTP_FILE" || grep -q 'question-report-actions' "$HTTP_FILE"; then echo "ERROR: report flag remains in live UI" >&2; rollback; exit 1; fi
+if grep -q 'Báo lỗi câu này' "$HTTP_FILE"; then echo "ERROR: report flag remains in live UI" >&2; rollback; exit 1; fi
 if ! grep -q 'Mã câu:</b>' "$HTTP_FILE"; then echo "ERROR: question code missing from feedback template" >&2; rollback; exit 1; fi
 printf 'STUDENT_EXAM_UI_CLEANUP_DEPLOY_SUCCESS\n'
 printf 'BACKUP_DIR=%s\n' "$BACKUP_DIR"
