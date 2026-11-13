@@ -26,6 +26,8 @@ jobs:
         run: bash -n ops/phanmemgiaoduc-gradefix-deploy.sh
       - name: Check student exam UI cleanup deploy script syntax
         run: bash -n ops/phanmemgiaoduc-student-ui-cleanup-deploy.sh
+      - name: Check answer display deploy script syntax
+        run: bash -n ops/phanmemgiaoduc-answer-display-deploy.sh
       - name: Check MCQ matching deploy script syntax
         run: bash -n ops/phanmemgiaoduc-mcq-matchfix-deploy.sh
       - name: Check question-bank guard deploy script syntax
