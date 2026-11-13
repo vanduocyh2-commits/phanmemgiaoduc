@@ -22,6 +22,8 @@ jobs:
       - run: node --check portal-server.mjs
       - run: node --check public/student-visual-math-editor.js
       - run: node --check supabase-store.mjs
+      - name: Check guarded VPS deploy script syntax
+        run: bash -n ops/phanmemgiaoduc-gradefix-deploy.sh
       - name: Check inline scripts in public entry
         run: |
           python3 - <<'PY'
