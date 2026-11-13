@@ -1468,7 +1468,14 @@ const TS = (() => {
    .filter(q=>!questionBankFilters.level||q.level===questionBankFilters.level)
    .filter(q=>!bankQcStatusFilter||(bankQcStatusFilter==='unverified'?!['verified','failed','needs_review'].includes(q.qc?.status):q.qc?.status===bankQcStatusFilter))
    .filter(q=>!questionBankFilters.search||[q.questionCode,q.text,q.subject,q.curriculum,q.textbook,q.chapter,q.lesson,q.sourceExamTitle].join(' ').toLocaleLowerCase('vi').includes(questionBankFilters.search.toLocaleLowerCase('vi')))
-   .filter(q=>!questionBankFilters.code||String(q.questionCode||'').toLocaleLowerCase('vi').includes(questionBankFilters.code.toLocaleLowerCase('vi')))
+   .filter(q=>{
+    if(!questionBankFilters.code)return true;
+    const normalizeCode=value=>String(value??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').toLocaleUpperCase('vi').replace(/^\s*MA\s*CAU\s*:?\s*/,'').replace(/[^A-Z0-9]/g,'');
+    const wanted=normalizeCode(questionBankFilters.code);
+    if(!wanted)return true;
+    const candidates=[q.questionCode,q.code,q.question_code,q.metadata?.questionCode,q.meta?.questionCode];
+    return candidates.some(value=>normalizeCode(value).includes(wanted));
+   })
    .sort((a,b)=>String(a.grade||'99').localeCompare(String(b.grade||'99'),'vi',{numeric:true})||String(a.subject||'').localeCompare(String(b.subject||''),'vi')||String(a.textbook||'').localeCompare(String(b.textbook||''),'vi')||(Number(a.chapterOrder)||999)-(Number(b.chapterOrder)||999)||(Number(a.lessonOrder)||999)-(Number(b.lessonOrder)||999)||String(a.level||'').localeCompare(String(b.level||'')));
   let group='';
   const entries=rows.slice(0,100).map(q=>{
