@@ -153,7 +153,8 @@ test('regrading resolves and persists exam code for an older submission without 
 TEST
 
 chmod 0644 "$TEST_FILE"
-if ! runuser -u centerapp -- node --test "$TEST_FILE"; then rollback; exit 1; fi
+# Run the node:test file in-process. The isolated --test worker cannot be spawned by this VPS user context.
+if ! runuser -u centerapp -- node "$TEST_FILE"; then rollback; exit 1; fi
 if ! systemctl restart "$SERVICE"; then rollback; exit 1; fi
 if ! systemctl is-active --quiet "$SERVICE"; then
   journalctl -u "$SERVICE" -n 40 --no-pager >&2 || true
