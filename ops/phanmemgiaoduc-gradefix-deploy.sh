@@ -161,8 +161,18 @@ if ! systemctl is-active --quiet "$SERVICE"; then
   rollback
   exit 1
 fi
-if ! curl -fsS --max-time 10 http://127.0.0.1:3000/ -o /dev/null; then
-  echo "ERROR: service active but HTTP root health check failed" >&2
+health_ok=0
+for attempt in $(seq 1 30); do
+  if curl -fsS --max-time 3 http://127.0.0.1:3000/api/health -o /dev/null; then
+    health_ok=1
+    break
+  fi
+  sleep 1
+done
+if [[ "$health_ok" -ne 1 ]]; then
+  echo "ERROR: service did not become HTTP-ready on 127.0.0.1:3000 within 30 seconds" >&2
+  ss -lntp >&2 || true
+  journalctl -u "$SERVICE" -n 60 --no-pager >&2 || true
   rollback
   exit 1
 fi
