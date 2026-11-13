@@ -123,7 +123,7 @@ if ! curl -fsS --max-time 10 http://127.0.0.1:3000/ -o "$HTTP_FILE"; then
   rollback
   exit 1
 fi
-if ! grep -q "replace(/^(?:\\\\s|&nbsp;)*(" "$HTTP_FILE"; then
+if ! grep -Fq "key=String(key).replace" "$HTTP_FILE"; then
   echo "ERROR: live page does not contain leading separator normalization" >&2
   rollback
   exit 1
