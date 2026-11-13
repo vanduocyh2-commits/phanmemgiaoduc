@@ -55,7 +55,7 @@ if s.count(report_expr) != 1:
 s = s.replace(report_expr, "", 1)
 
 old_question = """ <span class="exam-question-points">(${points} điểm)</span> ${MathBridge.inline(questionText)}"""
-new_question = """ <span class="exam-question-points">(${points} điểm)</span> ${q.questionCode?'<span class="exam-question-code" style="margin-left:8px;color:#64748b;font-size:.85em"><b>Mã câu:</b> '+esc(q.questionCode)+'</span> ':''}${MathBridge.inline(questionText)}"""
+new_question = """ <span class="exam-question-points">(${points} điểm)</span> ${q.questionCode?'<span class="exam-question-code" ><b>Mã câu:</b> '+esc(q.questionCode)+'</span> ':''}${MathBridge.inline(questionText)}"""
 if s.count(old_question) != 1:
     raise SystemExit(f"ABORT: expected one question-heading insertion point, found {s.count(old_question)}")
 s = s.replace(old_question, new_question, 1)
