@@ -16,44 +16,13 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Back up VPS working tree before deployment
+      - name: Deploy guarded production grading hotfix
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
-            set -eu
-            REPO=/opt/phanmemgiaoduc
-            STAMP=$(date -u +%Y%m%dT%H%M%SZ)
-            BACKUP="$HOME/phanmemgiaoduc-predeploy-$STAMP"
-            mkdir -p "$BACKUP"
-            git -C "$REPO" status --porcelain=v1 > "$BACKUP/git-status.txt"
-            git -C "$REPO" diff --binary > "$BACKUP/unstaged.patch"
-            git -C "$REPO" diff --cached --binary > "$BACKUP/staged.patch"
-            git -C "$REPO" bundle create "$BACKUP/repository.bundle" --all
-            tar --ignore-failed-read --exclude='./.git' --exclude='./node_modules' --exclude='./uploads' --exclude='./.env' -czf "$BACKUP/working-tree.tar.gz" -C "$REPO" .
-            git -C "$REPO" bundle verify "$BACKUP/repository.bundle"
-            tar -tzf "$BACKUP/working-tree.tar.gz" >/dev/null
-            sha256sum "$BACKUP"/* > "$BACKUP/SHA256SUMS"
-            echo "BACKUP_PATH=$BACKUP"
-            echo "BACKUP_FILES:"
-            ls -lh "$BACKUP"
-            echo "STATUS_SUMMARY:"
-            wc -l "$BACKUP/git-status.txt"
-            echo "=== Backup verified; guarded deploy follows ==="
-
-      - name: Deploy through SSH
-        uses: appleboy/ssh-action@v1.2.0
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          script: |
-            set -e
-            echo "=== VPS working tree preflight ==="
-            git -C /opt/phanmemgiaoduc status --short || true
-            git -C /opt/phanmemgiaoduc diff --stat || true
-            git -C /opt/phanmemgiaoduc diff --cached --stat || true
-            echo "=== Starting guarded deployment ==="
+            set -euo pipefail
+            echo "=== Running guarded grading hotfix ==="
             sudo -n /usr/local/sbin/phanmemgiaoduc-deploy
