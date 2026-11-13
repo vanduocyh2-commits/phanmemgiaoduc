@@ -13,62 +13,17 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  deploy-preflight:
+  deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Read-only VPS deployment preflight
+      - name: Deploy reviewed source files to VPS with backup and rollback
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
+          command_timeout: 10m
           script: |
             set -euo pipefail
-            echo "=== Read-only VPS deployment preflight ==="
-            printf 'SSH_USER=%s\n' "$(id -un)"
-            printf 'SSH_UID=%s\n' "$(id -u)"
-            APP="/opt/phanmemgiaoduc"
-            if [[ -d "$APP" ]]; then echo "APP_DIR=present"; else echo "APP_DIR=missing"; exit 2; fi
-            for f in "$APP/public/index.html" "$APP/portal-server.mjs"; do
-              if [[ -f "$f" ]]; then
-                printf 'FILE_PRESENT=%s\n' "${f#"$APP"/}"
-                if [[ -w "$f" ]]; then echo "FILE_WRITABLE_BY_SSH_USER=yes"; else echo "FILE_WRITABLE_BY_SSH_USER=no"; fi
-                sha256sum "$f"
-              else
-                printf 'FILE_MISSING=%s\n' "${f#"$APP"/}"
-                exit 2
-              fi
-            done
-            if git -C "$APP" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-              echo "GIT_REPOSITORY=yes"
-              printf 'GIT_BRANCH=%s\n' "$(git -C "$APP" branch --show-current)"
-              printf 'GIT_HEAD=%s\n' "$(git -C "$APP" rev-parse HEAD)"
-              if git -C "$APP" remote get-url origin >/dev/null 2>&1; then
-                origin="$(git -C "$APP" remote get-url origin)"
-                case "$origin" in
-                  https://github.com/vanduocyh2-commits/phanmemgiaoduc.git|https://github.com/vanduocyh2-commits/phanmemgiaoduc|git@github.com:vanduocyh2-commits/phanmemgiaoduc.git|git@github.com:vanduocyh2-commits/phanmemgiaoduc) echo "GIT_ORIGIN_MATCH=yes" ;;
-                  *) echo "GIT_ORIGIN_MATCH=no"; echo "GIT_ORIGIN_TYPE=unexpected";;
-                esac
-              else
-                echo "GIT_ORIGIN=missing"
-              fi
-              if [[ -z "$(git -C "$APP" status --porcelain --untracked-files=no)" ]]; then
-                echo "TRACKED_WORKTREE_CLEAN=yes"
-              else
-                echo "TRACKED_WORKTREE_CLEAN=no"
-                git -C "$APP" status --short
-              fi
-            else
-              echo "GIT_REPOSITORY=no"
-            fi
-            if sudo -n /bin/bash -c 'test "$(id -u)" -eq 0' >/dev/null 2>&1; then
-              echo "SUDO_ROOT_SHELL=yes"
-            else
-              echo "SUDO_ROOT_SHELL=no"
-            fi
-            if systemctl is-active --quiet phanmemgiaoduc.service; then
-              echo "PORTAL_SERVICE=active"
-            else
-              echo "PORTAL_SERVICE=not-active"
-            fi
-            echo "=== PRELIGHT_COMPLETE_NO_FILES_CHANGED ==="
+            echo "=== Deploying reviewed GitHub commit to VPS ==="
+            sudo -n /usr/local/sbin/phanmemgiaoduc-source-deploy '${{ github.sha }}'
