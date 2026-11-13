@@ -1399,9 +1399,9 @@ const TS = (() => {
   if(options.length!==4||options.some(x=>!String(x||'').trim()))return '';
   const raw=String(candidate??'').trim();
   if(!raw)return '';
-  const letterMatch=raw.match(/(?:^|[\\s(])(?:đáp án(?: đúng)?\\s*[:：]?\\s*)?([ABCD])(?=$|[\\s).,:：-])/i);
+  const letterMatch=raw.match(/(?:^|[\s(])(?:(?:đáp án(?: đúng)?|verifiedAnswer)\s*[:：]?\s*)?([ABCD])(?=$|[\s).,:：-])/i);
   if(letterMatch)return letterMatch[1].toUpperCase();
-  const cleaned=raw.replace(/^\\s*(?:đáp án(?: đúng)?|verifiedAnswer)\\s*[:：-]?\\s*/i,'').trim();
+  const cleaned=raw.replace(/^\s*(?:đáp án(?: đúng)?|verifiedAnswer)\s*[:：-]?\s*/i,'').trim();
   const normalized=bankQcNorm(cleaned);
   const exact=options.findIndex(option=>bankQcNorm(option)===normalized);
   if(exact>=0)return 'ABCD'[exact];
