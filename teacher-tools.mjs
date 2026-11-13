@@ -29,7 +29,7 @@ export function parseKeyPayload(text){text=String(text||'').trim();if(!text||tex
 
 export function validateAnswerVariants(ex){if(ex.answerVariants===undefined)return;const entries=Object.entries(ex.answerVariants||{});if(!entries.length||entries.length>64||!Array.isArray(ex.questions))throw Error('Bảng mã đề không hợp lệ.');for(const [code,qs]of entries){if(!/^\d{3,4}$/.test(code)||!Array.isArray(qs)||qs.length!==ex.questions.length||qs.some((q,i)=>q.id!==ex.questions[i].id||q.type!==ex.questions[i].type||!Number.isFinite(q.points)||Math.abs(q.points-ex.questions[i].points)>.001)||Math.abs(qs.reduce((n,q)=>n+q.points,0)-10)>.001)throw Error('Các mã đề cần cùng số câu, loại câu và thang điểm 10.');}}
 
-export function answersMatch(expected,actual,type){const norm=v=>String(v??'').trim().toLowerCase().replace(/\s+/g,' ').replace(/,/g,'.'),a=norm(expected),b=norm(actual),numeric=/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/;if(type==='short'&&numeric.test(a)&&numeric.test(b))return Math.abs(Number(a)-Number(b))<=1e-9;return a===b;}
+export function answersMatch(expected,actual,type){const norm=v=>String(v??'').normalize('NFKC').replace(/[−–—﹣－]/g,'-').trim().toLowerCase().replace(/\s+/g,' ').replace(/\s*,\s*/g,',').replace(/,/g,'.'),a=norm(expected),b=norm(actual),numeric=/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/;if(type==='short'&&numeric.test(a)&&numeric.test(b))return Math.abs(Number(a)-Number(b))<=1e-9;return a===b;}
 export function answersMatchQuestion(question,expected,actual){
  if(question?.type!=='mcq')return answersMatch(expected,actual,question?.type);
  const selected=String(actual??'').trim().toUpperCase();
