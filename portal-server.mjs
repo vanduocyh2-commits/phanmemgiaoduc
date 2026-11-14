@@ -420,7 +420,7 @@ if(p==='/api/practice/check'&&req.method==='POST'){
    const candidate=source.qc?.status==='verified'?(source.qc.verifiedAnswer||source.answer):source.answer;
    let resolved=/^[ABCD]$/i.test(String(candidate||'').trim())?String(candidate).trim().toUpperCase():'';
    if(!resolved&&source.qc?.status==='verified')resolved=['A','B','C','D'].find(letter=>answersMatchQuestion(source,candidate,letter))||'';
-   if(resolved)question={...question,answer:resolved,options:Array.isArray(source.options)&&source.options.length===4?source.options:question.options,explanation:source.explanation||source.qc?.solution||question.explanation};
+   question={...question,answer:resolved||candidate||question.answer,options:Array.isArray(source.options)&&source.options.length===4?source.options:question.options,explanation:source.explanation||source.qc?.solution||question.explanation};
   }
  }
  const explanation=String(question.explanation||'').replace(/^\s*[-–—•]+\s*/,'').trim();
