@@ -1166,7 +1166,7 @@ const attSel = (c,s) => attendanceSelector(c,s);
             if($('tch-grades')){
                 $('teacher-class-ranking')?.remove();
                 $('tch-grades').insertAdjacentHTML('afterend','<div id="teacher-class-ranking">'+rankingHTML(c)+'</div>');
-                $('tch-grades').innerHTML = [...gs].reverse().map(g => `<div class="flex justify-between p-2 bg-slate-50 border rounded-lg"><span>${esc(name(g.sbd))} — ${esc(g.title)}: <b>${g.score}</b> <span class="text-slate-400">(${esc(g.date)})</span></span><button onclick="window.app.deleteGrade('${g.id}')" class="text-red-600"><i class="fa-solid fa-trash"></i></button></div>`).join('') || '<p class="text-slate-400">Chưa có điểm nào.</p>';
+                $('tch-grades').innerHTML = [...gs].reverse().map(g => `<div class="flex justify-between p-2 bg-slate-50 border rounded-lg"><span>${esc(name(g.sbd))} — ${esc(g.title)}: <b>${g.score}</b> <span class="text-slate-400">(${esc(g.date)})</span></span></div>`).join('') || '<p class="text-slate-400">Chưa có điểm nào.</p>';
             }
         }
 
@@ -1176,7 +1176,7 @@ const attSel = (c,s) => attendanceSelector(c,s);
             state.gradeBook.push({ id: uid('gr'), classId: c.id, sbd, title, score, date: new Date(attendanceDate+'T12:00:00').toLocaleDateString('vi-VN') });
             $('tch-g-title').value = ''; $('tch-g-score').value = ''; persist(); refreshUI(); toast('Đã lưu điểm.');
         }
-        function deleteGrade(id) {const target=state.gradeBook.find(g=>g.id===id);if(!target||!canManageAssignment(state.assignments.find(a=>a.id===target.assignmentId)))return; state.gradeBook = state.gradeBook.filter(g => g.id !== id); persist(); refreshUI(); }
+        function deleteGrade(id) {const target=state.gradeBook.find(g=>g.id===id);if(!target||!canManageClass(target.classId))return toast('Không có quyền xóa điểm của lớp này.');if(String(id).startsWith('learning_')){const submissionId=String(id).slice('learning_'.length);if(typeof window.TS?.deleteSubmission==='function')return window.TS.deleteSubmission(submissionId);return toast('Chức năng xóa bài nộp chưa sẵn sàng, hãy tải lại trang.');}if(!confirm('Xóa điểm '+target.title+' của học sinh này?'))return;state.gradeBook=state.gradeBook.filter(g=>g.id!==id);persist();refreshUI();toast('Đã xóa điểm.');}
 
         // ---------- Học sinh / Phụ huynh ----------
         function monthlyFeeRows(s,months){
