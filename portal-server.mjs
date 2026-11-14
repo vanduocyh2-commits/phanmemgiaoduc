@@ -447,16 +447,15 @@ if(p==='/api/practice/check'&&req.method==='POST'){
   }
   return result;
  };
- const satisfiesPair=option=>{
-  if(!pair)return false;
+ const parseLinearEquation=option=>{
   const equation=optionText(option).replace(/\\(?:\(|\)|\[|\])/g,'');
-  const sides=equation.split('=');if(sides.length!==2)return false;
-  const left=parseLinearSide(sides[0]),right=parseLinearSide(sides[1]);if(!left||!right)return false;
-  const x=left.x-right.x,y=left.y-right.y,c=right.c-left.c;
-  return Math.abs(x*pair[0]+y*pair[1]-c)<1e-9;
+  const sides=equation.split('=');if(sides.length!==2)return null;
+  const left=parseLinearSide(sides[0]),right=parseLinearSide(sides[1]);if(!left||!right)return null;
+  return {x:left.x-right.x,y:left.y-right.y,c:right.c-left.c};
  };
  const options=Array.isArray(question.options)?question.options:[];
- const derivedIndexes=question.type==='mcq'&&options.length===4&&pair&&options.every(option=>satisfiesPair(option))?options.map((option,i)=>satisfiesPair(option)?i:-1).filter(i=>i>=0):[];
+ const parsedOptions=options.map(parseLinearEquation);
+ const derivedIndexes=question.type==='mcq'&&options.length===4&&pair&&parsedOptions.every(Boolean)?parsedOptions.map((equation,i)=>Math.abs(equation.x*pair[0]+equation.y*pair[1]-equation.c)<1e-9?i:-1).filter(i=>i>=0):[];
  const explanation=derivedIndexes.length?'Thay x = '+pair[0]+', y = '+pair[1]+' vào từng phương án: '+derivedIndexes.map(i=>'ABCD'[i]).join(', ')+' đều thỏa mãn phương trình. Câu hỏi hiện có '+derivedIndexes.length+' đáp án đúng; cần sửa phương án hoặc chấp nhận tất cả đáp án này.':String(question.explanation||'').replace(/^\s*[-–—•]+\s*/,'').trim();
  if(question.type==='mcq'){
   const storedKeys=String(question.answer||'').split('|').map(value=>value.trim()).filter(Boolean);
