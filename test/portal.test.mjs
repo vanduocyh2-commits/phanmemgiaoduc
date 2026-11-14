@@ -45,7 +45,7 @@ test('student practice answer check returns the key only after an active authori
   assert.equal(result.correct,true);
   assert.equal(result.points,1);
   assert.match(result.correctAnswer,/^A\./);assert.match(result.correctAnswer,/C\./);
-  assert.match(result.explanation,/Thay x/);
+  assert.match(result.explanation,/Thay x/);assert.match(result.explanation,/2 đáp án đúng/);
   const alsoCorrect=await call('/api/practice/check',{method:'POST',cookie:student,data:{assignmentId:'practice-assignment',attemptId:'practice-attempt-1',questionId:'practice-q1',answer:'C'}});assert.equal((await alsoCorrect.json()).correct,true);
   const wrong=await call('/api/practice/check',{method:'POST',cookie:student,data:{assignmentId:'practice-assignment',attemptId:'practice-attempt-1',questionId:'practice-q1',answer:'B'}});
   assert.equal((await wrong.json()).correct,false);
