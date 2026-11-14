@@ -1166,7 +1166,7 @@ const attSel = (c,s) => attendanceSelector(c,s);
             if($('tch-grades')){
                 $('teacher-class-ranking')?.remove();
                 $('tch-grades').insertAdjacentHTML('afterend','<div id="teacher-class-ranking">'+rankingHTML(c)+'</div>');
-                $('tch-grades').innerHTML = [...gs].reverse().map(g => `<div class="flex justify-between p-2 bg-slate-50 border rounded-lg"><span>${esc(name(g.sbd))} — ${esc(g.title)}: <b>${g.score}</b> <span class="text-slate-400">(${esc(g.date)})</span></span></div>`).join('') || '<p class="text-slate-400">Chưa có điểm nào.</p>';
+                $('tch-grades').innerHTML = [...gs].reverse().map(g => `<div class="flex items-center justify-between gap-3 p-2 bg-slate-50 border rounded-lg"><span class="min-w-0">${esc(name(g.sbd))} — ${esc(g.title)}: <b>${g.score}</b> <span class="text-slate-400">(${esc(g.date)})</span></span><button type="button" class="ts-btn danger" style="flex:0 0 auto;padding:5px 9px" onclick="window.app.deleteGrade('${esc(g.id)}')" aria-label="Xóa điểm bài ${esc(g.title)} của ${esc(name(g.sbd))}">Xóa</button></div>`).join('') || '<p class="text-slate-400">Chưa có điểm nào.</p>';
             }
         }
 
