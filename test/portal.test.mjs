@@ -29,7 +29,7 @@ test('student practice answer check returns the key only after an active authori
   const admin=adminLogin.headers.get('set-cookie').split(';')[0];
   const created=await call('/api/state',{method:'PUT',cookie:admin,data:{changes:{
    classes:{upsert:[{id:'practice-class',name:'Practice 9A',students:[{sbd:'P1',name:'Practice Student',password:'practice123'}]}],remove:[]},
-   learningExams:{upsert:[{id:'practice-exam',title:'Practice',duration:30,questions:[{id:'practice-q1',questionCode:'T9-1.1-NB-021',type:'mcq',text:'Cặp số (-1;2) là nghiệm của phương trình nào?',points:1,answer:'A',options:['2x + y = 0','x - 2y = 3','3x + y = -1','x + y = 2'],explanation:'Thay x = -1, y = 2 vào phương án A: -2 + 2 = 0.']}]}],remove:[]},
+   learningExams:{upsert:[{id:'practice-exam',title:'Practice',duration:30,questions:[{id:'practice-q1',questionCode:'T9-1.1-NB-021',type:'mcq',text:'Cặp số (-1;2) là nghiệm của phương trình nào?',points:1,answer:'A',options:['2x + y = 0','x - 2y = 3','3x + y = -1','x + y = 2'],explanation:'Thay x = -1, y = 2 vào phương án A: -2 + 2 = 0.'}]}],remove:[]},
    assignments:{upsert:[{id:'practice-assignment',examId:'practice-exam',classId:'practice-class',audience:'class',practiceSetId:'practice-set-1'}],remove:[]}
   }}});
   assert.equal(created.status,200);
