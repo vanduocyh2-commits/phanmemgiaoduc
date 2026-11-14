@@ -397,6 +397,99 @@ if(p==='/api/director-feedback'&&req.method==='POST'){if(!m||!['teacher','parent
  }
  return send(res,405,{error:'Phương thức không được hỗ trợ.'});
 }
+if(p==='/api/practice/check'&&req.method==='POST'){
+ if(!m||m.role!=='student')return send(res,403,{error:'Chỉ học sinh được kiểm tra bài luyện tập.'});
+ const input=await jsonBody(req),assignmentId=String(input.assignmentId||''),attemptId=String(input.attemptId||''),questionId=String(input.questionId||''),answer=String(input.answer??'').slice(0,100000);
+ if(!assignmentId||!attemptId||!questionId||!answer.trim())return send(res,400,{error:'Thiếu thông tin câu trả lời.'});
+ const assignment=(d.assignments||[]).find(row=>row.id===assignmentId&&row.classId===m.cid);
+ if(!assignment||!assignment.practiceSetId||assignment.archivedAt||assignment.closed||!access(assignment,m.sbd)||!examMatchesClass(assignment.snapshot,d.classes.find(c=>c.id===m.cid)))return send(res,404,{error:'Không tìm thấy bài luyện tập hợp lệ.'});
+ if(assignment.start&&Date.now()<Date.parse(assignment.start))return send(res,403,{error:'Bài luyện tập chưa mở.'});
+ if(assignment.end&&Date.now()>Date.parse(assignment.end)+60000)return send(res,403,{error:'Bài luyện tập đã hết hạn.'});
+ const active=activeAttempt(d,assignment,m.cid,m.sbd);
+ if(!active||active.id!==attemptId)return send(res,409,{error:'Phiên làm bài không còn hiệu lực. Hãy mở lại bài luyện tập.'});
+ const code=String(active.examCode||studentExamCode(d,assignment,m.sbd)||assignment.snapshot.presentation?.code||'101');
+ const questions=assignment.snapshot.answerVariants?.[code]||assignment.snapshot.questions||[];
+ let question=questions.find(row=>row.id===questionId);
+ if(!question)return send(res,404,{error:'Không tìm thấy câu hỏi trong bài luyện tập.'});
+ question={...question};
+ if(question.type==='mcq'){
+  const sourceId=String(question.sourceBankId??question.bankQuestionId??'');
+  let source=sourceId?(d.questionBank||[]).find(row=>String(row.id)===sourceId):null;
+  if(!source&&question.questionCode)source=(d.questionBank||[]).find(row=>row.questionCode===question.questionCode);
+  if(source?.type==='mcq'){
+   const candidate=source.qc?.status==='verified'?(source.qc.verifiedAnswer||source.answer):source.answer;
+   let resolved=/^[ABCD]$/i.test(String(candidate||'').trim())?String(candidate).trim().toUpperCase():'';
+   if(!resolved&&source.qc?.status==='verified')resolved=['A','B','C','D'].find(letter=>answersMatchQuestion(source,candidate,letter))||'';
+   question={...question,answer:resolved||candidate||question.answer,options:Array.isArray(source.options)&&source.options.length===4?source.options:question.options,explanation:source.explanation||source.qc?.solution||question.explanation};
+  }
+ }
+ const optionText=option=>String(option&&typeof option==='object'?(option.text??option.content??option.value??option.label??''):option??'').replace(/<[^>]*>/g,' ').replace(/\\[()[\]]/g,'').replace(/\\(?:left|right)\b/g,'').replace(/[−–—﹣－]/g,'-').trim();
+ const pairText=String(question.text||'').replace(/<[^>]*>/g,' ').replace(/\\(?:left|right)\b/g,'').replace(/[−–—﹣－]/g,'-');
+ const pairMatch=pairText.match(/\(\s*([+-]?\s*\d+(?:[.,]\d+)?)\s*[;,]\s*([+-]?\s*\d+(?:[.,]\d+)?)\s*\)/);
+ const pair=pairMatch?[Number(pairMatch[1].replace(/\s/g,'').replace(',','.')),Number(pairMatch[2].replace(/\s/g,'').replace(',','.'))]:null;
+ const parseLinearSide=expression=>{
+  const value=String(expression||'').replace(/\\(?:left|right)\b/g,'').replace(/\\(?:cdot|times)/g,'*').replace(/[{}]/g,'').replace(/[−–—﹣－]/g,'-').replace(/\s/g,'');
+  if(!value||/[^0-9.x*y+\-*/]/i.test(value))return null;
+  const terms=value.match(/[+-]?[^+-]+/g);if(!terms)return null;
+  const result={x:0,y:0,c:0};
+  for(let term of terms){
+   const sign=term.startsWith('-')?-1:1;term=term.replace(/^[+-]/,'');
+   if(!term)continue;
+   if(/x$/i.test(term)||/y$/i.test(term)){
+    const variable=term.slice(-1).toLowerCase(),raw=term.slice(0,-1).replace(/\*$/,'');
+    const coefficient=raw===''?1:Number(raw);
+    if(!Number.isFinite(coefficient))return null;
+    result[variable]+=sign*coefficient;
+   }else{
+    const constant=Number(term);if(!Number.isFinite(constant))return null;
+    result.c+=sign*constant;
+   }
+  }
+  return result;
+ };
+ const parseLinearEquation=option=>{
+  const equation=optionText(option).replace(/\\(?:\(|\)|\[|\])/g,'');
+  const sides=equation.split('=');if(sides.length!==2)return null;
+  const left=parseLinearSide(sides[0]),right=parseLinearSide(sides[1]);if(!left||!right)return null;
+  return {x:left.x-right.x,y:left.y-right.y,c:right.c-left.c};
+ };
+ const options=Array.isArray(question.options)?question.options:[];
+ const parsedOptions=options.map(parseLinearEquation);
+ const derivedIndexes=question.type==='mcq'&&options.length===4&&pair&&parsedOptions.every(Boolean)?parsedOptions.map((equation,i)=>Math.abs(equation.x*pair[0]+equation.y*pair[1]-equation.c)<1e-9?i:-1).filter(i=>i>=0):[];
+ const explanation=derivedIndexes.length?'Thay x = '+pair[0]+', y = '+pair[1]+' vào từng phương án: '+derivedIndexes.map(i=>'ABCD'[i]).join(', ')+' đều thỏa mãn phương trình. Câu hỏi hiện có '+derivedIndexes.length+' đáp án đúng; cần sửa phương án hoặc chấp nhận tất cả đáp án này.':String(question.explanation||'').replace(/^\s*[-–—•]+\s*/,'').trim();
+ if(question.type==='mcq'){
+  const storedKeys=String(question.answer||'').split('|').map(value=>value.trim()).filter(Boolean);
+  const keys=derivedIndexes.length?derivedIndexes.map(i=>'ABCD'[i]):storedKeys;
+  if(!keys.length)return send(res,422,{error:'Câu hỏi chưa có đáp án chuẩn. Giáo viên cần kiểm tra ngân hàng câu hỏi.'});
+  const correct=keys.some(key=>answersMatchQuestion(question,key,answer));
+  const letters='ABCD';
+  const indexes=keys.map(key=>/^[ABCD]$/i.test(key)?letters.indexOf(key.toUpperCase()):options.findIndex((_,i)=>answersMatchQuestion(question,key,letters[i]))).filter(i=>i>=0);
+  const unique=[...new Set(indexes)];
+  const correctAnswer=unique.length?unique.map(i=>letters[i]+'. '+optionText(options[i])).join(' / '):keys.join(' / ');
+  return send(res,200,{correct,points:correct?(Number(question.points)||0):0,correctAnswer,explanation});
+ }
+ if(question.type==='short'){
+  const keys=String(question.answer||'').split('|').map(value=>value.trim()).filter(Boolean);
+  if(!keys.length)return send(res,422,{error:'Câu hỏi chưa có đáp án chuẩn. Giáo viên cần kiểm tra ngân hàng câu hỏi.'});
+  const correct=keys.some(key=>answersMatchQuestion(question,key,answer));
+  return send(res,200,{correct,points:correct?(Number(question.points)||0):0,correctAnswer:keys.join(' / '),explanation});
+ }
+ if(question.type==='tf'&&question.statements?.length===4){
+  const parse=value=>{
+   if(Array.isArray(value))return value;
+   const text=String(value||'').trim(),words=text.match(/đúng|sai|true|false/gi);
+   if(words?.length===4)return words.map(word=>/đúng|true/i.test(word)?'Đúng':'Sai');
+   const compact=text.replace(/[\s,;|.]/g,'').toUpperCase();
+   return /^[ĐDS_]{4}$/.test(compact)?[...compact].map(char=>char==='_'?'':char==='S'?'Sai':'Đúng'):[];
+  };
+  const expected=parse(question.tfAnswers||question.answer),actual=parse(answer);
+  if(expected.length!==4||actual.length!==4||expected.some(value=>!['Đúng','Sai'].includes(String(value))))return send(res,422,{error:'Câu đúng/sai chưa có đủ đáp án chuẩn.'});
+  const tfResults=expected.map((value,i)=>({label:'abcd'[i],expected:value,correct:String(actual[i]).toLowerCase()===String(value).toLowerCase()}));
+  const count=tfResults.filter(row=>row.correct).length,curve=assignment.snapshot.tfScoring||[0,.1,.25,.5,1],points=+(Number(question.points||0)*Number(curve[count]??0)).toFixed(2);
+  return send(res,200,{correct:count===4,points,correctAnswer:expected.join(' · '),explanation,tfResults});
+ }
+ return send(res,422,{error:'Dạng câu này không hỗ trợ kiểm tra đáp án tự động.'});
+}
 if(p==='/api/state'){if(!m)return send(res,401,{error:'Hãy đăng nhập.'});if(req.method==='GET')return send(res,200,{view:publicView(d,m)});if(req.method==='PUT'){const body=await jsonBody(req);for(const kind of ['lessonPlans','centerLessons'])for(const row of body.changes?.[kind]?.upsert||[])for(const ref of row.mediaFiles||[]){const file=await store.getFile(lessonFileId(ref));if(!file||file.kind!=='lesson'||m.role==='teacher'&&file.owner!==m.username)throw Error('Tệp đính kèm không thuộc người soạn.');}const result=await store.mutate(current=>{const actor=member(current,raw);if(!actor)throw Error('Phiên đăng nhập hết hiệu lực.');return applyChanges(current,actor,body.changes||{})});return send(res,200,{view:publicView(result,member(result,raw))})}}
 if(p==='/api/files'&&req.method==='POST'){if(!m||m.role==='parent')return send(res,401,{error:'Hãy đăng nhập giáo viên hoặc học sinh.'});const f=await jsonBody(req);if(!['exam','answer','lesson','essay'].includes(f.kind)||m.role==='student'&&f.kind!=='essay')return send(res,403,{error:'Không được tải loại file này.'});const valid=/^data:(application\/pdf|application\/msword|application\/vnd\.openxmlformats-officedocument\.wordprocessingml\.document|application\/vnd\.openxmlformats-officedocument\.presentationml\.presentation|application\/vnd\.ms-powerpoint|video\/mp4|video\/webm|video\/quicktime|image\/jpeg|image\/png|image\/webp|text\/plain);base64,([A-Za-z0-9+/=]+)$/.exec(f.data||'');if(!valid)return send(res,400,{error:'Định dạng không hợp lệ.'});if((valid[1].startsWith('video/')||valid[1].includes('presentation')||valid[1].includes('powerpoint'))&&(f.kind!=='lesson'||!['teacher','admin'].includes(m.role)))return send(res,403,{error:'Video và PowerPoint chỉ dùng trong bài giảng của giáo viên.'});const bytes=Buffer.from(valid[2],'base64');if(bytes.length>10*1024*1024)return send(res,413,{error:'File tối đa 10 MB.'});const id=f.kind==='essay'&&/^[-\w]{5,120}$/.test(f.id)?f.id:randomUUID();await store.putFile({id,name:String(f.name||'TaiLieu').slice(0,240),type:valid[1],kind:f.kind,owner:m.username||skey(m.cid,m.sbd),data:bytes});return send(res,201,{fileId:id,kind:f.kind,storage:'hosted'})}if(/^\/api\/files\/[-\w]+$/.test(p)&&req.method==='DELETE'){if(!m||m.role!=='student')return send(res,403,{error:'Chỉ học sinh được xóa file bài làm của mình.'});const id=decodeURIComponent(p.slice('/api/files/'.length)),file=await store.getFile(id),owner=m.username||skey(m.cid,m.sbd);if(!file||file.kind!=='essay'||file.owner!==owner)return send(res,403,{error:'Không có quyền xóa file bài làm này.'});await store.deleteFile(id);return send(res,200,{deleted:true});}
 const feedbackDeleteRoute=/^\/api\/feedback\/([-\w]+)$/.exec(p);if(feedbackDeleteRoute&&req.method==='DELETE'){if(!m)return send(res,401,{error:'Hãy đăng nhập.'});const result=await store.mutate(current=>{const actor=member(current,raw);return deleteResolvedFeedback(current,actor&&{role:actor.role,cid:actor.cid,sbd:actor.sbd,allowedClassIds:classesFor(current,actor).map(c=>c.id)},feedbackDeleteRoute[1]);});return send(res,200,{view:publicView(result,member(result,raw))});}
