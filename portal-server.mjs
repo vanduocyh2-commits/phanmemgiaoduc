@@ -423,15 +423,50 @@ if(p==='/api/practice/check'&&req.method==='POST'){
    question={...question,answer:resolved||candidate||question.answer,options:Array.isArray(source.options)&&source.options.length===4?source.options:question.options,explanation:source.explanation||source.qc?.solution||question.explanation};
   }
  }
- const explanation=String(question.explanation||'').replace(/^\s*[-–—•]+\s*/,'').trim();
+ const optionText=option=>String(option&&typeof option==='object'?(option.text??option.content??option.value??option.label??''):option??'').replace(/<[^>]*>/g,' ').replace(/\\[()[\]]/g,'').replace(/\\(?:left|right)\b/g,'').replace(/[−–—﹣－]/g,'-').trim();
+ const pairText=String(question.text||'').replace(/<[^>]*>/g,' ').replace(/\\(?:left|right)\b/g,'').replace(/[−–—﹣－]/g,'-');
+ const pairMatch=pairText.match(/\(\s*([+-]?\s*\d+(?:[.,]\d+)?)\s*[;,]\s*([+-]?\s*\d+(?:[.,]\d+)?)\s*\)/);
+ const pair=pairMatch?[Number(pairMatch[1].replace(/\s/g,'').replace(',','.')),Number(pairMatch[2].replace(/\s/g,'').replace(',','.'))]:null;
+ const parseLinearSide=expression=>{
+  const value=String(expression||'').replace(/\\(?:left|right)\b/g,'').replace(/\\(?:cdot|times)/g,'*').replace(/[{}]/g,'').replace(/[−–—﹣－]/g,'-').replace(/\s/g,'');
+  if(!value||/[^0-9.x*y+\-*/]/i.test(value))return null;
+  const terms=value.match(/[+-]?[^+-]+/g);if(!terms)return null;
+  const result={x:0,y:0,c:0};
+  for(let term of terms){
+   const sign=term.startsWith('-')?-1:1;term=term.replace(/^[+-]/,'');
+   if(!term)continue;
+   if(/x$/i.test(term)||/y$/i.test(term)){
+    const variable=term.slice(-1).toLowerCase(),raw=term.slice(0,-1).replace(/\*$/,'');
+    const coefficient=raw===''?1:Number(raw);
+    if(!Number.isFinite(coefficient))return null;
+    result[variable]+=sign*coefficient;
+   }else{
+    const constant=Number(term);if(!Number.isFinite(constant))return null;
+    result.c+=sign*constant;
+   }
+  }
+  return result;
+ };
+ const satisfiesPair=option=>{
+  if(!pair)return false;
+  const equation=optionText(option).replace(/\\(?:\(|\)|\[|\])/g,'');
+  const sides=equation.split('=');if(sides.length!==2)return false;
+  const left=parseLinearSide(sides[0]),right=parseLinearSide(sides[1]);if(!left||!right)return false;
+  const x=left.x-right.x,y=left.y-right.y,c=right.c-left.c;
+  return Math.abs(x*pair[0]+y*pair[1]-c)<1e-9;
+ };
+ const options=Array.isArray(question.options)?question.options:[];
+ const derivedIndexes=question.type==='mcq'&&options.length===4&&pair&&options.every(option=>satisfiesPair(option))?options.map((option,i)=>satisfiesPair(option)?i:-1).filter(i=>i>=0):[];
+ const explanation=derivedIndexes.length?'Thay x = '+pair[0]+', y = '+pair[1]+' vào từng phương án: '+derivedIndexes.map(i=>'ABCD'[i]).join(', ')+' đều thỏa mãn phương trình. Câu hỏi hiện có '+derivedIndexes.length+' đáp án đúng; cần sửa phương án hoặc chấp nhận tất cả đáp án này.':String(question.explanation||'').replace(/^\s*[-–—•]+\s*/,'').trim();
  if(question.type==='mcq'){
-  const keys=String(question.answer||'').split('|').map(value=>value.trim()).filter(Boolean);
+  const storedKeys=String(question.answer||'').split('|').map(value=>value.trim()).filter(Boolean);
+  const keys=derivedIndexes.length?derivedIndexes.map(i=>'ABCD'[i]):storedKeys;
   if(!keys.length)return send(res,422,{error:'Câu hỏi chưa có đáp án chuẩn. Giáo viên cần kiểm tra ngân hàng câu hỏi.'});
   const correct=keys.some(key=>answersMatchQuestion(question,key,answer));
-  const letters='ABCD',options=Array.isArray(question.options)?question.options:[];
+  const letters='ABCD';
   const indexes=keys.map(key=>/^[ABCD]$/i.test(key)?letters.indexOf(key.toUpperCase()):options.findIndex((_,i)=>answersMatchQuestion(question,key,letters[i]))).filter(i=>i>=0);
   const unique=[...new Set(indexes)];
-  const correctAnswer=unique.length?unique.map(i=>letters[i]+'. '+String(options[i]??'').replace(/<[^>]*>/g,' ').trim()).join(' / '):keys.join(' / ');
+  const correctAnswer=unique.length?unique.map(i=>letters[i]+'. '+optionText(options[i])).join(' / '):keys.join(' / ');
   return send(res,200,{correct,points:correct?(Number(question.points)||0):0,correctAnswer,explanation});
  }
  if(question.type==='short'){
