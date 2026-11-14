@@ -579,7 +579,7 @@ window.MathBridge=(()=>{
  let pending=0, last={html:'',formulas:[],errors:[],source:''};
  function tokenize(source){
   const items=[],raw=String(source??'').replace(/\r\n?/g,'\n');
-  const re=/```(?:latex|tex|math)[ \t]*\n([\s\S]*?)```|```[\s\S]*?```|`[^`\n]+`|\\\[([\s\S]*?)\\\]|\\\(([\s\S]*?)\\\)|\$\$([\s\S]*?)\$\$|(?<!\\)\$(?!\$)([^\n$]+?)(?<!\\)\$/g;
+  const re=/```(?:latex|tex|math)[ \t]*\n([\s\S]*?)```|```[\s\S]*?```|`[^`\n]+`|\\\[([\s\S]*?)\\\]|\\\(([\s\S]*?)\\\)|\\?\$\$([\s\S]*?)\\?\$\$|\\?\$(?!\$)([^\n$]+?)\\?\$/g;
   const text=raw.replace(re,(full,fenced,bracket,paren,dollarBlock,dollarInline)=>{
    if(full.startsWith('`')&&fenced===undefined)return full;
    const tex=(fenced??bracket??paren??dollarBlock??dollarInline??'').trim();
@@ -4364,7 +4364,7 @@ window.app.logoutCurrentAccount=logoutCurrentAccount;
         if(hosted){for(const id of ['admin-login-pass','teacher-login-pass','student-login-pass','parent-login-pass'])if($(id))$(id).value='';try{await onlineInit();}catch(e){setBadge(false);toast('Không kết nối được dữ liệu máy chủ: '+e.message);}}else {refreshUI();restoreSession();initCloudSync();}
     
     </script>
-<script src="/student-visual-math-editor.js?v=20261114-mathbridge-card-render-5"></script>
+<script src="/student-visual-math-editor.js?v=20261114-escaped-dollar-fix-6"></script>
 <style id="teacher-top-button-no-clip">
 #portal-teacher .teacher-top-buttons{
   display:flex;flex-wrap:wrap;align-items:center;gap:10px;min-width:0;
