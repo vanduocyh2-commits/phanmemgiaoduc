@@ -17,3 +17,38 @@ test('teacher roster proposals preserve director fees and credentials while awai
 test('own profile changes require current password and cannot target another account or change role',async()=>{const {updateOwnProfile}=await import('../portal-server.mjs');const d=emptyState('admin-test-123456');d.accounts.push({id:'t1',username:'teacher',role:'teacher',name:'Old'});d._auth.teacher=passwordHash('oldpassword');d.classes=[{id:'c1',teacherId:'t1',teacher:'Old',students:[{sbd:'S1',name:'Student',fees:{x:{amount:500}}}]}];d._auth['student:c1:S1']=passwordHash('student123');const actor={role:'teacher',username:'teacher',account:d.accounts[1]};assert.throws(()=>updateOwnProfile(d,actor,{name:'New',currentPassword:'wrong'}),/không đúng/);const adminHash=d._auth.admin;updateOwnProfile(d,actor,{name:'New Teacher',currentPassword:'oldpassword',newPassword:'newpassword',username:'admin',role:'superadmin'});assert.equal(d.accounts[1].name,'New Teacher');assert.equal(d.accounts[1].role,'teacher');assert.equal(d.classes[0].teacher,'New Teacher');assert.equal(d._auth.admin,adminHash);assert.throws(()=>updateOwnProfile(d,{role:'student',cid:'c1',sbd:'S1'},{name:'New Student',currentPassword:'student123',newPassword:'student456'}),/chỉ được đổi mật khẩu/);updateOwnProfile(d,{role:'student',cid:'c1',sbd:'S1'},{name:'Student',currentPassword:'student123',newPassword:'student456'});assert.equal(d.classes[0].students[0].name,'Student');assert.equal(d.classes[0].students[0].fees.x.amount,500);});
 
 test('teacher notifications are restricted to assigned classes and forced to student audience',()=>{const d=emptyState('admin-test-123456');d.classes=[{id:'c1',teacherId:'t1',students:[]},{id:'c2',students:[]}];const teacher={role:'teacher',username:'teacher',account:{id:'t1'}};assert.throws(()=>applyChanges(d,teacher,{notifications:{upsert:[{id:'n1',classId:'c2',target:'ALL',title:'Private'}],remove:[]}}),/thông báo lớp/);applyChanges(d,teacher,{notifications:{upsert:[{id:'n1',classId:'c1',target:'ALL',title:'Notice',content:'Content'}],remove:[]}});assert.equal(d.notifications[0].target,'STUDENTS');assert.equal(d.notifications[0].owner,'teacher');});
+
+
+test('student practice answer check returns the key only after an active authorized practice attempt',async()=>{
+ const store=memoryStore(),server=createPortalServer({store,env:{SESSION_SECRET:'p'.repeat(64)}});
+ await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+ const base='http://127.0.0.1:'+server.address().port;
+ const call=(path,{method='GET',data,cookie}={})=>fetch(base+path,{method,headers:{...(cookie?{Cookie:cookie}:{}),...(data?{'Content-Type':'application/json'}:{})},...(data?{body:JSON.stringify(data)}:{})});
+ try{
+  const adminLogin=await call('/api/login',{method:'POST',data:{role:'admin',username:'admin',password:'admin-test-123456'}});
+  const admin=adminLogin.headers.get('set-cookie').split(';')[0];
+  const created=await call('/api/state',{method:'PUT',cookie:admin,data:{changes:{
+   classes:{upsert:[{id:'practice-class',name:'Practice 9A',students:[{sbd:'P1',name:'Practice Student',password:'practice123'}]}],remove:[]},
+   learningExams:{upsert:[{id:'practice-exam',title:'Practice',duration:30,questions:[{id:'practice-q1',questionCode:'T9-1.1-NB-021',type:'mcq',text:'Cặp số (-1;2) là nghiệm của phương trình nào?',points:1,answer:'A',options:['2x + y = 0','x - 2y = 3','3x + y = -1','x + y = 2'],explanation:'Thay x = -1, y = 2 vào phương án A: -2 + 2 = 0.']}]}],remove:[]},
+   assignments:{upsert:[{id:'practice-assignment',examId:'practice-exam',classId:'practice-class',audience:'class',practiceSetId:'practice-set-1'}],remove:[]}
+  }}});
+  assert.equal(created.status,200);
+  const studentLogin=await call('/api/login',{method:'POST',data:{role:'student',className:'Practice 9A',sbd:'P1',password:'practice123'}});
+  const student=studentLogin.headers.get('set-cookie').split(';')[0],view=await studentLogin.json();
+  assert.equal(view.view.assignments[0].snapshot.questions[0].answer,undefined);
+  assert.equal(view.view.assignments[0].snapshot.questions[0].explanation,undefined);
+  const attemptSave=await call('/api/state',{method:'PUT',cookie:student,data:{changes:{learningAttempts:{upsert:[{id:'practice-attempt-1',assignmentId:'practice-assignment',classId:'practice-class',sbd:'P1',startedAt:Date.now(),answers:{}}],remove:[]}}}});
+  assert.equal(attemptSave.status,200);
+  const check=await call('/api/practice/check',{method:'POST',cookie:student,data:{assignmentId:'practice-assignment',attemptId:'practice-attempt-1',questionId:'practice-q1',answer:'A'}});
+  assert.equal(check.status,200);
+  const result=await check.json();
+  assert.equal(result.correct,true);
+  assert.equal(result.points,1);
+  assert.match(result.correctAnswer,/^A\./);
+  assert.match(result.explanation,/Thay x/);
+  const wrong=await call('/api/practice/check',{method:'POST',cookie:student,data:{assignmentId:'practice-assignment',attemptId:'practice-attempt-1',questionId:'practice-q1',answer:'B'}});
+  assert.equal((await wrong.json()).correct,false);
+  const denied=await call('/api/practice/check',{method:'POST',cookie:admin,data:{assignmentId:'practice-assignment',attemptId:'practice-attempt-1',questionId:'practice-q1',answer:'A'}});
+  assert.equal(denied.status,403);
+ }finally{await new Promise(resolve=>server.close(resolve));}
+});
