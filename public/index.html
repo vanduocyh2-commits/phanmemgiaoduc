@@ -2442,14 +2442,14 @@ function author(){draft=draft||blank();draft.authorMode=draft.authorMode||'direc
 
  function resolveKNTTCatalogAddress(q){
   const catalog=window.KNTTQuestionBankCatalog;
-  if(!catalog?.books||String(q?.subject||'').normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').replace(/đ/g,'d').toLowerCase().trim()!=='toan')return false;
+  if(!catalog?.books||String(q?.subject||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').toLowerCase().trim()!=='toan')return false;
   const grade=String(q.grade||'').replace(/[^0-9]/g,'');
   if(!/^([6-9]|1[0-2])$/.test(grade))return false;
-  const norm=v=>String(v??'').normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').replace(/đ/g,'d').toLocaleLowerCase('vi').replace(/[^a-z0-9]+/g,' ').trim();
+  const norm=v=>String(v??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').toLocaleLowerCase('vi').replace(/[^a-z0-9]+/g,' ').trim();
   const books=catalog.books.filter(b=>String(b.grade)===grade&&norm(b.subject)===norm(q.subject)&&norm(b.curriculum||'GDPT 2018')===norm(q.curriculum||'GDPT 2018'));
   if(!books.length)return false;
   let book=books.find(b=>String(b.id)===String(q.bookId||''));
-  const bookName=norm(q.textbook),volumeMatch=String(q.textbook||'').match(/(?:tập|tap)\\s*([12])/i);
+  const bookName=norm(q.textbook),volumeMatch=String(q.textbook||'').match(/(?:tập|tap)\s*([12])/i);
   if(!book)book=books.find(b=>norm(b.textbook)===bookName||norm(b.label)===bookName);
   if(!book&&volumeMatch)book=books.find(b=>Number(b.volume)===Number(volumeMatch[1]));
   if(!book&&books.length===1)book=books[0];
