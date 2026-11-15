@@ -31,6 +31,9 @@ test('catalogue UI script parses and uses existing bank classification field ids
   for (const id of ['qg-', 'qb-', 'qc-', 'qls-', 'qco', 'qlo']) assert.ok(source.includes(id));
   assert.ok(source.includes('/question-bank-catalog.json'));
   assert.ok(source.includes('window.TS?.capture?.()'));
+  assert.ok(source.includes('normalize(book.label) === normalizedPrevious'));
+  assert.ok(source.includes('const chapterMatch = chapters.find'));
+  assert.ok(source.includes('const lessonMatch = lessons.find'));
 });
 
 test('portal serves the catalogue files and injects its UI script', async () => {
