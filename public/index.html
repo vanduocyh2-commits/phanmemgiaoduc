@@ -2313,7 +2313,40 @@ function copyBankGeminiRepairPromptAndOpen(){
   const levelOf=v=>{const t=String(v||'NB').toUpperCase();return /VDC|VẬN DỤNG CAO/.test(t)?'VDC':/VD|VẬN DỤNG/.test(t)?'VD':/TH|THÔNG HIỂU/.test(t)?'TH':'NB';};
   return {meta,questions:rows.map((q,i)=>{const options=q.options||q.choices||q.luachon||[];const statements=q.statements||q.menhDe||q.subQuestions||[];let answer=q.answer??q.correctAnswer??q.dapAn??q.dapan??'';if(Array.isArray(answer))answer=answer.join(',');return {...q,id:q.id||uid('geminiq'),text:String(q.text??q.question??q.content??q.cauHoi??q.noiDung??''),type:typeOf(q.type??q.questionType??q.dangCauHoi??(options.length?'mcq':'essay')),level:levelOf(q.level??q.difficulty??q.mucDo),points:Number(q.points??q.score??q.diem)||undefined,unit:String(q.unit??q.lesson??q.bai??q.topic??''),chapter:String(q.chapter??q.chuong??''),lesson:String(q.lesson??q.bai??''),options:Array.isArray(options)?options.map(x=>typeof x==='object'?String(x.text??x.content??x.value??''):String(x)):[],statements:Array.isArray(statements)?statements.map(x=>typeof x==='object'?String(x.text??x.content??''):String(x)):[],answer:String(answer),explanation:String(q.explanation??q.solution??q.giaiThich??q.loiGiai??'')};}).filter(q=>q.text.trim())};
 }
- async function importGeminiExamFile(input){if(!staff())return;const file=input?.files?.[0];if(!file)return;try{if(file.size>15*1024*1024)throw Error('File vượt quá 15 MB.');capture();let source='',result;const code=String(draft.presentation?.code||'101');if(/\.json$/i.test(file.name||'')){source=await file.text();const parsed=geminiJsonExamQuestions(JSON.parse(source));const meta=parsed.meta||{};if(meta.grade||meta.subject||meta.textbook||meta.curriculum){source='ĐỀ: Môn '+(meta.subject||draft.subject||'')+' — Lớp '+(meta.grade||draft.grade||'')+' — Bộ sách: '+(meta.textbook||draft.textbook||'')+'\nChương trình: '+(meta.curriculum||draft.curriculum||'GDPT 2018')+'\n'+source;}result={questions:parsed.questions,intro:''};}else{result=await importRichSource(file,code,{budget:1800000});source=draft.variantContent?.[code]?.content||draft.content||'';}await geminiApplyExamImport(source,result);if(input)input.value='';}catch(error){const status=$('gemini-exam-status');if(status)status.textContent='Không nhập được file: '+(error?.message||error);toast('Không nhập được file Gemini: '+(error?.message||error));}}
+ async function importGeminiExamFile(input){
+  if(!staff())return;
+  const file=input?.files?.[0];if(!file)return;
+  try{
+   if(file.size>15*1024*1024)throw Error('File vượt quá 15 MB.');
+   capture();let source='',result;
+   const name=String(file.name||''),code=String(draft.presentation?.code||'101');
+   if(/\.json$/i.test(name)){
+    source=await file.text();
+    const parsed=geminiJsonExamQuestions(JSON.parse(source)),meta=parsed.meta||{};
+    if(meta.grade)draft.grade=String(meta.grade).replace(/^(?:lớp|khối)\s*/i,'');
+    if(meta.subject)draft.subject=String(meta.subject).replace(/^môn\s*/i,'');
+    if(meta.curriculum)draft.curriculum=String(meta.curriculum);
+    if(meta.textbook)draft.textbook=String(meta.textbook);
+    if(meta.title)draft.title=String(meta.title);
+    source='ĐỀ: Môn '+(meta.subject||draft.subject||'')+' — Lớp '+(meta.grade||draft.grade||'')+' — Bộ sách: '+(meta.textbook||draft.textbook||'')+'\nChương trình: '+(meta.curriculum||draft.curriculum||'GDPT 2018')+'\n'+source;
+    result={questions:parsed.questions,intro:''};
+   }else if(/\.(?:md|markdown|txt)$/i.test(name)){
+    source=await file.text();
+    const parsed=parseExamSource(source);
+    if(!parsed.questions.length)throw Error('Không nhận diện được câu hỏi trong tệp Markdown. Kiểm tra tiêu đề câu và nhãn dạng câu [TN]/[ĐS]/[TLN].');
+    result={questions:parsed.questions.map(q=>({...q,id:uid('geminiq'),level:q.level||'NB',points:q.points??({mcq:.25,tf:1,short:.5,essay:1}[q.type]),answer:q.answer||''})),intro:parsed.intro};
+   }else{
+    result=await importRichSource(file,code,{budget:1800000});
+    source=draft.variantContent?.[code]?.content||draft.content||'';
+   }
+   await geminiApplyExamImport(source,result);
+   if(input)input.value='';
+  }catch(error){
+   const status=$('gemini-exam-status');
+   if(status)status.textContent='Không nhập được file: '+(error?.message||error);
+   toast('Không nhập được file Gemini: '+(error?.message||error));
+  }
+ }
  async function importGeminiExamText(){if(!staff())return;const raw=$('gemini-exam-raw')?.value||'';if(!raw.trim())return toast('Dán kết quả Gemini trước.');try{capture();const parsed=parseExamSource(raw);if(!parsed.questions.length)throw Error('Không nhận diện được câu hỏi. Kiểm tra tiêu đề “Câu 1 [TN] [NB]” và PHẦN 1.');const result={questions:parsed.questions.map(q=>({...q,id:uid('geminiq'),level:q.level||'NB',points:q.points??({mcq:.25,tf:1,short:.5,essay:1}[q.type]),answer:q.answer||''})),intro:parsed.intro};draft.content=raw;await geminiApplyExamImport(raw,result);}catch(error){const status=$('gemini-exam-status');if(status)status.textContent='Chưa phân tích được: '+(error?.message||error);toast('Lỗi phân tích Gemini: '+(error?.message||error));}}
  async function geminiApplyExamImport(source,result){
   const meta=geminiExamMetadata(source),units=geminiExamStructure(source),questions=Array.isArray(result?.questions)?result.questions:[];
