@@ -21,7 +21,7 @@ test('standalone practice uses the textbook table of contents and selected lesso
   assert.match(html,/TOÁN LỚP /);
   assert.match(html,/Luyện tập chung/);
   assert.match(html,/Bài tập cuối chương/);
-  assert.match(html,/src="\/question-bank-catalog-ui\.js"/);
+  assert.match(html,/src="\/question-bank-catalog-ui\.js(?:\?[^"]*)?"/);
   assert.match(html,/kntt-catalog-ready/);
   const start=html.indexOf('function standaloneQuestionPool(){');
   const end=html.indexOf('function createStandalonePractice(){',start);
