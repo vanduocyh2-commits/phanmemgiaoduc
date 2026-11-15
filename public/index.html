@@ -2246,6 +2246,17 @@ function copyBankGeminiRepairPromptAndOpen(){
   const overlap=aa.filter(w=>bb.includes(w)).length;
   return Math.round(65*overlap/Math.max(aa.length,bb.length));
  }
+ function geminiCatalogMatchScore(a,b){
+  const x=geminiNorm(a).replace(/^bai\\s*\\d+\\s*/,''),y=geminiNorm(b).replace(/^bai\\s*\\d+\\s*/,'');
+  if(!x||!y)return 0;
+  if(x===y)return 100;
+  if(x.includes(y)||y.includes(x))return 96;
+  const stop=new Set(['va','cua','cac','mot','nhung','trong','voi','theo','tu','den','la','duoc','cho','ve','bai']);
+  const aa=[...new Set(x.split(' ').filter(w=>w.length>1&&!stop.has(w)))],bb=[...new Set(y.split(' ').filter(w=>w.length>1&&!stop.has(w)))];
+  if(!aa.length||!bb.length)return 0;
+  const overlap=aa.filter(w=>bb.includes(w)).length;
+  return Math.round(100*overlap/Math.max(aa.length,bb.length));
+ }
  function geminiCatalogBook(meta,units){
   const catalog=window.KNTTQuestionBankCatalog,all=catalog?.books||[];
   if(!all.length)return null;
@@ -2253,7 +2264,7 @@ function copyBankGeminiRepairPromptAndOpen(){
   const subject=geminiNorm(meta.subject||draft.subject||'');
   let books=all.filter(b=>(!grade||String(b.grade)===grade)&&(!subject||geminiNorm(b.subject)===subject));
   if(!books.length)return null;
-  const hint=geminiNorm(meta.textbook||'');
+  const hint=geminiNorm(meta.textbook||draft.textbook||'');
   if(hint){
    const hinted=books.filter(b=>geminiNorm(b.textbook).includes(hint)||geminiNorm(b.label).includes(hint)||hint.includes(geminiNorm(b.textbook)));
    if(hinted.length)books=hinted;
@@ -2266,9 +2277,9 @@ function copyBankGeminiRepairPromptAndOpen(){
    let score=0;
    for(const unit of units){
     for(const chapter of book.chapters||[]){
-     const cs=geminiMatchScore(unit.chapter,chapter.title);
+     const cs=geminiCatalogMatchScore(unit.chapter,chapter.title);
      for(const lesson of chapter.lessons||[]){
-      const ls=geminiMatchScore(unit.lesson,lesson.title);
+      const ls=geminiCatalogMatchScore(unit.lesson,lesson.title);
       score=Math.max(score,ls*2+(cs?Math.min(cs,100)*.35:0));
      }
     }
@@ -2284,9 +2295,9 @@ function copyBankGeminiRepairPromptAndOpen(){
   if(!book)return null;
   let best=null,bestScore=0;
   for(const chapter of book.chapters||[]){
-   const chapterScore=geminiMatchScore(chapterName,chapter.title);
+   const chapterScore=geminiCatalogMatchScore(chapterName,chapter.title);
    for(const lesson of chapter.lessons||[]){
-    const lessonScore=geminiMatchScore(lessonName,lesson.title);
+    const lessonScore=geminiCatalogMatchScore(lessonName,lesson.title);
     const score=lessonScore*2+(chapterScore?chapterScore*.35:0);
     if(score>bestScore){bestScore=score;best={chapter,lesson,score};}
    }
