@@ -80,7 +80,7 @@
     const oldChapter = chapterEl.value || (chapterOld.tagName !== 'SELECT' ? chapterOld.value : '');
     const chapterMatch = chapters.find(ch => normalize(ch.title) === normalize(oldChapter)) ||
       chapters.find(ch => oldChapter && (normalize(ch.title).includes(normalize(oldChapter)) || normalize(oldChapter).includes(normalize(ch.title)))) ||
-      chapters.find(ch => oldChapter && Number(section.querySelector('#qco-' + index)?.value) === Number(ch.order));
+      chapters.find(ch => Number(section.querySelector('#qco-' + index)?.value) > 0 && Number(section.querySelector('#qco-' + index)?.value) === Number(ch.order));
     setOptions(chapterEl, activeBook ? 'Chọn chương' : 'Chọn tập trước', chapters.map(ch => ({
       value: ch.title, label: 'Chương ' + ch.order + '. ' + ch.title, order: ch.order
     })), chapterMatch?.title || '', 'title', 'chapter');
@@ -89,7 +89,7 @@
     const lessons = activeChapter?.lessons || [];
     const lessonMatch = lessons.find(lesson => normalize(lesson.title) === normalize(oldLesson)) ||
       lessons.find(lesson => oldLesson && (normalize(lesson.title).includes(normalize(oldLesson)) || normalize(oldLesson).includes(normalize(lesson.title)))) ||
-      lessons.find(lesson => oldLesson && Number(section.querySelector('#qlo-' + index)?.value) === Number(lesson.order));
+      lessons.find(lesson => Number(section.querySelector('#qlo-' + index)?.value) > 0 && Number(section.querySelector('#qlo-' + index)?.value) === Number(lesson.order));
     setOptions(lessonEl, activeChapter ? 'Chọn bài học' : 'Chọn chương trước', lessons.map(lesson => ({
       value: lesson.title, label: lesson.title, order: lesson.order
     })), lessonMatch?.title || '', 'title', 'lesson');
