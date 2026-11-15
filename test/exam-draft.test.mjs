@@ -33,7 +33,7 @@ test('leaving a monitored test persists latest answers; screen-exit events remai
 });
 test('draft endpoint rejects another student and does not create a new attempt after submission',()=>{
  const d=fixture(),body={assignmentId:'a1',attemptId:'attempt1',answers:{q1:'A'}};
- assert.throws(()=>recordExamDraft(d,{role:'student',cid:'c2',sbd:'S2'},body),/Bài thi chưa mở|khác khối/);
+ assert.throws(()=>recordExamDraft(d,{role:'student',cid:'c2',sbd:'S2'},body),/Bài chưa mở/);
  recordExamDraft(d,actor,body);
  d.learningSubmissions.push({id:'sub1',assignmentId:'a1',classId:'c1',sbd:'S1',attemptId:'attempt1'});
  recordExamDraft(d,actor,body);
