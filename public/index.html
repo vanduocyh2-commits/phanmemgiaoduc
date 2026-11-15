@@ -4114,7 +4114,22 @@ async function saveLessonToLibrary(){const id=await saveLesson(false);if(!id)ret
  document.addEventListener('visibilitychange',()=>{if(document.hidden){if(!monitorFilePicker)scheduleScreenExit('tab_hidden');}else if(document.hasFocus())returnedToExam()});
  window.addEventListener('blur',()=>scheduleScreenExit('window_blur'));
  window.addEventListener('focus',returnedToExam);
- window.addEventListener('pagehide',()=>recordScreenExit('page_leave'));
+ function persistAttemptOnExit(){
+  if(!attempt||state.sessionRole!=='student'||!cur)return;
+  const active=attempt,monitored=isMonitored(monitorAssignment());
+  if(monitored&&!monitorAway&&!monitorLocked()&&Date.now()>=monitorExemptUntil){
+   monitorAway=true;
+   active.monitorEvents=monitorEvents().concat({id:uid('exit'),reason:'page_leave',clientAt:Date.now()}).slice(0,4);
+   saveMonitorDraft();
+  }
+  put();
+  if(hosted&&navigator.sendBeacon){
+   const body={assignmentId:active.assignmentId,attemptId:active.id,startedAt:active.startedAt,answers:copy(active.answers||{}),files:copy(active.files||{})};
+   if(monitored)body.events=monitorEvents();
+   try{const payload=new Blob([JSON.stringify(body)],{type:'application/json'});navigator.sendBeacon(monitored?'/api/exam-events':'/api/exam-draft',payload);}catch(e){}
+  }
+ }
+ window.addEventListener('pagehide',persistAttemptOnExit);
  window.addEventListener('online',()=>flushExamMonitor());
  function examFilePickerFromEvent(e){const target=e.target?.closest?.('input[type="file"]')||e.target?.closest?.('label')?.querySelector('input[type="file"]');return target?.closest('#ts-attempt')?target:null;}
  function beginExamFilePicker(e){if(!attempt||state.sessionRole!=='student'||!examFilePickerFromEvent(e))return;monitorFilePicker=true;monitorExemptUntil=Date.now()+30000;}
@@ -4129,7 +4144,7 @@ async function saveLessonToLibrary(){const id=await saveLesson(false);if(!id)ret
  function teacherMonitoringHTML(){const rows=(state.learningAttempts||[]).filter(t=>canManageClass(t.classId)&&isMonitored(state.assignments.find(a=>a.id===t.assignmentId)));return `<section class="${box}"><h3>Giám sát thi / kiểm tra</h3><p class="ts-help">Theo dõi trạng thái tab/cửa sổ do trình duyệt báo; không quay màn hình. Rời màn hình quá 3 lần sẽ tự nộp ở lần thứ 4.</p>${rows.map(t=>{const c=state.classes.find(c=>c.id===t.classId),a=state.assignments.find(a=>a.id===t.assignmentId),sub=submitted(t.assignmentId,t.classId,t.sbd);return `<div class="ts-list"><div><b>${esc(c?.students.find(s=>s.sbd===t.sbd)?.name||t.sbd)}</b><small>${esc(c?.name||'')} · ${esc(a?.snapshot.title||'')}</small></div><b>${Number(t.monitoringExitCount)||0} lần · ${sub?sub.autoSubmitted?'Đã tự nộp':'Đã nộp':'Đang làm'}</b></div>`}).join('')||'<p>Chưa có học sinh làm bài thi/kiểm tra được giám sát.</p>'}</section>`;}
 
  function hasLiveAttempt(){return !!attempt;}
- function stop(){clearTimeout(monitorExitTimer);monitorFilePicker=false;$('submit-review-modal')?.remove();monitorAway=false;closeEssayCamera();releaseEssayURLs();clearInterval(timer);attempt=null;deferredEssaySubmit=false;}
+ function stop(){if(attempt&&state.sessionRole==='student')persistAttemptOnExit();clearTimeout(monitorExitTimer);monitorFilePicker=false;$('submit-review-modal')?.remove();monitorAway=false;closeEssayCamera();releaseEssayURLs();clearInterval(timer);attempt=null;deferredEssaySubmit=false;}
  try{const d=JSON.parse(localStorage.getItem('edu_author_draft')||'null');if(d?.draft&&Array.isArray(d.questions)){draft=d.draft;questionDraft=d.questions;editing=d.editing;}}catch(e){}
 
  function excelFile(name,sheets){const wb=XLSX.utils.book_new();for(const [title,rows]of sheets){const ws=XLSX.utils.aoa_to_sheet(rows);ws['!cols']=(rows[0]||[]).map((_,i)=>({wch:i<3?24:18}));if(rows.length>1)ws['!autofilter']={ref:ws['!ref']};XLSX.utils.book_append_sheet(wb,ws,title.slice(0,31));}XLSX.writeFile(wb,name+'.xlsx');}
