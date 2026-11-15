@@ -11,21 +11,27 @@
     return match ? match[1] : null;
   };
   const setOptions = (el, placeholder, rows, value, label, key) => {
-    const signature = JSON.stringify([placeholder, rows.map(row => [row.value, row.label, row.order])]);
+    const signature = JSON.stringify([placeholder, rows.map(row => [row.value, row.label, row.order, row.id, row.volume])]);
     if (el.dataset.catalogOptions === signature) {
       if (value !== undefined && el.value !== value && [...el.options].some(o => o.value === value)) el.value = value;
+      el.dataset.catalogId = el.selectedOptions?.[0]?.dataset?.catalogId || '';
+      el.dataset.catalogOrder = el.selectedOptions?.[0]?.dataset?.order || '';
       return;
     }
     const options = [new Option(placeholder, '')];
     for (const row of rows) {
       const option = new Option(row.label, row.value);
       if (row.order !== undefined) option.dataset.order = String(row.order);
+      if (row.id !== undefined) option.dataset.catalogId = String(row.id);
+      if (row.volume !== undefined) option.dataset.volume = String(row.volume);
       options.push(option);
     }
     el.replaceChildren(...options);
     el.dataset.catalogOptions = signature;
     if (value && [...el.options].some(o => o.value === value)) el.value = value;
     else el.value = '';
+    el.dataset.catalogId = el.selectedOptions?.[0]?.dataset?.catalogId || '';
+    el.dataset.catalogOrder = el.selectedOptions?.[0]?.dataset?.order || '';
     if (key) el.dataset.catalogField = key;
   };
   const selectify = (old, placeholder) => {
@@ -61,7 +67,7 @@
     const chapterEl = selectify(chapterOld, 'Chương');
     const lessonEl = selectify(lessonOld, 'Bài học');
     if (!bookEl || !chapterEl || !lessonEl) return;
-    const books = catalog.books.filter(book => String(book.grade) === grade);
+    const books = catalog.books.filter(book => String(book.grade) === grade && normalize(book.subject) === subject);
     const normalizedPrevious = normalize(previousBook);
     // Imported drafts may store either the canonical textbook name or the visible dropdown label.
     let selectedBook = books.find(book =>
@@ -73,7 +79,7 @@
       bookEl.value = '';
     }
     setOptions(bookEl, 'Chọn Toán ' + grade + ' — Tập 1 hoặc Tập 2', books.map(book => ({
-      value: book.textbook, label: book.label
+      value: book.textbook, label: book.label, id: book.id, volume: book.volume
     })), selectedBook?.textbook || '', 'label', 'book');
     const activeBook = books.find(book => book.textbook === bookEl.value);
     const chapters = activeBook ? activeBook.chapters : [];
@@ -82,7 +88,7 @@
       chapters.find(ch => oldChapter && (normalize(ch.title).includes(normalize(oldChapter)) || normalize(oldChapter).includes(normalize(ch.title)))) ||
       chapters.find(ch => Number(section.querySelector('#qco-' + index)?.value) > 0 && Number(section.querySelector('#qco-' + index)?.value) === Number(ch.order));
     setOptions(chapterEl, activeBook ? 'Chọn chương' : 'Chọn tập trước', chapters.map(ch => ({
-      value: ch.title, label: 'Chương ' + ch.order + '. ' + ch.title, order: ch.order
+      value: ch.title, label: 'Chương ' + ch.order + '. ' + ch.title, order: ch.order, id: ch.id
     })), chapterMatch?.title || '', 'title', 'chapter');
     const activeChapter = chapters.find(ch => normalize(ch.title) === normalize(chapterEl.value));
     const oldLesson = lessonEl.value || (lessonOld.tagName !== 'SELECT' ? lessonOld.value : '');
@@ -91,8 +97,12 @@
       lessons.find(lesson => oldLesson && (normalize(lesson.title).includes(normalize(oldLesson)) || normalize(oldLesson).includes(normalize(lesson.title)))) ||
       lessons.find(lesson => Number(section.querySelector('#qlo-' + index)?.value) > 0 && Number(section.querySelector('#qlo-' + index)?.value) === Number(lesson.order));
     setOptions(lessonEl, activeChapter ? 'Chọn bài học' : 'Chọn chương trước', lessons.map(lesson => ({
-      value: lesson.title, label: lesson.title, order: lesson.order
+      value: lesson.title, label: lesson.title, order: lesson.order, id: lesson.id
     })), lessonMatch?.title || '', 'title', 'lesson');
+    bookEl.dataset.catalogId = bookEl.selectedOptions?.[0]?.dataset?.catalogId || '';
+    chapterEl.dataset.catalogId = chapterEl.selectedOptions?.[0]?.dataset?.catalogId || '';
+    lessonEl.dataset.catalogId = lessonEl.selectedOptions?.[0]?.dataset?.catalogId || '';
+    bookEl.dataset.catalogVolume = bookEl.selectedOptions?.[0]?.dataset?.volume || '';
     bookEl.required = chapterEl.required = lessonEl.required = true;
     const bookLabel = bookEl.closest('label');
     if (bookLabel) bookLabel.firstChild.textContent = 'Bộ sách / tập ';
@@ -128,7 +138,7 @@
       document.addEventListener('change', event => {
         const target = event.target;
         if (!(target instanceof HTMLElement) || !target.id) return;
-        const match = target.id.match(/^(qg|qb|qc|qls)-(\d+)$/);
+        const match = target.id.match(/^(qg|qb|qc|qls|qco|qlo)-(\d+)$/);
         if (!match) return;
         const section = target.closest('.qcard-curriculum');
         if (!section) return;
@@ -151,6 +161,10 @@
         const lessonOrder = lesson?.selectedOptions?.[0]?.dataset?.order;
         if (chapterOrder) numberField(section, 'qco', index, chapterOrder);
         if (lessonOrder) numberField(section, 'qlo', index, lessonOrder);
+        const bookEl = section.querySelector('#qb-' + index), chapterEl = section.querySelector('#qc-' + index), lessonEl = section.querySelector('#qls-' + index);
+        if (bookEl) bookEl.dataset.catalogId = bookEl.selectedOptions?.[0]?.dataset?.catalogId || '';
+        if (chapterEl) chapterEl.dataset.catalogId = chapterEl.selectedOptions?.[0]?.dataset?.catalogId || '';
+        if (lessonEl) lessonEl.dataset.catalogId = lessonEl.selectedOptions?.[0]?.dataset?.catalogId || '';
         window.TS?.capture?.();
       });
       document.addEventListener('input', event => {
