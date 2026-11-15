@@ -63,26 +63,36 @@
     if (!bookEl || !chapterEl || !lessonEl) return;
     const books = catalog.books.filter(book => String(book.grade) === grade);
     const normalizedPrevious = normalize(previousBook);
-    let selectedBook = books.find(book => book.textbook === previousBook);
+    // Imported drafts may store either the canonical textbook name or the visible dropdown label.
+    let selectedBook = books.find(book =>
+      normalize(book.textbook) === normalizedPrevious ||
+      normalize(book.label) === normalizedPrevious
+    );
     if (!selectedBook && normalizedPrevious === normalize(catalog.series)) {
-      // The legacy generic book label has no volume; ask the teacher to choose the exact volume.
+      // A series-only label has no volume; ask the teacher to choose the exact volume.
       bookEl.value = '';
     }
     setOptions(bookEl, 'Chọn Toán ' + grade + ' — Tập 1 hoặc Tập 2', books.map(book => ({
       value: book.textbook, label: book.label
-    })), selectedBook?.textbook || (books.some(book => book.textbook === previousBook) ? previousBook : ''), 'label', 'book');
+    })), selectedBook?.textbook || '', 'label', 'book');
     const activeBook = books.find(book => book.textbook === bookEl.value);
     const chapters = activeBook ? activeBook.chapters : [];
     const oldChapter = chapterEl.value || (chapterOld.tagName !== 'SELECT' ? chapterOld.value : '');
+    const chapterMatch = chapters.find(ch => normalize(ch.title) === normalize(oldChapter)) ||
+      chapters.find(ch => oldChapter && (normalize(ch.title).includes(normalize(oldChapter)) || normalize(oldChapter).includes(normalize(ch.title)))) ||
+      chapters.find(ch => oldChapter && Number(section.querySelector('#qco-' + index)?.value) === Number(ch.order));
     setOptions(chapterEl, activeBook ? 'Chọn chương' : 'Chọn tập trước', chapters.map(ch => ({
       value: ch.title, label: 'Chương ' + ch.order + '. ' + ch.title, order: ch.order
-    })), chapters.some(ch => ch.title === oldChapter) ? oldChapter : '', 'title', 'chapter');
-    const activeChapter = chapters.find(ch => ch.title === chapterEl.value);
+    })), chapterMatch?.title || '', 'title', 'chapter');
+    const activeChapter = chapters.find(ch => normalize(ch.title) === normalize(chapterEl.value));
     const oldLesson = lessonEl.value || (lessonOld.tagName !== 'SELECT' ? lessonOld.value : '');
     const lessons = activeChapter?.lessons || [];
+    const lessonMatch = lessons.find(lesson => normalize(lesson.title) === normalize(oldLesson)) ||
+      lessons.find(lesson => oldLesson && (normalize(lesson.title).includes(normalize(oldLesson)) || normalize(oldLesson).includes(normalize(lesson.title)))) ||
+      lessons.find(lesson => oldLesson && Number(section.querySelector('#qlo-' + index)?.value) === Number(lesson.order));
     setOptions(lessonEl, activeChapter ? 'Chọn bài học' : 'Chọn chương trước', lessons.map(lesson => ({
       value: lesson.title, label: lesson.title, order: lesson.order
-    })), lessons.some(lesson => lesson.title === oldLesson) ? oldLesson : '', 'title', 'lesson');
+    })), lessonMatch?.title || '', 'title', 'lesson');
     bookEl.required = chapterEl.required = lessonEl.required = true;
     const bookLabel = bookEl.closest('label');
     if (bookLabel) bookLabel.firstChild.textContent = 'Bộ sách / tập ';
