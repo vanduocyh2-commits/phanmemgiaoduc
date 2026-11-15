@@ -2324,7 +2324,7 @@ function copyBankGeminiRepairPromptAndOpen(){
   if(meta.scope)draft.scope=meta.scope;
   if(meta.duration)draft.duration=meta.duration;
   if(meta.examUnit)draft.examUnit=meta.examUnit;
-  const resolvedMeta={...meta,grade:meta.grade||draft.grade||'',subject:meta.subject||draft.subject||'',textbook:meta.textbook||draft.textbook||'',curriculum:meta.curriculum||draft.curriculum||'GDPT 2018'};const book=geminiCatalogBook(resolvedMeta,units);
+  const resolvedMeta={...meta,grade:meta.grade||draft.grade||'',subject:meta.subject||draft.subject||'',textbook:meta.textbook||draft.textbook||'',curriculum:meta.curriculum||draft.curriculum||'GDPT 2018'};const catalogUnits=units.length?units:questions.map(q=>({chapter:String(q.chapter||''),lesson:String(q.lesson||q.unit||'')})).filter(x=>x.chapter||x.lesson);const book=geminiCatalogBook(resolvedMeta,catalogUnits);
   const curriculum=meta.curriculum||book?.curriculum||draft.curriculum||'GDPT 2018';
   const textbook=book?.textbook||resolvedMeta.textbook||'';
   if(book){draft.grade=String(book.grade);draft.subject=book.subject||draft.subject;}
@@ -2334,7 +2334,7 @@ function copyBankGeminiRepairPromptAndOpen(){
   for(let i=0;i<questions.length;i++){
    const q=questions[i],unit=String(q.unit||q.lesson||'').trim();
    const matrixUnit=geminiFindMatrixUnit(units,unit);
-   const splitUnit=unit.match(/(chương\\s*(?:[ivxlcdm]+|\\d+)[^,;–—-]*?)\\s*(?:[,;:–—-]+\\s*)?(bài\\s*\\d+[^,;]*)/i);
+   const splitUnit=unit.match(/(chương\s*(?:[ivxlcdm]+|\d+)[^,;–—-]*?)\s*(?:[,;:–—-]+\s*)?(bài\s*\d+[^,;]*)/i);
    const matrixChapter=String(q.chapter||matrixUnit?.chapter||splitUnit?.[1]||'').trim();
    const matrixLesson=String(q.lesson||matrixUnit?.lesson||splitUnit?.[2]||unit).trim();
    const catalogMatch=geminiFindCatalogLesson(book,matrixChapter,matrixLesson);
