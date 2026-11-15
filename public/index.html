@@ -2382,7 +2382,19 @@ function copyBankGeminiRepairPromptAndOpen(){
    const splitUnit=unit.match(/(chương\s*(?:[ivxlcdm]+|\d+)[^,;–—-]*?)\s*(?:[,;:–—-]+\s*)?(bài\s*\d+[^,;]*)/i);
    const matrixChapter=String(q.chapter||matrixUnit?.chapter||splitUnit?.[1]||'').trim();
    const matrixLesson=String(q.lesson||matrixUnit?.lesson||splitUnit?.[2]||unit).trim();
-   const catalogMatch=geminiFindCatalogLesson(book,matrixChapter,matrixLesson);
+   let catalogMatch=geminiFindCatalogLesson(book,matrixChapter,matrixLesson);
+   // Gemini's matrix often names a knowledge unit, not the literal textbook lesson title.
+   // If the chapter is known but the lesson wording differs, map the matrix row's order
+   // to the corresponding lesson in the selected KNTT chapter.
+   if(!catalogMatch&&book&&matrixChapter){
+    const chapterEntry=(book.chapters||[]).map(ch=>({chapter:ch,score:geminiCatalogMatchScore(matrixChapter,ch.title)})).sort((a,b)=>b.score-a.score)[0];
+    if(chapterEntry&&chapterEntry.score>=80){
+     const lessons=chapterEntry.chapter.lessons||[];
+     const ordinal=Number(matrixUnit?.lessonOrder)||0;
+     const fallbackLesson=lessons.find(x=>geminiCatalogMatchScore(matrixLesson,x.title)>=55)||lessons[ordinal-1]||null;
+     if(fallbackLesson)catalogMatch={chapter:chapterEntry.chapter,lesson:fallbackLesson,score:chapterEntry.score};
+    }
+   }
    let chapter=catalogMatch?.chapter?.title||matrixChapter||'';
    let lesson=catalogMatch?.lesson?.title||matrixLesson||'';
    let chapterOrder=Number(catalogMatch?.chapter?.order||matrixUnit?.chapterOrder)||1;
