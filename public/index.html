@@ -2215,6 +2215,7 @@ function copyBankGeminiRepairPromptAndOpen(){
      else if((m=c.match(/^(?:Lớp|Khối)\s*:\s*(.+)$/i)))apply('grade',m[1]);
      else if((m=c.match(/^(?:Lớp|Khối)\s+(.+)$/i)))apply('grade',m[1]);
      else if((m=c.match(/^(?:Bộ\s*)?sách\s*:\s*(.+)$/i)))apply('textbook',m[1]);
+     else if((m=c.match(/^Tập\s*[:：]?\s*([12])$/i)))apply('volume',m[1]);
      else if((m=c.match(/^Tập\s*:\s*(.+)$/i)))apply('volume',m[1]);
      else if((m=c.match(/^Chương\s*trình\s*:\s*(.+)$/i)))apply('curriculum',m[1]);
      else if((m=c.match(/^Phạm\s*vi\s*:\s*(.+)$/i)))apply('scope',m[1]);
