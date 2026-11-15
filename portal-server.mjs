@@ -273,7 +273,7 @@ export function recordExamDraft(d,m,input){
  if(m.role!=='student'||m.pendingAdmission)throw Error('Chỉ học sinh đang làm bài được lưu bản nháp.');
  const a=d.assignments.find(row=>row.id===input.assignmentId&&row.classId===m.cid&&access(row,m.sbd));
  if(!a||a.archivedAt||a.closed||!examMatchesClass(a.snapshot,d.classes.find(row=>row.id===a.classId))||a.start&&Date.parse(a.start)>Date.now())throw Error('Bài chưa mở hoặc đã đóng.');
- const attemptId=typeof input.attemptId==='string'&&/^[-\\w]{1,100}$/.test(input.attemptId)?input.attemptId:'';
+ const attemptId=typeof input.attemptId==='string'&&/^[A-Za-z0-9_-]{1,100}$/.test(input.attemptId)?input.attemptId:'';
  if(!attemptId)throw Error('Mã lượt làm bài không hợp lệ.');
  if(d.learningSubmissions.some(row=>row.assignmentId===a.id&&row.classId===m.cid&&row.sbd===m.sbd&&row.attemptId===attemptId))return d;
  if(!canAttempt(d,a,m.cid,m.sbd))return d;
