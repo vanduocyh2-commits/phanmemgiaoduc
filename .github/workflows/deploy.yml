@@ -25,6 +25,7 @@ jobs:
           command_timeout: 10m
           script: |
             set -euo pipefail
+            echo "SSH_DEPLOY_USER=$(id -un)"
             SHA=' ${{ github.sha }}'
             SHA="${SHA# }"
             RAW="https://raw.githubusercontent.com/vanduocyh2-commits/phanmemgiaoduc/${SHA}"
