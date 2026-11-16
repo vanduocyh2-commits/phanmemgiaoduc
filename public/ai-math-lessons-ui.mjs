@@ -24,10 +24,13 @@ let aiMounting=false;async function mount(){uiDocument=document;const doc=docume
  const body=$('div',{style:'display:grid;margin-top:12px'});
  body.style.gap='10px';
  body.append($('p',{style:'font-size:12px;line-height:1.6;color:#475569;margin:0'},'Chọn khối, sách, chương và bài học để AI soạn bản nháp. Giáo viên kiểm duyệt, chỉnh sửa rồi lưu hoặc giao bài trực tiếp cho lớp.'));
+ const loading=$('p',{role:'status',style:'font-size:12px;color:#64748b;margin:8px 0'},'Đang tải danh mục bài học…');
+ body.append(loading);root.append(body);host.append(root);
  const grid=$('div',{style:'display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:9px'});
  const grade=select(),book=select(),chapter=select(),lesson=select();
  const fill=(s,placeholder,rows,label)=>{s.replaceChildren();const first=uiDocument.createElement('option');first.value='';first.textContent=placeholder;s.append(first);for(const x of rows){const option=uiDocument.createElement('option');option.value=x.id;option.textContent=label(x);s.append(option)}};
  const cat=await fetch('/question-bank-catalog.json',{cache:'no-store'}).then(r=>{if(!r.ok)throw Error('Không tải được danh mục sách Toán.');return r.json()});
+ loading.remove();
  fill(grade,'Chọn khối',cat.grades.map(x=>({id:String(x)})),x=>'Lớp '+x.id);
  const updateBooks=()=>{const rows=cat.books.filter(x=>String(x.grade)===grade.value);fill(book,'Chọn sách / tập',rows,x=>x.label);fill(chapter,'Chọn chương',[],x=>x.title);fill(lesson,'Chọn bài học',[],x=>x.title)};
  const updateChapters=()=>{const b=cat.books.find(x=>x.id===book.value);fill(chapter,'Chọn chương',b?.chapters||[],x=>'Chương '+x.order+'. '+x.title);fill(lesson,'Chọn bài học',[],x=>x.title)};
@@ -48,7 +51,7 @@ let aiMounting=false;async function mount(){uiDocument=document;const doc=docume
  const save=$('button',{type:'button',style:'padding:9px 13px;border:0;border-radius:9px;background:#0f766e;color:white;font-weight:700'},'Lưu bản nháp');
  const publish=$('button',{type:'button',style:'padding:9px 13px;border:0;border-radius:9px;background:#2563eb;color:white;font-weight:800'},'✓ Duyệt và giao bài cho học sinh');
  const ppt=$('button',{type:'button',style:'padding:9px 13px;border:1px solid #94a3b8;border-radius:9px;background:white;color:#334155;font-weight:700'},'Xuất PowerPoint');
- actions.append(save,publish,ppt);editor.append(actions);body.append(generate,editor);root.append(body);host.append(root);
+ actions.append(save,publish,ppt);editor.append(actions);body.append(generate,editor);
  let planId=null;
  generate.addEventListener('click',async()=>{if(!grade.value||!book.value||!chapter.value||!lesson.value){status.textContent='Hãy chọn đầy đủ khối, sách, chương và bài học.';return}generate.disabled=true;status.textContent='AI đang soạn bài giảng. Có thể mất một lúc…';try{const d=await api('/api/ai/math-lessons/generate',{method:'POST',body:JSON.stringify({grade:grade.value,bookId:book.value,chapterId:chapter.value,lessonId:lesson.value})});planId=d.plan.id;for(const k of Object.keys(controls))controls[k].value=d.plan[k]||'';editor.style.display='grid';status.textContent='Đã tạo bản nháp. Giáo viên cần kiểm tra nội dung, công thức và hình minh họa trước khi sử dụng.'}catch(e){status.textContent=e.message}finally{generate.disabled=false}});
  save.addEventListener('click',async()=>{if(!planId)return;save.disabled=true;try{const d=await api('/api/ai/math-lessons/save',{method:'POST',body:JSON.stringify({planId,fields:Object.fromEntries(Object.entries(controls).map(([k,v])=>[k,v.value]))})});status.textContent='Đã lưu bản nháp vào kho bài giảng. Mã: '+d.planId}catch(e){status.textContent=e.message}finally{save.disabled=false}});
