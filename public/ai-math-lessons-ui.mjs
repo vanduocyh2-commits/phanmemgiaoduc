@@ -19,9 +19,9 @@ let aiMounting=false;async function mount(){uiDocument=document;const doc=docume
  const root=$('section',{id:'ai-math-lessons',style:'margin:16px 0 4px;padding:15px;border:1px solid #c7d2fe;border-radius:14px;background:linear-gradient(135deg,#f5f3ff,#eff6ff);font-family:Inter,Arial,sans-serif'});
  const bar=$('div',{style:'display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap'});
  const title=$('strong',{style:'font-size:15px;color:#312e81'},'✨ AI thiết kế bài giảng & bài học học sinh');
- const toggle=$('button',{type:'button',style:'padding:7px 12px;border:1px solid #a5b4fc;border-radius:8px;background:white;color:#3730a3;font-weight:800;cursor:pointer'},'Mở công cụ AI ▾');
- bar.append(title,toggle,$('span',{style:'font-size:11px;color:#64748b'},'Toán KNTT · GDPT 2018 · Lớp 6–12'));root.append(bar);
- const body=$('div',{style:'display:none;margin-top:12px'});toggle.addEventListener('click',()=>{const open=body.style.display==='none';body.style.display=open?'grid':'none';toggle.textContent=open?'Thu gọn ▴':'Mở công cụ AI ▾'});
+ const stateLabel=$('span',{style:'padding:7px 11px;border:1px solid #a5b4fc;border-radius:8px;background:white;color:#3730a3;font-size:12px;font-weight:800'},'Công cụ AI luôn hiển thị');
+ bar.append(title,stateLabel,$('span',{style:'font-size:11px;color:#64748b'},'Toán KNTT · GDPT 2018 · Lớp 6–12'));root.append(bar);
+ const body=$('div',{style:'display:grid;margin-top:12px'});
  body.style.gap='10px';
  body.append($('p',{style:'font-size:12px;line-height:1.6;color:#475569;margin:0'},'Chọn khối, sách, chương và bài học để AI soạn bản nháp. Giáo viên kiểm duyệt, chỉnh sửa rồi lưu hoặc giao bài trực tiếp cho lớp.'));
  const grid=$('div',{style:'display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:9px'});
