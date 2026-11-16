@@ -67,7 +67,7 @@ let aiMounting=false;async function mount(){uiDocument=document;const doc=docume
   const fields=isStudent?[['studentSummary','Mục tiêu bài học'],['content','Nội dung bài học'],['assessment','Luyện tập và tự đánh giá']]:[['objectives','Mục tiêu / yêu cầu cần đạt'],['equipment','Thiết bị và học liệu'],['activities','Tiến trình hoạt động dạy học'],['content','Nội dung bài giảng'],['assessment','Kiểm tra và đánh giá'],['studentSummary','Tóm tắt dành cho học sinh']];
   for(const [key,label] of fields){const value=String(controls[key]?.value||'').trim();if(!value)continue;const card=$('section',{style:'padding:12px;border:1px solid #e2e8f0;border-radius:10px;background:#fff'});
    card.append($('h3',{style:'font-size:14px;font-weight:800;color:#4338ca;margin:0 0 7px'},label));
-   const content=$('div',{style:'white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.75;font-size:13px;color:#334155'});content.textContent=value;card.append(content);previewBody.append(card);
+   const content=$('div',{style:'overflow-wrap:anywhere;line-height:1.75;font-size:13px;color:#334155'});if(window.MathBridge?.render){content.innerHTML=window.MathBridge.render(value).html}else{content.style.whiteSpace='pre-wrap';content.textContent=value}card.append(content);previewBody.append(card);
   }
   if(previewBody.children.length===1)previewBody.append($('p',{style:'color:#64748b;font-size:13px'},'Chưa có nội dung để xem trước.'));
   preview.style.display='block';preview.scrollIntoView({behavior:'smooth',block:'nearest'});
