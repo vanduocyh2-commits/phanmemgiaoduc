@@ -1,11 +1,12 @@
-const $=(tag,attrs={},text='')=>{const n=document.createElement(tag);for(const [k,v] of Object.entries(attrs)){if(k==='style')n.style.cssText=v;else if(k==='class')n.className=v;else n.setAttribute(k,v)}if(text)n.textContent=text;return n};
+let uiDocument=document;
+const $=(tag,attrs={},text='')=>{const n=uiDocument.createElement(tag);for(const [k,v] of Object.entries(attrs)){if(k==='style')n.style.cssText=v;else if(k==='class')n.className=v;else n.setAttribute(k,v)}if(text)n.textContent=text;return n};
 const css='width:100%;box-sizing:border-box;padding:9px;border:1px solid #cbd5e1;border-radius:9px;background:white;font:13px Inter,Arial,sans-serif';
 async function api(path,options={}){const r=await fetch(path,{credentials:'same-origin',...options,headers:{...(options.body?{'Content-Type':'application/json'}:{}),...options.headers}});const d=await r.json().catch(()=>({}));if(!r.ok)throw Error(d.error||'Máy chủ từ chối yêu cầu.');return d}
 function field(label,control){const w=$('label',{style:'display:grid;gap:5px;font-size:12px;font-weight:700;color:#334155'});w.append($('span',{},label),control);return w}
 function select(){const s=$('select',{style:css});return s}
 function area(label){const a=$('textarea',{rows:'7',style:css+';resize:vertical;line-height:1.6'});return [field(label,a),a]}
-function findLessonAuthoringHost(){const norm=s=>String(s||'').replace(/\\s+/g,' ').trim().toLocaleLowerCase('vi');const nodes=[...document.querySelectorAll('h1,h2,h3,h4,strong,div,section')].filter(n=>norm(n.textContent).includes('soạn giáo án & bài giảng'));for(const n of nodes){let p=n;for(let i=0;i<8&&p;i++,p=p.parentElement){const t=norm(p.textContent);if(t.includes('gửi bài giảng')&&t.includes('gửi bài tập')&&(t.includes('tải bài pdf')||t.includes('chuyển sang pdf')))return p;}}const send=[...document.querySelectorAll('button,a')].find(n=>norm(n.textContent)==='gửi bài giảng');if(send){let p=send;for(let i=0;i<5&&p;i++,p=p.parentElement){const t=norm(p.textContent);if(t.includes('gửi bài tập')&&t.includes('tải bài pdf'))return p;}}return null;}
-async function mount(){if(document.getElementById('ai-math-lessons'))return;const host=findLessonAuthoringHost();if(!host)return;
+function findLessonAuthoringHost(){const norm=s=>String(s||'').replace(/\\s+/g,' ').trim().toLocaleLowerCase('vi');const nodes=[...document.querySelectorAll('h1,h2,h3,h4,strong,div,section')].filter(n=>norm(n.textContent).includes('soạn giáo án & bài giảng'));for(const n of nodes){let p=n;for(let i=0;i<8&&p;i++,p=p.parentElement){const t=norm(p.textContent);if(t.includes('gửi bài giảng')&&t.includes('gửi bài tập')&&(t.includes('tải bài pdf')||t.includes('chuyển sang pdf')))return p;}}const send=[...doc.querySelectorAll('button,a')].find(n=>norm(n.textContent)==='gửi bài giảng');if(send){let p=send;for(let i=0;i<5&&p;i++,p=p.parentElement){const t=norm(p.textContent);if(t.includes('gửi bài tập')&&t.includes('tải bài pdf'))return p;}}return null;}
+async function mount(){const frame=document.getElementById('teacher-workspace');const doc=frame?.contentDocument;if(!doc)return;uiDocument=doc;if(doc.getElementById('ai-math-lessons'))return;const host=findLessonAuthoringHost(doc);if(!host)return;
  const root=$('section',{id:'ai-math-lessons',style:'margin:16px 0 4px;padding:15px;border:1px solid #c7d2fe;border-radius:14px;background:linear-gradient(135deg,#f5f3ff,#eff6ff);font-family:Inter,Arial,sans-serif'});
  const bar=$('div',{style:'display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap'});
  const title=$('strong',{style:'font-size:15px;color:#312e81'},'✨ AI thiết kế bài giảng & bài học học sinh');
@@ -16,7 +17,7 @@ async function mount(){if(document.getElementById('ai-math-lessons'))return;cons
  body.append($('p',{style:'font-size:12px;line-height:1.6;color:#475569;margin:0'},'Chọn khối, sách, chương và bài học để AI soạn bản nháp. Giáo viên kiểm duyệt, chỉnh sửa rồi lưu hoặc giao bài trực tiếp cho lớp.'));
  const grid=$('div',{style:'display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:9px'});
  const grade=select(),book=select(),chapter=select(),lesson=select();
- const fill=(s,placeholder,rows,label)=>{s.replaceChildren(new Option(placeholder,''));for(const x of rows)s.add(new Option(label(x),x.id))};
+ const fill=(s,placeholder,rows,label)=>{s.replaceChildren();const first=uiDocument.createElement('option');first.value='';first.textContent=placeholder;s.append(first);for(const x of rows){const option=uiDocument.createElement('option');option.value=x.id;option.textContent=label(x);s.append(option)}};
  const cat=await fetch('/question-bank-catalog.json',{cache:'no-store'}).then(r=>{if(!r.ok)throw Error('Không tải được danh mục sách Toán.');return r.json()});
  fill(grade,'Chọn khối',cat.grades.map(x=>({id:String(x)})),x=>'Lớp '+x.id);
  const updateBooks=()=>{const rows=cat.books.filter(x=>String(x.grade)===grade.value);fill(book,'Chọn sách / tập',rows,x=>x.label);fill(chapter,'Chọn chương',[],x=>x.title);fill(lesson,'Chọn bài học',[],x=>x.title)};
@@ -28,8 +29,8 @@ async function mount(){if(document.getElementById('ai-math-lessons'))return;cons
  const generate=$('button',{type:'button',style:'padding:10px 15px;border:0;border-radius:9px;background:#4f46e5;color:white;font-weight:800;cursor:pointer'},'✨ Tạo bài giảng bằng AI');
  const editor=$('div',{style:'display:none;gap:10px;margin-top:14px'});
  const controls={};for(const [k,label] of [['objectives','Mục tiêu'],['equipment','Thiết bị và học liệu'],['activities','Tiến trình hoạt động dạy học'],['content','Nội dung bài giảng, ví dụ và minh họa'],['assessment','Luyện tập và đánh giá'],['studentSummary','Bản tóm tắt ngắn gọn hiển thị cho học sinh']]){const [wrap,control]=area(label);controls[k]=control;editor.append(wrap)}
- const classSelect=select();classSelect.append(new Option('Chọn lớp để giao bài',''));
- try{const state=await api('/api/state');for(const cls of state.view?.assignmentClasses||[])classSelect.append(new Option(cls.name,cls.id));}catch{}
+ const classSelect=select();const emptyClass=uiDocument.createElement('option');emptyClass.value='';emptyClass.textContent='Chọn lớp để giao bài';classSelect.append(emptyClass);
+ try{const state=await api('/api/state');for(const cls of state.view?.assignmentClasses||[]){const option=uiDocument.createElement('option');option.value=cls.id;option.textContent=cls.name;classSelect.append(option)}}catch{}
  editor.append(field('Giao bài cho lớp',classSelect));
  const exercisePreview=$('div',{style:'padding:10px;border:1px solid #cbd5e1;border-radius:10px;background:white;font-size:12px;color:#334155;line-height:1.6'});
  exercisePreview.textContent='Bài luyện tập tương tác sẽ được tạo cùng bài giảng và hiển thị trong cổng học sinh.';
