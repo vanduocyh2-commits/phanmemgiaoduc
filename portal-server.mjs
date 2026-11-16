@@ -463,7 +463,7 @@ if(p==='/api/student/lessons/progress'&&req.method==='POST'){
   const row={...(old||{}),id,lessonId:lesson.id,classId:actor.cid,sbd:actor.sbd,answers,score,total:questions.length,completed:completed||old?.completed===true,completedAt:completed?new Date().toISOString():old?.completedAt||'',updatedAt:new Date().toISOString()};
   current.lessonProgress=current.lessonProgress.filter(x=>x.id!==id).concat(row);current._revision=(current._revision||0)+1;return row;
  });
- return send(res,200,{progress:updated});
+ return send(res,200,{progress:updated,results:checked,explanations:questions.map(q=>({id:q.id,text:q.explanation||''}))});
 }
 if(p==='/api/teacher-utilities'){
  if(!m||!['admin','teacher'].includes(m.role))return send(res,403,{error:'Chỉ giáo viên hoặc quản trị được quản lý tiện ích.'});
