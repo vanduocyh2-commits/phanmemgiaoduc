@@ -418,8 +418,52 @@ if(p==='/api/director-feedback'&&req.method==='POST'){if(!m||!['teacher','parent
 if(p==='/api/ai/math-lessons/save'&&req.method==='POST'){
  if(!m||!['admin','teacher'].includes(m.role))return send(res,403,{error:'Chỉ giáo viên và quản trị được lưu bài giảng.'});
  const input=await jsonBody(req),fields=input.fields||{};
- const updated=await store.mutate(current=>{const actor=member(current,raw),plan=(current.lessonPlans||[]).find(x=>x.id===input.planId);if(!actor||!plan||plan.owner!==actor.username)throw Error('Không tìm thấy bản nháp hoặc bạn không có quyền sửa.');for(const key of ['objectives','equipment','activities','content','assessment']){if(typeof fields[key]!=='string'||fields[key].length>60000)throw Error('Nội dung bài giảng không hợp lệ hoặc quá dài.');plan[key]=fields[key];}plan.updatedAt=new Date().toISOString();plan.teacherReviewed=false;current._revision=(current._revision||0)+1;return current});
+ const updated=await store.mutate(current=>{const actor=member(current,raw),plan=(current.lessonPlans||[]).find(x=>x.id===input.planId);if(!actor||!plan||plan.owner!==actor.username)throw Error('Không tìm thấy bản nháp hoặc bạn không có quyền sửa.');for(const key of ['objectives','equipment','activities','content','assessment','studentSummary']){if(fields[key]!==undefined){if(typeof fields[key]!=='string'||fields[key].length>60000)throw Error('Nội dung bài giảng không hợp lệ hoặc quá dài.');plan[key]=fields[key];}}if(fields.studentExercises!==undefined){if(!Array.isArray(fields.studentExercises)||fields.studentExercises.length>12)throw Error('Bộ câu hỏi luyện tập không hợp lệ.');plan.studentExercises=clone(fields.studentExercises);}plan.updatedAt=new Date().toISOString();plan.teacherReviewed=false;current._revision=(current._revision||0)+1;return current});
  return send(res,200,{planId:input.planId,updatedAt:updated.lessonPlans.find(x=>x.id===input.planId).updatedAt});
+}
+if(p==='/api/ai/math-lessons/publish'&&req.method==='POST'){
+ if(!m||!['admin','teacher'].includes(m.role))return send(res,403,{error:'Chỉ giáo viên và quản trị được giao bài.'});
+ const input=await jsonBody(req);
+ const result=await store.mutate(current=>{
+  const actor=member(current,raw),plan=(current.lessonPlans||[]).find(x=>x.id===input.planId);
+  if(!actor||!plan||plan.owner!==actor.username)throw Error('Không tìm thấy bản nháp hoặc không có quyền giao bài.');
+  const cls=current.classes.find(x=>x.id===input.classId);
+  if(!cls||actor.role==='teacher'&&cls.teacherId!==actor.account?.id)throw Error('Lớp được chọn không thuộc phạm vi giảng dạy.');
+  plan.classId=cls.id;plan.teacherReviewed=true;plan.draftStatus='published';
+  const lesson=publishLessonPlan(current,actor,{planId:plan.id,published:true});
+  current._revision=(current._revision||0)+1;
+  return {lessonId:lesson.id,title:lesson.title,className:cls.name};
+ });
+ return send(res,200,result);
+}
+if(p==='/api/student/lessons'&&req.method==='GET'){
+ if(!m||m.role!=='student')return send(res,403,{error:'Chỉ học sinh mới xem được bài học được giao.'});
+ const lessons=(d.centerLessons||[]).filter(l=>l.published===true&&(l.classIds||[]).includes(m.cid)).map(l=>({
+  id:l.id,title:l.title,subject:l.subject,grade:l.grade,chapter:l.chapter,lesson:l.lesson,
+  summary:l.studentSummary||l.content||'',exercises:Array.isArray(l.studentExercises)?l.studentExercises.map(q=>({id:q.id,question:q.question,options:q.options,explanation:q.explanation})):[],
+  createdAt:l.createdAt,updatedAt:l.updatedAt
+ }));
+ const progress=(d.lessonProgress||[]).filter(x=>x.classId===m.cid&&x.sbd===m.sbd);
+ return send(res,200,{lessons,progress,className:d.classes.find(x=>x.id===m.cid)?.name||''});
+}
+if(p==='/api/student/lessons/progress'&&req.method==='POST'){
+ if(!m||m.role!=='student')return send(res,403,{error:'Chỉ học sinh mới được lưu tiến độ.'});
+ const input=await jsonBody(req),lesson=(d.centerLessons||[]).find(l=>l.id===input.lessonId&&l.published===true&&(l.classIds||[]).includes(m.cid));
+ if(!lesson)return send(res,404,{error:'Bài học không còn được giao cho lớp này.'});
+ const questions=Array.isArray(lesson.studentExercises)?lesson.studentExercises:[];
+ const answers=input.answers&&typeof input.answers==='object'?input.answers:{};
+ const checked=questions.map(q=>({questionId:q.id,selected:Number.isInteger(answers[q.id])?answers[q.id]:-1,correct:Number.isInteger(answers[q.id])&&answers[q.id]===q.correctIndex}));
+ const score=checked.filter(x=>x.correct).length;
+ const completed=input.completed===true;
+ const updated=await store.mutate(current=>{
+  const actor=member(current,raw);if(!actor||actor.role!=='student'||actor.cid!==m.cid||actor.sbd!==m.sbd)throw Error('Phiên học sinh không hợp lệ.');
+  current.lessonProgress??=[];
+  const id=lesson.id+'|'+actor.cid+'|'+actor.sbd;
+  const old=current.lessonProgress.find(x=>x.id===id);
+  const row={...(old||{}),id,lessonId:lesson.id,classId:actor.cid,sbd:actor.sbd,answers,score,total:questions.length,completed:completed||old?.completed===true,completedAt:completed?new Date().toISOString():old?.completedAt||'',updatedAt:new Date().toISOString()};
+  current.lessonProgress=current.lessonProgress.filter(x=>x.id!==id).concat(row);current._revision=(current._revision||0)+1;return row;
+ });
+ return send(res,200,{progress:updated});
 }
 if(p==='/api/teacher-utilities'){
  if(!m||!['admin','teacher'].includes(m.role))return send(res,403,{error:'Chỉ giáo viên hoặc quản trị được quản lý tiện ích.'});
