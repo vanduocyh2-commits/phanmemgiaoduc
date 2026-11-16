@@ -1349,7 +1349,7 @@ const TS = (() => {
  function panelHost(){return state.sessionRole==='teacher'?($('ts-panel')||$('admin-exam-panel')):($('admin-exam-panel')||$('ts-panel'));}
 
  let teacherTop='',scopeOwner=null;const scopeDrafts=new Map();
- function scopedBankExams(){const c=state.classes.find(c=>c.id===teacherScopeClassId);return state.learningExams.filter(e=>!e.archivedAt&&examInTeacherClass(e,c));}
+ function scopedBankExams(){const classes=state.sessionRole==='teacher'?managedTeacherClasses():state.classes;return state.learningExams.filter(e=>!e.archivedAt&&classes.some(c=>examInTeacherClass(e,c)));}
  function tabCounts(){return teacherTabStatistics({classes:managedTeacherClasses(),exams:state.learningExams,assignments:teacherAssignments(),submissions:teacherSubmissions(),plans:state.lessonPlans,reports:state.learningReports},teacherScopeClassId,activeAccount?.username);}
  let gradeStatsMonth=(()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')})();
  function teacherMonthKey(value){if(value===null||value===undefined||value==='')return '';if(value instanceof Date&&!Number.isNaN(value.getTime()))return value.getFullYear()+'-'+String(value.getMonth()+1).padStart(2,'0');const raw=String(value).trim();let m=raw.match(/^(\d{4})[-/](\d{1,2})/);if(m)return m[1]+'-'+String(Number(m[2])).padStart(2,'0');m=raw.match(/^(\d{1,2})[/. \-](\d{1,2})[/. \-](\d{4})$/);if(m)return m[3]+'-'+String(Number(m[2])).padStart(2,'0');const d=new Date(raw);return Number.isNaN(d.getTime())?'':d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');}
