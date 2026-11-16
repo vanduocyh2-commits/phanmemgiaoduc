@@ -25,6 +25,9 @@ jobs:
           command_timeout: 10m
           script: |
             set -euo pipefail
+            echo "=== SSH identity and sudo permission check ==="
+            id
+            sudo -n -l || true
             echo "=== Deploying reviewed commit ${{ github.sha }} ==="
             sudo -n /usr/local/sbin/phanmemgiaoduc-ai-modules-deploy '${{ github.sha }}'
             echo "=== Verifying portal service health ==="
