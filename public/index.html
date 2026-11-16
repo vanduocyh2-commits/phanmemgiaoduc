@@ -3032,7 +3032,7 @@ function mark(id){const s=state.learningSubmissions.find(s=>s.id===id),a=state.a
   const questionHtml=(ex.questions||[]).map((q,i)=>{
    typeCounts[q.type]=(typeCounts[q.type]||0)+1;
    const number=Number(q.partNumber)||typeCounts[q.type];
-   const answerRow=solution?.answers?.find(row=>row.type===q.type&&Number(row.number)===number)||solution?.answers?.[i]||null;
+   const answerRow=solution?.answers?.find(row=>row.type===q.type&&Number(row.number)===number)||solution?.answers?.filter(row=>row.type===q.type)?.[typeCounts[q.type]-1]||null;
    const answer=String(q.answer||answerRow?.answer||'').trim();
    const tfValues=q.type==='tf'?tfAnswersFrom(q.tfAnswers||answer||answerRow?.tfAnswers||answerRow?.answer):[];
    let keyHtml='';
