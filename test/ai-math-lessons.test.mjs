@@ -19,3 +19,11 @@ test('rejects empty generated lesson content',()=>{
  const meta={book:catalog.books[0],chapter:catalog.books[0].chapters[0],lesson:catalog.books[0].chapters[0].lessons[0]};
  assert.throws(()=>normalizeAiMathLesson({content:'',activities:''},meta),/chưa có nội dung/);
 });
+
+test('creates a concise student summary and validated interactive exercises',()=>{
+ const meta={book:catalog.books[0],chapter:catalog.books[0].chapters[0],lesson:catalog.books[0].chapters[0].lessons[0]};
+ const plan=normalizeAiMathLesson({title:'Bài 1',content:'Nội dung',studentSummary:'Tóm tắt ngắn',studentExercises:[{id:'q1',question:'1+1 bằng?',options:['1','2'],correctIndex:1,explanation:'Vì 1+1=2.'},{id:'bad',question:'Bỏ đáp án',options:['A'],correctIndex:8}]},meta);
+ assert.equal(plan.studentSummary,'Tóm tắt ngắn');
+ assert.equal(plan.studentExercises.length,1);
+ assert.equal(plan.studentExercises[0].correctIndex,1);
+});
