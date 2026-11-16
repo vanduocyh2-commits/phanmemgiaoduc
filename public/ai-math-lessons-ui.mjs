@@ -1,0 +1,35 @@
+const $=(tag,attrs={},text='')=>{const n=document.createElement(tag);for(const [k,v] of Object.entries(attrs)){if(k==='style')n.style.cssText=v;else if(k==='class')n.className=v;else n.setAttribute(k,v)}if(text)n.textContent=text;return n};
+const css='width:100%;box-sizing:border-box;padding:9px;border:1px solid #cbd5e1;border-radius:9px;background:white;font:13px Inter,Arial,sans-serif';
+async function api(path,options={}){const r=await fetch(path,{credentials:'same-origin',...options,headers:{...(options.body?{'Content-Type':'application/json'}:{}),...options.headers}});const d=await r.json().catch(()=>({}));if(!r.ok)throw Error(d.error||'Máy chủ từ chối yêu cầu.');return d}
+function field(label,control){const w=$('label',{style:'display:grid;gap:5px;font-size:12px;font-weight:700;color:#334155'});w.append($('span',{},label),control);return w}
+function select(){const s=$('select',{style:css});return s}
+function area(label){const a=$('textarea',{rows:'7',style:css+';resize:vertical;line-height:1.6'});return [field(label,a),a]}
+async function mount(){if(document.getElementById('ai-math-lessons'))return;const host=document.getElementById('teacher-tools-host');if(!host)return;
+ const root=$('section',{id:'ai-math-lessons',style:'margin:14px 0;padding:16px;border:1px solid #c7d2fe;border-radius:16px;background:linear-gradient(135deg,#f5f3ff,#eff6ff);font-family:Inter,Arial,sans-serif'});
+ root.append($('div',{style:'display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap'},''));
+ const head=root.firstChild;head.append($('strong',{style:'font-size:16px;color:#312e81'},'✨ Bài giảng Toán AI'),$('span',{style:'font-size:11px;color:#64748b'},'KNTT · GDPT 2018 · Lớp 6–12'));
+ root.append($('p',{style:'font-size:12px;line-height:1.6;color:#475569;margin:8px 0 14px'},'Chọn đúng bài học trong sách, tạo bản nháp bằng AI, kiểm tra và chỉnh sửa trước khi lưu hoặc xuất PowerPoint.'));
+ const grid=$('div',{style:'display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:9px'});
+ const grade=select(),book=select(),chapter=select(),lesson=select();
+ const fill=(s,placeholder,rows,label)=>{s.replaceChildren(new Option(placeholder,''));for(const x of rows)s.add(new Option(label(x),x.id))};
+ const cat=await fetch('/question-bank-catalog.json',{cache:'no-store'}).then(r=>{if(!r.ok)throw Error('Không tải được danh mục sách Toán.');return r.json()});
+ fill(grade,'Chọn khối',cat.grades.map(x=>({id:String(x)})),x=>'Lớp '+x.id);
+ const updateBooks=()=>{const rows=cat.books.filter(x=>String(x.grade)===grade.value);fill(book,'Chọn sách / tập',rows,x=>x.label);fill(chapter,'Chọn chương',[],x=>x.title);fill(lesson,'Chọn bài học',[],x=>x.title)};
+ const updateChapters=()=>{const b=cat.books.find(x=>x.id===book.value);fill(chapter,'Chọn chương',b?.chapters||[],x=>'Chương '+x.order+'. '+x.title);fill(lesson,'Chọn bài học',[],x=>x.title)};
+ const updateLessons=()=>{const b=cat.books.find(x=>x.id===book.value),c=b?.chapters.find(x=>x.id===chapter.value);fill(lesson,'Chọn bài học',c?.lessons||[],x=>x.title)};
+ grade.addEventListener('change',updateBooks);book.addEventListener('change',updateChapters);chapter.addEventListener('change',updateLessons);
+ grid.append(field('Khối lớp',grade),field('Sách / tập',book),field('Chương',chapter),field('Bài học',lesson));root.append(grid);
+ const status=$('p',{role:'status',style:'font-size:12px;color:#475569;margin:12px 0'});status.textContent='Sẵn sàng tạo bài giảng.';root.append(status);
+ const generate=$('button',{type:'button',style:'padding:10px 15px;border:0;border-radius:9px;background:#4f46e5;color:white;font-weight:800;cursor:pointer'},'✨ Tạo bài giảng bằng AI');
+ const editor=$('div',{style:'display:grid;gap:10px;margin-top:14px'});editor.classList.add('hidden');
+ const controls={};for(const [k,label] of [['objectives','Mục tiêu'],['equipment','Thiết bị và học liệu'],['activities','Tiến trình hoạt động dạy học'],['content','Nội dung bài giảng, ví dụ và minh họa'],['assessment','Luyện tập và đánh giá']]){const [wrap,control]=area(label);controls[k]=control;editor.append(wrap)}
+ const actions=$('div',{style:'display:flex;gap:8px;flex-wrap:wrap'});
+ const save=$('button',{type:'button',style:'padding:9px 13px;border:0;border-radius:9px;background:#0f766e;color:white;font-weight:700'},'Lưu bản nháp');
+ const ppt=$('button',{type:'button',style:'padding:9px 13px;border:1px solid #94a3b8;border-radius:9px;background:white;color:#334155;font-weight:700'},'Xuất PowerPoint');
+ actions.append(save,ppt);editor.append(actions);root.append(generate,editor);host.before(root);
+ let planId=null;
+ generate.addEventListener('click',async()=>{if(!grade.value||!book.value||!chapter.value||!lesson.value){status.textContent='Hãy chọn đầy đủ khối, sách, chương và bài học.';return}generate.disabled=true;status.textContent='AI đang soạn bài giảng. Có thể mất một lúc…';try{const d=await api('/api/ai/math-lessons/generate',{method:'POST',body:JSON.stringify({grade:grade.value,bookId:book.value,chapterId:chapter.value,lessonId:lesson.value})});planId=d.plan.id;for(const k of Object.keys(controls))controls[k].value=d.plan[k]||'';editor.classList.remove('hidden');status.textContent='Đã tạo bản nháp. Giáo viên cần kiểm tra nội dung, công thức và hình minh họa trước khi sử dụng.'}catch(e){status.textContent=e.message}finally{generate.disabled=false}});
+ save.addEventListener('click',async()=>{if(!planId)return;save.disabled=true;try{const d=await api('/api/ai/math-lessons/save',{method:'POST',body:JSON.stringify({planId,fields:Object.fromEntries(Object.entries(controls).map(([k,v])=>[k,v.value]))})});status.textContent='Đã lưu bản nháp vào kho bài giảng. Mã: '+d.planId}catch(e){status.textContent=e.message}finally{save.disabled=false}});
+ ppt.addEventListener('click',async()=>{if(!planId)return;try{await api('/api/ai/math-lessons/save',{method:'POST',body:JSON.stringify({planId,fields:Object.fromEntries(Object.entries(controls).map(([k,v])=>[k,v.value]))})});const r=await fetch('/api/lesson-plans/powerpoint',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({planId})});if(!r.ok){const d=await r.json();throw Error(d.error||'Không xuất được PowerPoint.')}const blob=await r.blob(),url=URL.createObjectURL(blob),a=$('a',{href:url,download:'Bai-giang-Toan-KNTT.pptx'});a.click();URL.revokeObjectURL(url);status.textContent='Đã tạo tệp PowerPoint.'}catch(e){status.textContent=e.message}});
+}
+window.addEventListener('message',e=>{const f=document.getElementById('teacher-workspace');if(f&&e.source===f.contentWindow&&e.data?.type==='edu-teacher-ready')mount().catch(err=>{const host=document.getElementById('teacher-tools-host');if(host)host.prepend($('p',{style:'color:#b91c1c'},err.message))})});
