@@ -16,7 +16,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Deploy reviewed source files to VPS with backup and rollback
+      - name: Stage AI lesson modules and deploy reviewed source
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.VPS_HOST }}
@@ -25,8 +25,40 @@ jobs:
           command_timeout: 10m
           script: |
             set -euo pipefail
-            echo "=== Deploying reviewed GitHub commit to VPS ==="
-            sudo -n /usr/local/sbin/phanmemgiaoduc-source-deploy '${{ github.sha }}'
+            SHA=' ${{ github.sha }}'
+            SHA="${SHA# }"
+            RAW="https://raw.githubusercontent.com/vanduocyh2-commits/phanmemgiaoduc/${SHA}"
+            STAGE="$(mktemp -d /tmp/phanmemgiaoduc-ai-stage.XXXXXX)"
+            APP="/opt/phanmemgiaoduc"
+            ROOT_MODULE="${APP}/ai-math-lessons.mjs"
+            PUBLIC_MODULE="${APP}/public/ai-math-lessons-ui.mjs"
+            cleanup() {
+              status=$?
+              if [ "$status" -ne 0 ] && [ -d "$STAGE/backup" ]; then
+                echo "Deployment failed; restoring staged AI module files" >&2
+                if [ -f "$STAGE/backup/root" ]; then sudo -n cp -a "$STAGE/backup/root" "$ROOT_MODULE"; else sudo -n rm -f "$ROOT_MODULE"; fi
+                if [ -f "$STAGE/backup/public" ]; then sudo -n cp -a "$STAGE/backup/public" "$PUBLIC_MODULE"; else sudo -n rm -f "$PUBLIC_MODULE"; fi
+              fi
+              rm -rf "$STAGE"
+              exit "$status"
+            }
+            trap cleanup EXIT
+
+            echo "=== Downloading AI lesson modules for commit ${SHA} ==="
+            mkdir -p "$STAGE/backup"
+            curl -fsSL --retry 2 --connect-timeout 10 --max-time 120 "$RAW/ai-math-lessons.mjs" -o "$STAGE/ai-math-lessons.mjs"
+            curl -fsSL --retry 2 --connect-timeout 10 --max-time 120 "$RAW/public/ai-math-lessons-ui.mjs" -o "$STAGE/ai-math-lessons-ui.mjs"
+            node --check "$STAGE/ai-math-lessons.mjs"
+            node --check "$STAGE/ai-math-lessons-ui.mjs"
+
+            if sudo -n test -f "$ROOT_MODULE"; then sudo -n cp -a "$ROOT_MODULE" "$STAGE/backup/root"; fi
+            if sudo -n test -f "$PUBLIC_MODULE"; then sudo -n cp -a "$PUBLIC_MODULE" "$STAGE/backup/public"; fi
+            sudo -n install -o centerapp -g centerapp -m 0644 "$STAGE/ai-math-lessons.mjs" "$ROOT_MODULE"
+            sudo -n install -o centerapp -g centerapp -m 0644 "$STAGE/ai-math-lessons-ui.mjs" "$PUBLIC_MODULE"
+
+            echo "=== Deploying public/index.html and portal-server.mjs ==="
+            sudo -n /usr/local/sbin/phanmemgiaoduc-source-deploy "${SHA}"
+
             echo "=== Verifying portal service health ==="
             for attempt in {1..12}; do
               if curl --fail --silent --show-error --max-time 3 http://127.0.0.1:3000/api/health; then
