@@ -183,6 +183,9 @@ function wordRun(value,format={}) {
   if(format.code)props.push('<w:rFonts w:ascii="Consolas" w:hAnsi="Consolas"/>');
   return '<w:r>'+(props.length?'<w:rPr>'+props.join('')+'</w:rPr>':'')+'<w:t xml:space="preserve">'+escXml(text)+'</w:t></w:r>';
 }
+function wordField(instruction, fallback='1') {
+  return '<w:r><w:fldChar w:fldCharType="begin"/></w:r><w:r><w:instrText xml:space="preserve"> '+instruction+' </w:instrText></w:r><w:r><w:fldChar w:fldCharType="separate"/></w:r>'+wordRun(fallback)+'<w:r><w:fldChar w:fldCharType="end"/></w:r>';
+}
 function wordParagraph(runs, options={}) {
   const p=[];
   if(options.style)p.push('<w:pStyle w:val="'+options.style+'"/>');
@@ -233,7 +236,13 @@ export function createWordDocx(html, options={}) {
     return '<w:r><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0"><wp:extent cx="'+cx+'" cy="'+cy+'"/><wp:docPr id="'+imageIndex+'" name="'+escXml(name)+'"/><a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic><pic:nvPicPr><pic:cNvPr id="'+imageIndex+'" name="'+escXml(name)+'"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="'+id+'"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="'+cx+'" cy="'+cy+'"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r>';
   }
   function inline(node, fmt={}) {
-    if(node.nodeType===3)return wordRun(node.nodeValue||'',fmt);
+    if(node.nodeType===3) {
+      const raw=String(node.nodeValue||'');
+      // Replace the generated fixed page-count label with Word's live NUMPAGES field.
+      const match=raw.match(/(Đề thi có\\s*)\\d+(\\s*trang)/i);
+      if(match)return wordRun(match[1],fmt)+wordField('NUMPAGES')+wordRun(match[2],fmt);
+      return wordRun(raw,fmt);
+    }
     if(node.nodeType!==1)return '';
     const tag=local(node);
     if(tag==='math') {formulaCount++;return mathMLToOMML(node);}
@@ -320,7 +329,7 @@ export function createWordDocx(html, options={}) {
       // response cells blank. The source HTML contains literal "□" text,
       // not input elements, so filtering input tags alone cannot remove them.
       let cellBody=isTf
-        ? wordParagraph(ri===0||ci===0?inline(cell):'',{align:ci===0?'left':'center',after:70})
+        ? wordParagraph(ri===0||ci===0?inline(cell):'',{align:ci===0?'left':'center',after:70,keep:ci===0&&ri<rows.length-1})
         : blockChildren(cell);
       if(!cellBody)cellBody=wordParagraph(inline(cell));
       return '<w:tc><w:tcPr><w:tcW w:w="'+(widths[ci]||Math.floor(9000/cols))+'" w:type="dxa"/><w:vAlign w:val="center"/>'+(ri===0?'<w:shd w:fill="E9EEF7"/>':'')+'</w:tcPr>'+cellBody+'</w:tc>';
@@ -376,16 +385,17 @@ export function createWordDocx(html, options={}) {
       return wordParagraph(inline(node,{italic:true}),{after:90});
     }
     if(node.classList?.contains('exam-paper-footer')) {
-      // Keep the closing "HẾT" line and the candidate reminder as two
-      // separate centered paragraphs in the exported Word document.
-      return children(node).map(child => {
-        if (child.nodeType !== 1) return '';
-        const childTag = local(child);
-        if (childTag === 'p' || childTag === 'b' || childTag === 'strong') {
-          return wordParagraph(inline(child), {align:'center', after:60});
-        }
-        return block(child);
-      }).join('');
+      // Split the exam-end marker and candidate reminder into separate centered lines.
+      const footerText=String(node.textContent||'').replace(/\\s+/g,' ').trim();
+      const reminder='Thí sinh kiểm tra lại bài làm trước khi nộp.';
+      const reminderAt=footerText.indexOf(reminder);
+      if(reminderAt>=0) {
+        const endLine=footerText.slice(0,reminderAt).trim();
+        const reminderLine=footerText.slice(reminderAt).trim();
+        return wordParagraph(wordRun(endLine),{align:'center',after:40})+
+          wordParagraph(wordRun(reminderLine),{align:'center',after:80});
+      }
+      return wordParagraph(inline(node),{align:'center',after:80});
     }
     if(tag==='table')return tableXml(node);
     if(tag==='img')return wordParagraph(imageDrawing(node),{align:'center',after:100});
