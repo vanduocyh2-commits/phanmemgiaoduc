@@ -276,7 +276,7 @@ export function createWordDocx(html, options={}) {
       const cell=cells[ci], para=wordParagraph(cell?(ci===0||ri===0?inline(cell):''):'',{align:ci===0?'left':'center',after:70});
       return '<w:tc><w:tcPr><w:tcW w:w="'+width+'" w:type="dxa"/><w:vAlign w:val="center"/>'+(ri===0?'<w:shd w:fill="E9EEF7"/>':'')+'</w:tcPr>'+para+'</w:tc>';
     }).join('')+'</w:tr>').join('');
-    return '<w:tbl><w:tblPr><w:tblW w:w="9000" w:type="dxa"/><w:tblLayout w:type="fixed"/>'+border+'</w:tblPr>'+grid+body+'</w:tbl>';
+    return '<w:tbl><w:tblPr><w:tblW w:w="'+tableWidth+'" w:type="dxa"/><w:tblLayout w:type="fixed"/><w:tblInd w:w="0" w:type="dxa"/>'+border+'</w:tblPr>'+grid+body+'</w:tbl>';
   }
   function tableXml(table) {
     const sourceRows=Array.from(table.rows||[]);
@@ -308,7 +308,10 @@ export function createWordDocx(html, options={}) {
     const firstCellText=String(rows[0]?.cells?.[0]?.textContent||'').replace(/\s+/g,' ').trim().toLowerCase();
     // Detect the true/false answer table even when saved question HTML loses its class.
     const isTf=hasClass(table,'tf-answer-table') || (cols===3 && firstCellText.includes('nội dung mệnh đề') && String(rows[0]?.cells?.[1]?.textContent||'').replace(/\s+/g,' ').trim().toLowerCase()==='đúng' && String(rows[0]?.cells?.[2]?.textContent||'').replace(/\s+/g,' ').trim().toLowerCase()==='sai');
-    const widths=isTf?[7600,700,700]:Array(cols).fill(Math.floor(9000/cols));
+    // A4 content width with 960-twip left/right margins: 11906 - 2*960 = 9986.
+    // Give the statement column most of the width and keep the answer columns narrow.
+    const widths=isTf?[8188,899,899]:Array(cols).fill(Math.floor(9000/cols));
+    const tableWidth=widths.reduce((sum,width)=>sum+width,0);
     const border='<w:tblBorders><w:top w:val="single" w:sz="6" w:color="555555"/><w:left w:val="single" w:sz="6" w:color="555555"/><w:bottom w:val="single" w:sz="6" w:color="555555"/><w:right w:val="single" w:sz="6" w:color="555555"/><w:insideH w:val="single" w:sz="4" w:color="888888"/><w:insideV w:val="single" w:sz="4" w:color="888888"/></w:tblBorders>';
     const grid='<w:tblGrid>'+widths.map(w=>'<w:gridCol w:w="'+w+'"/>').join('')+'</w:tblGrid>';
     const body=rows.map((row,ri)=>'<w:tr><w:trPr><w:cantSplit/></w:trPr>'+Array.from(row.cells||[]).map((cell,ci)=>{
