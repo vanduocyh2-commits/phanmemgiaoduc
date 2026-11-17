@@ -250,7 +250,7 @@ export function createWordDocx(html, options={}) {
   }
   function answerGridXml(gridNode) {
     const descendants=Array.from(gridNode.querySelectorAll('*'));
-    const head=descendants.find(node=>hasClass(node,'tf-answer-head'))||null;
+    let head=descendants.find(node=>hasClass(node,'tf-answer-head'))||null;
     const rowNodes=descendants.filter(node=>hasClass(node,'tf-answer-row'));
     // Defensive fallback: recover the expected three-column structure from
     // the rendered direct-child order even if a browser parser alters classes.
