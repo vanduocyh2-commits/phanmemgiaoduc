@@ -376,7 +376,16 @@ export function createWordDocx(html, options={}) {
       return wordParagraph(inline(node,{italic:true}),{after:90});
     }
     if(node.classList?.contains('exam-paper-footer')) {
-      return wordParagraph(inline(node),{align:'center',after:80});
+      // Keep the closing "HẾT" line and the candidate reminder as two
+      // separate centered paragraphs in the exported Word document.
+      return children(node).map(child => {
+        if (child.nodeType !== 1) return '';
+        const childTag = local(child);
+        if (childTag === 'p' || childTag === 'b' || childTag === 'strong') {
+          return wordParagraph(inline(child), {align:'center', after:60});
+        }
+        return block(child);
+      }).join('');
     }
     if(tag==='table')return tableXml(node);
     if(tag==='img')return wordParagraph(imageDrawing(node),{align:'center',after:100});
@@ -407,17 +416,21 @@ export function createWordDocx(html, options={}) {
   if(!body)body=wordParagraph(wordRun('Không có nội dung để xuất.'));
   const title=escXml(options.title||'Đề thi');
   const docXml='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
-    +'<w:document xmlns:w="'+WORD_NS+'" xmlns:r="'+DOC_REL_NS+'" xmlns:m="'+MATH_NS+'" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><w:body>'+body+'<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1020" w:right="960" w:bottom="1020" w:left="960"/></w:sectPr></w:body></w:document>';
+    +'<w:document xmlns:w="'+WORD_NS+'" xmlns:r="'+DOC_REL_NS+'" xmlns:m="'+MATH_NS+'" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><w:body>'+body+'<w:sectPr><w:footerReference w:type="default" r:id="rIdFooter"/><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1020" w:right="960" w:bottom="1020" w:left="960" w:footer="480"/></w:sectPr></w:body></w:document>';
   const styles='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:styles xmlns:w="'+WORD_NS+'"><w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman" w:eastAsia="Times New Roman"/></w:rPr></w:rPrDefault><w:pPrDefault><w:pPr><w:spacing w:after="80" w:line="240" w:lineRule="auto"/></w:pPr></w:pPrDefault></w:docDefaults><w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/></w:style><w:style w:type="paragraph" w:styleId="Heading1"><w:name w:val="heading 1"/><w:basedOn w:val="Normal"/><w:rPr><w:b/><w:sz w:val="30"/></w:rPr></w:style><w:style w:type="paragraph" w:styleId="Heading2"><w:name w:val="heading 2"/><w:basedOn w:val="Normal"/><w:rPr><w:b/><w:sz w:val="26"/></w:rPr></w:style></w:styles>';
   const types=['<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/>'];
   if(contentTypes.has('png'))types.push('<Default Extension="png" ContentType="image/png"/>');
   if(contentTypes.has('jpg'))types.push('<Default Extension="jpg" ContentType="image/jpeg"/>');
-  types.push('<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/><Override PartName="/word/settings.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.settings+xml"/></Types>');
+  types.push('<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/><Override PartName="/word/settings.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.settings+xml"/><Override PartName="/word/footer1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml"/></Types>');
   entries.push(['[Content_Types].xml',types.join('')]);
   entries.push(['_rels/.rels','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="'+REL_NS+'"><Relationship Id="rId1" Type="'+DOC_REL_NS+'/officeDocument" Target="word/document.xml"/></Relationships>']);
-  entries.push(['word/_rels/document.xml.rels','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="'+REL_NS+'"><Relationship Id="rIdStyles" Type="'+DOC_REL_NS+'/styles" Target="styles.xml"/><Relationship Id="rIdSettings" Type="'+DOC_REL_NS+'/settings" Target="settings.xml"/>'+imageRels.join('')+'</Relationships>']);
+  entries.push(['word/_rels/document.xml.rels','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="'+REL_NS+'"><Relationship Id="rIdStyles" Type="'+DOC_REL_NS+'/styles" Target="styles.xml"/><Relationship Id="rIdSettings" Type="'+DOC_REL_NS+'/settings" Target="settings.xml"/><Relationship Id="rIdFooter" Type="'+DOC_REL_NS+'/footer" Target="footer1.xml"/>'+imageRels.join('')+'</Relationships>']);
   entries.push(['word/styles.xml',styles]);
   entries.push(['word/settings.xml','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:settings xmlns:w="'+WORD_NS+'"><w:updateFields w:val="true"/></w:settings>']);
+  // PAGE and NUMPAGES are Word fields, so the displayed count follows the
+  // real pagination after Word lays out the completed document.
+  const pageField = (instruction, fallback) => '<w:r><w:fldChar w:fldCharType="begin"/></w:r><w:r><w:instrText xml:space="preserve"> '+instruction+' </w:instrText></w:r><w:r><w:fldChar w:fldCharType="separate"/></w:r>'+wordRun(fallback) + '<w:r><w:fldChar w:fldCharType="end"/></w:r>';
+  entries.push(['word/footer1.xml','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:ftr xmlns:w="'+WORD_NS+'"><w:p><w:pPr><w:jc w:val="center"/></w:pPr>'+wordRun('Trang ') + pageField('PAGE','1') + wordRun('/') + pageField('NUMPAGES','1')+'</w:p></w:ftr>']);
   entries.push(['word/document.xml',docXml]);
   // Validate every XML part before packaging. A malformed XML part can produce
   // a ZIP that downloads successfully but Word refuses to open.
