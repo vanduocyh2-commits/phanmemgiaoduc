@@ -2515,30 +2515,24 @@ function wordPlainMath(value){
 }
 function wordRich(value){const raw=String(value??'');return window.MathBridge?window.MathBridge.format(raw):esc(raw).replace(/\n/g,'<br>');}
 function removeRepeatedExamMetadata(html){
- // Do not use DOMParser here: in some Word-export contexts the detached
- // document can lack a body element, which raises "reading innerHTML of null".
- // The imported metadata is emitted as individual paragraph/heading elements,
- // so remove just those exact lines while preserving surrounding question data.
- const source=String(html||'');
- const repeated=/^(?:ĐƠN VỊ RA ĐỀ|ĐỀ KIỂM TRA|MÔN|THỜI GIAN)\\s*:/i;
+ // Avoid DOMParser in this helper: detached parser documents may not expose
+ // a body element in the Word-export flow. Remove only standalone metadata
+ // paragraphs/headings and preserve question content and formula markup.
+ const repeated=/^(?:ĐƠN VỊ RA ĐỀ|ĐỀ KIỂM TRA|MÔN|THỜI GIAN)\s*:/i;
  const plain=value=>String(value||'')
-   .replace(/<br\\s*\\/?\\s*>/gi,' ')
-   .replace(/<\\/p\\s*>/gi,' ')
+   .replace(/<br\s*\/?\s*>/gi,' ')
+   .replace(/<\/(?:p|div|li|center)>/gi,' ')
    .replace(/<[^>]*>/g,' ')
    .replace(/&nbsp;|&#160;|&#xA0;/gi,' ')
    .replace(/&amp;/gi,'&')
    .replace(/&lt;/gi,'<')
    .replace(/&gt;/gi,'>')
-   .replace(/[\\s\\u00a0]+/g,' ')
+   .replace(/[\s\u00a0]+/g,' ')
    .trim();
- let output=source.replace(/<(p|h1|h2|h3|h4|h5|h6|li|center)(\\b[^>]*)>[\\s\\S]*?<\\/\\1\\s*>/gi,block=>{
+ return String(html||'').replace(/<(p|h1|h2|h3|h4|h5|h6|li|center)(\b[^>]*)>[\s\S]*?<\/\1\s*>/gi,block=>{
    return repeated.test(plain(block))?'':block;
  });
- // Also discard a plain-text metadata line when it was not wrapped in a block.
- output=output.replace(/(^|<br\\s*\\/?\\s*>|\\n)\\s*(?:ĐƠN VỊ RA ĐỀ|ĐỀ KIỂM TRA|MÔN|THỜI GIAN)\\s*:[^<\\n]*(?=<br|$|\\n)/gi,'$1');
- return output;
-}
-function stripRepeatedExamMetadataFromWord(html){return removeRepeatedExamMetadata(html);}
+}function stripRepeatedExamMetadataFromWord(html){return removeRepeatedExamMetadata(html);}
 function wordSection(title,body){
  // The exam already has its own designed header; do not prepend a second generic title/meta line.
  if(String(title||"").trim().toUpperCase()==="ĐỀ THI")return stripRepeatedExamMetadataFromWord(body);
