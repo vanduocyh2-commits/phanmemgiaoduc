@@ -27,6 +27,38 @@ jobs:
             set -euo pipefail
             echo "=== Deploying reviewed commit ${{ github.sha }} ==="
             sudo -n /usr/local/sbin/phanmemgiaoduc-ai-modules-deploy '${{ github.sha }}'
+            echo "=== Deploying the Word DOCX exporter module ==="
+            WORD_STAGE="$(mktemp -d /tmp/phanmemgiaoduc-word-export.XXXXXX)"
+            WORD_TARGET="/opt/phanmemgiaoduc/public/word-docx-export.mjs"
+            WORD_HAD_PREVIOUS=0
+            if sudo -n test -f "$WORD_TARGET"; then
+              sudo -n cp -a "$WORD_TARGET" "$WORD_STAGE/previous"
+              WORD_HAD_PREVIOUS=1
+            fi
+            word_export_rollback() {
+              status=$?
+              if [[ "$status" -ne 0 ]]; then
+                echo "Word exporter deployment failed; restoring previous module" >&2
+                if [[ "$WORD_HAD_PREVIOUS" -eq 1 ]]; then
+                  sudo -n install -o centerapp -g centerapp -m 0644 "$WORD_STAGE/previous" "$WORD_TARGET"
+                else
+                  sudo -n rm -f "$WORD_TARGET"
+                fi
+              fi
+              rm -rf "$WORD_STAGE"
+              exit "$status"
+            }
+            trap word_export_rollback EXIT
+            curl -fsSL --retry 2 --connect-timeout 10 --max-time 120 \
+              "https://raw.githubusercontent.com/vanduocyh2-commits/phanmemgiaoduc/${{ github.sha }}/public/word-docx-export.mjs" \
+              -o "$WORD_STAGE/word-docx-export.mjs"
+            node --check "$WORD_STAGE/word-docx-export.mjs"
+            sudo -n install -o centerapp -g centerapp -m 0644 \
+              "$WORD_STAGE/word-docx-export.mjs" "$WORD_TARGET"
+            echo "WORD_DOCX_EXPORT_DEPLOYED"
+            sudo -n sha256sum "$WORD_TARGET"
+            trap - EXIT
+            rm -rf "$WORD_STAGE"
             echo "=== Verifying portal service health ==="
             for attempt in {1..12}; do
               if curl --fail --silent --show-error --max-time 3 http://127.0.0.1:3000/api/health; then
