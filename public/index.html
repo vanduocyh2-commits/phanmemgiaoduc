@@ -4146,7 +4146,22 @@ async function saveLessonToLibrary(){const id=await saveLesson(false);if(!id)ret
  }catch(e){for(const id of saved)try{await EssayFiles.remove(id)}catch(err){}toast('Không nhập được bài nộp: '+e.message);}finally{input.value='';}}
 
  const defaultTfCurve=[0,.1,.25,.5,1];
- function tfAnswersFrom(value){if(Array.isArray(value))return Array.from({length:4},(_,i)=>['Đúng','Sai'].includes(value[i])?value[i]:'');const text=String(value||'').trim(),words=text.match(/đúng|sai|true|false/gi);if(words?.length===4)return words.map(v=>/đúng|true/i.test(v)?'Đúng':'Sai');const code=text.replace(/[\s,;|.]/g,'').toUpperCase();if(/^[ĐDS_]{4}$/.test(code))return [...code].map(v=>v==='_'?'':v==='S'?'Sai':'Đúng');return ['','','',''];}
+ function tfAnswersFrom(value){
+   if(Array.isArray(value))return Array.from({length:4},(_,i)=>['Đúng','Sai'].includes(value[i])?value[i]:'');
+   const text=String(value||'').trim();
+   // Prefer explicitly labeled a/b/c/d answers. This remains reliable even
+   // when Gemini also repeats true/false words in the explanation.
+   const labeled=[...text.matchAll(/(?:^|[;\\n,|]\\s*|\\s)([a-d])\\s*[).:]\\s*(đúng|sai|true|false)\\b/gi)];
+   if(labeled.length>=4){
+     const map=new Map(labeled.map(m=>[m[1].toLowerCase(),/đúng|true/i.test(m[2])?'Đúng':'Sai']));
+     if(['a','b','c','d'].every(k=>map.has(k)))return ['a','b','c','d'].map(k=>map.get(k));
+   }
+   const words=text.match(/đúng|sai|true|false/gi);
+   if(words?.length===4)return words.map(v=>/đúng|true/i.test(v)?'Đúng':'Sai');
+   const code=text.replace(/[\\s,;|.]/g,'').toUpperCase();
+   if(/^[ĐDS_]{4}$/.test(code))return [...code].map(v=>v==='_'?'':v==='S'?'Sai':'Đúng');
+   return ['','','',''];
+ }
  const tfCode=values=>values.map(v=>v==='Đúng'?'Đ':v==='Sai'?'S':'_').join('');
  function validTfCurve(curve){return Array.isArray(curve)&&curve.length===5&&curve[0]===0&&curve[4]===1&&curve.every((v,i)=>Number.isFinite(v)&&v>=0&&v<=1&&(!i||v>=curve[i-1]));}
  function tfCurveFor(ex){return validTfCurve(ex.tfScoring)?ex.tfScoring:defaultTfCurve;}
