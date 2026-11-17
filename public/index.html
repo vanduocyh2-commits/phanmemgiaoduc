@@ -4158,7 +4158,7 @@ async function saveLessonToLibrary(){const id=await saveLesson(false);if(!id)ret
    }
    const words=text.match(/đúng|sai|true|false/gi);
    if(words?.length===4)return words.map(v=>/đúng|true/i.test(v)?'Đúng':'Sai');
-   const code=text.replace(/[\\s,;|.]/g,'').toUpperCase();
+   const code=text.replace(/[\\s,;|.\\-–—]/g,'').toUpperCase();
    if(/^[ĐDS_]{4}$/.test(code))return [...code].map(v=>v==='_'?'':v==='S'?'Sai':'Đúng');
    return ['','','',''];
  }
