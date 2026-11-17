@@ -234,7 +234,9 @@ export function createWordDocx(html, options={}) {
     if(tag==='annotation'||tag==='annotation-xml')return '';
     if(tag==='img')return imageDrawing(node);
     if(tag==='br')return '<w:r><w:br/></w:r>';
-    if(tag==='input')return String(attr(node,'type','')).toLowerCase()==='checkbox'||String(attr(node,'type','')).toLowerCase()==='radio'?wordRun('☐ '):'';
+    // Exam papers are printed for students to mark by hand; do not export
+    // browser checkbox/radio widgets as tiny square glyphs in Word.
+    if(tag==='input')return '';
     const next={...fmt};
     if(tag==='b'||tag==='strong')next.bold=true;
     if(tag==='i'||tag==='em')next.italic=true;
