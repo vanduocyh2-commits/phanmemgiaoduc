@@ -280,11 +280,10 @@ export function createWordDocx(html, options={}) {
   function tableXml(table) {
     const rows=Array.from(table.rows||[]);
     if(!rows.length)return '';
-    const firstCellText=String(rows[0]?.cells?.[0]?.textContent||'').replace(/\\s+/g,' ').trim().toLowerCase();
-    // The exam HTML may lose the CSS class when assembled from saved question markup.
-    // Detect the semantic table by its stable three-column header as a fallback.
-    const isTf=String(attr(table,'class','')).includes('tf-answer-table') || (cols===3 && firstCellText.includes('nội dung mệnh đề') && String(rows[0]?.cells?.[1]?.textContent||'').trim().toLowerCase()==='đúng' && String(rows[0]?.cells?.[2]?.textContent||'').trim().toLowerCase()==='sai');
     const cols=Math.max(1,...rows.map(row=>Array.from(row.cells||[]).length));
+    const firstCellText=String(rows[0]?.cells?.[0]?.textContent||'').replace(/\s+/g,' ').trim().toLowerCase();
+    // Detect the true/false answer table even when saved question HTML loses its class.
+    const isTf=hasClass(table,'tf-answer-table') || (cols===3 && firstCellText.includes('nội dung mệnh đề') && String(rows[0]?.cells?.[1]?.textContent||'').replace(/\s+/g,' ').trim().toLowerCase()==='đúng' && String(rows[0]?.cells?.[2]?.textContent||'').replace(/\s+/g,' ').trim().toLowerCase()==='sai');
     const widths=isTf?[7600,700,700]:Array(cols).fill(Math.floor(9000/cols));
     const border='<w:tblBorders><w:top w:val="single" w:sz="6" w:color="555555"/><w:left w:val="single" w:sz="6" w:color="555555"/><w:bottom w:val="single" w:sz="6" w:color="555555"/><w:right w:val="single" w:sz="6" w:color="555555"/><w:insideH w:val="single" w:sz="4" w:color="888888"/><w:insideV w:val="single" w:sz="4" w:color="888888"/></w:tblBorders>';
     const grid='<w:tblGrid>'+widths.map(w=>'<w:gridCol w:w="'+w+'"/>').join('')+'</w:tblGrid>';
