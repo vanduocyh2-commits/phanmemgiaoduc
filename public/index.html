@@ -2504,7 +2504,7 @@ function wordRich(value){const raw=String(value??'');return window.MathBridge?wi
 function removeRepeatedExamMetadata(html){
  if(typeof DOMParser==="undefined")return String(html||"");
  const parsed=new DOMParser().parseFromString(String(html||""),"text/html");
- const intro=parsed.querySelector(".exam-introduction");
+ const intro=parsed.querySelector(".exam-introduction")||parsed.body;
  if(!intro)return parsed.body.innerHTML;
  const repeated=/^(ĐƠN VỊ RA ĐỀ|ĐỀ KIỂM TRA|MÔN|THỜI GIAN)\s*:/i;
  const isRepeated=node=>repeated.test(String(node.textContent||"").replace(/[\s\u00a0]+/g," ").trim());
@@ -2512,9 +2512,9 @@ function removeRepeatedExamMetadata(html){
  // also contains actual exam questions or other non-header content.
  const blocks=Array.from(intro.querySelectorAll("p,h1,h2,h3,h4,h5,h6,li,center,div,section,tr,td")).reverse();
  for(const node of blocks){
-   if(!node.isConnected||!isRepeated(node))continue;
+   if(!node.parentNode||!isRepeated(node))continue;
    const descendants=Array.from(node.querySelectorAll("p,h1,h2,h3,h4,h5,h6,li,center,div,section,tr,td"));
-   if(descendants.some(child=>child.isConnected&&!isRepeated(child)))continue;
+   if(descendants.some(child=>child.parentNode&&!isRepeated(child)))continue;
    node.remove();
  }
  if(!String(intro.textContent||"").replace(/[\s\u00a0]/g,"").length)intro.remove();
