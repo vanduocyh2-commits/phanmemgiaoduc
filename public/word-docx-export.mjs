@@ -8,7 +8,10 @@ const local = node => String(node?.localName || node?.nodeName || '').split(':')
 export const children = node => Array.from(node?.childNodes || []).filter(child => child && child.nodeType !== 8);
 const textOf = node => String(node?.textContent ?? '');
 const attr = (node, name, fallback='') => node?.getAttribute?.(name) ?? fallback;
-const hasClass = (node, name) => String(attr(node,'class','')).split(/\s+/).includes(name);
+const hasClass = (node, name) => {
+  const value=String(attr(node,'class','')||'');
+  return value===name || (' '+value.replace(/\s+/g,' ')+' ').includes(' '+name+' ');
+};
 
 function mathRun(value, style='p') {
   const text = String(value ?? '');
@@ -249,6 +252,16 @@ export function createWordDocx(html, options={}) {
     const descendants=Array.from(gridNode.querySelectorAll('*'));
     const head=descendants.find(node=>hasClass(node,'tf-answer-head'))||null;
     const rowNodes=descendants.filter(node=>hasClass(node,'tf-answer-row'));
+    // Defensive fallback: recover the expected three-column structure from
+    // the rendered direct-child order even if a browser parser alters classes.
+    if(!head && !rowNodes.length){
+      const direct=Array.from(gridNode.children||[]);
+      const header=direct.find(node=>String(attr(node,'class','')).includes('tf-answer-head'));
+      if(header)head=header;
+      for(const node of direct){
+        if(String(attr(node,'class','')).includes('tf-answer-row'))rowNodes.push(node);
+      }
+    }
     const rows=[];
     if(head)rows.push(Array.from(head.children||[]));
     for(const row of rowNodes)rows.push(Array.from(row.children||[]));
@@ -312,7 +325,7 @@ export function createWordDocx(html, options={}) {
       }
       return layoutTable([[left?blockChildren(left):wordParagraph(''),right]],[8000,1926]);
     }
-    if(hasClass(node,'tf-answer-table')) return answerGridXml(node);
+    if(String(attr(node,'class','')).split(/\s+/).includes('tf-answer-table') || String(attr(node,'class','')).includes('tf-answer-table')) return answerGridXml(node);
     if(node.classList?.contains('exam-options')) {
       const optionNodes=children(node).filter(n=>n.nodeType===1&&n.classList?.contains('exam-option'));
       const runs=optionNodes.map(option=>inline(option));
