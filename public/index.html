@@ -5205,7 +5205,10 @@ function createWordDocx(html, options={}) {
           else right+=wordParagraph(inline(child),{align:'center',after:35});
         }
       }
-      return layoutTable([[left,right]],[4963,4963]);
+      // Match the approved A4 heading sample: 36% institution block on
+      // the left and 64% exam details on the right, with both blocks centered.
+      // The previous 50/50 split made the exam title column too narrow.
+      return layoutTable([[left,right]],[3573,6353]) + wordParagraph(wordRun(' '),{after:110});
     }
     if(node.classList?.contains('exam-candidate')) {
       const left=node.querySelector(':scope > div'), code=node.querySelector('.exam-code');
