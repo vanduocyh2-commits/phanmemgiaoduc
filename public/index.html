@@ -2501,24 +2501,26 @@ function wordPlainMath(value){
  return s.replace(/[ \t]{2,}/g,' ').replace(/\n{3,}/g,'\n\n').trim();
 }
 function wordRich(value){const raw=String(value??'');return window.MathBridge?window.MathBridge.format(raw):esc(raw).replace(/\n/g,'<br>');}
-function stripRepeatedExamMetadataFromWord(html){
- if(typeof DOMParser==="undefined")return html;
+function removeRepeatedExamMetadata(html){
+ if(typeof DOMParser==="undefined")return String(html||"");
  const parsed=new DOMParser().parseFromString(String(html||""),"text/html");
  const intro=parsed.querySelector(".exam-introduction");
  if(!intro)return parsed.body.innerHTML;
- const repeated=/^(ĐƠN VỊ RA ĐỀ|ĐỀ KIỂM TRA|MÔN|THỜI GIAN)\\s*:/i;
- // The Word export uses the exam-specific two-column heading above. Remove
- // the duplicate metadata block that some saved exam descriptions append
- // below the candidate-name row. Leave all actual question content intact.
- const blocks=Array.from(intro.querySelectorAll("div,p,h1,h2,h3,h4,h5,h6,li,center,section,tr,td"));
+ const repeated=/^(ĐƠN VỊ RA ĐỀ|ĐỀ KIỂM TRA|MÔN|THỜI GIAN)\s*:/i;
+ const isRepeated=node=>repeated.test(String(node.textContent||"").replace(/[\s\u00a0]+/g," ").trim());
+ // Remove only the individual repeated header lines, never a wrapper that
+ // also contains actual exam questions or other non-header content.
+ const blocks=Array.from(intro.querySelectorAll("p,h1,h2,h3,h4,h5,h6,li,center,div,section,tr,td")).reverse();
  for(const node of blocks){
-   if(!node.isConnected)continue;
-   const text=String(node.textContent||"").replace(/[\\s\\u00a0]+/g," ").trim();
-   if(repeated.test(text))node.remove();
+   if(!node.isConnected||!isRepeated(node))continue;
+   const descendants=Array.from(node.querySelectorAll("p,h1,h2,h3,h4,h5,h6,li,center,div,section,tr,td"));
+   if(descendants.some(child=>child.isConnected&&!isRepeated(child)))continue;
+   node.remove();
  }
- if(!String(intro.textContent||"").replace(/[\\s\\u00a0]+/g,"").length)intro.remove();
+ if(!String(intro.textContent||"").replace(/[\s\u00a0]/g,"").length)intro.remove();
  return parsed.body.innerHTML;
 }
+function stripRepeatedExamMetadataFromWord(html){return removeRepeatedExamMetadata(html);}
 function wordSection(title,body){
  // The exam already has its own designed header; do not prepend a second generic title/meta line.
  if(String(title||"").trim().toUpperCase()==="ĐỀ THI")return stripRepeatedExamMetadataFromWord(body);
@@ -2663,7 +2665,7 @@ function deleteExamData(d,actor,examId){
   if(!e)return toast('Không tìm thấy đề để tải.');
   try{
    if(!window.WordDocxExport||typeof window.WordDocxExport.createWordDocx!=='function')throw Error('Bộ xuất Word chưa tải xong. Hãy tải lại trang rồi thử.');
-   const result=await window.WordDocxExport.createWordDocx(paperHTML(e,false),{title:e.title||'Đề thi'});
+   const result=await window.WordDocxExport.createWordDocx(stripRepeatedExamMetadataFromWord(paperHTML(e,false)),{title:e.title||'Đề thi'});
    const safeName=String(e.title||'de-thi').replace(/[\\/:*?"<>|]+/g,'-').trim().slice(0,100)||'de-thi';
    const url=URL.createObjectURL(result.blob),link=document.createElement('a');
    link.href=url;link.download=safeName+'.docx';document.body.appendChild(link);link.click();link.remove();
@@ -4005,18 +4007,11 @@ async function saveLessonToLibrary(){const id=await saveLesson(false);if(!id)ret
  function compactAnswerSheet(ex,answers={}){const code=ex.code||ex.presentation?.code||'101';return `<section class="compact-answer-sheet"><header><h3>Phiếu trả lời · Mã ${esc(code)}</h3><p>Đọc đề bên trái, chọn hoặc nhập đáp án dưới đây.</p></header>${['mcq','tf','short','essay'].map(type=>{const qs=(ex.questions||[]).filter(q=>q.type===type);if(!qs.length)return '';return `<section class="compact-answer-part"><h4>${{mcq:'I. Trắc nghiệm A/B/C/D',tf:'II. Đúng / Sai',short:'III. Trả lời ngắn',essay:'IV. Tự luận'}[type]}</h4>${qs.map((q,i)=>{const n=q.partNumber||i+1,value=answers[q.id]||'';if(type==='mcq')return `<div class="compact-answer-row"><b>Câu ${n}</b><div class="compact-choices">${['A','B','C','D'].map(v=>`<label><input type="radio" name="ans-${q.id}" value="${v}" ${value===v?'checked':''} onchange="TS.answer('${q.id}',this.value)"><span>${v}</span></label>`).join('')}</div></div>`;if(type==='tf'&&q.statements?.length===4){const selected=tfAnswersFrom(value);return `<div class="compact-tf"><b>Câu ${n}</b>${['a','b','c','d'].map((letter,j)=>`<div><span>${letter})</span>${['Đúng','Sai'].map(v=>`<label><input type="radio" name="ans-${q.id}-${j}" value="${v}" ${selected[j]===v?'checked':''} onchange="TS.studentTfAnswer('${q.id}',${j},this.value)"> ${v}</label>`).join('')}</div>`).join('')}</div>`;}if(type==='tf')return `<div class="compact-answer-row"><b>Câu ${n}</b>${['Đúng','Sai'].map(v=>`<label><input type="radio" name="ans-${q.id}" value="${v}" ${value===v?'checked':''} onchange="TS.answer('${q.id}',this.value)"> ${v}</label>`).join('')}</div>`;if(type==='short')return `<label class="compact-answer-row"><b>Câu ${n}</b><input class="ts-input" type="text" value="${esc(value)}" placeholder="Nhập đáp án" aria-label="Trả lời ngắn câu ${n}" oninput="TS.answer('${q.id}',this.value)"></label>`;return `<div class="compact-essay"><label><b>Câu ${n}</b><textarea class="ts-input" rows="3" placeholder="Nhập bài làm hoặc đính kèm file" oninput="TS.answer('${q.id}',this.value)">${esc(value)}</textarea></label>${essayFilesHTML(q.id,attempt?.files?.[q.id]||[],true)}</div>`;}).join('')}</section>`;}).join('')}</section>`;}
  function cleanExamIntroHTML(raw){
    const formatted=window.MathBridge?MathBridge.format(raw):esc(raw).replace(/\n/g,"<br>");
-   if(typeof DOMParser==="undefined")return formatted;
-   const parsed=new DOMParser().parseFromString(String(formatted||""),"text/html");
-   const duplicatedHeader=/^(ĐƠN VỊ RA ĐỀ|ĐỀ KIỂM TRA|MÔN|THỜI GIAN)\s*:/i;
-   for(const node of parsed.body.querySelectorAll("p,h1,h2,h3,h4,li")){
-     const text=String(node.textContent||"").replace(/[\s\u00a0]+/g," ").trim();
-     if(duplicatedHeader.test(text))node.remove();
-   }
-   return parsed.body.innerHTML;
+   return removeRepeatedExamMetadata(formatted);
  }
  function paperHTML(ex,interactive=false,answers={}){
    const p=ex.presentation||{},classroom=cur?state.classes.find(c=>c.id===cur.cid):null,student=cur?classroom?.students.find(s=>s.sbd===cur.sbd):null;
-   return `<article class="exam-paper"><header class="exam-paper-header"><div class="exam-paper-unit"><b>TRUNG TÂM DẠY HỌC<br>LỚP TOÁN THẦY ĐƯỢC</b><span class="exam-header-rule"></span><small>(Đề thi có <span class="word-num-pages">1</span> trang)</small></div><div class="exam-paper-title"><h1>${esc(ex.title||'ĐỀ KIỂM TRA')}</h1><p>NĂM HỌC: ${esc(p.schoolYear||'2026 – 2027')}</p><h2>MÔN: ${esc(ex.subject||'Toán')} – Lớp ${esc(ex.grade||'')}</h2><p class="exam-duration"><em>Thời gian làm bài: ${Number(ex.duration)||45} phút<br>(không kể thời gian phát đề)</em></p></div></header><div class="exam-candidate"><div><p>Họ và tên: <b>${interactive?esc(student?.name||''):''}</b><span class="exam-dots"></span> &nbsp; Số báo danh: <b>${interactive?esc(cur?.sbd||''):''}</b><span class="exam-dots short"></span></p></div><aside class="exam-code">Mã đề <strong>${esc(ex.code||p.code||'0102')}</strong></aside></div>${p.instructions?`<div class="exam-instructions">${MathBridge.format(p.instructions)}</div>`:''}${(ex.sourceQuestionContent?ex.sourceIntro:ex.content)?`<div class="exam-introduction">${MathBridge.format(ex.sourceQuestionContent?ex.sourceIntro:ex.content)}</div>`:''}${paperSections(ex,interactive,answers)}<footer class="exam-paper-footer"><b>-------------------- HẾT --------------------</b><p>Thí sinh kiểm tra lại bài làm trước khi nộp.</p></footer></article>`;
+   return `<article class="exam-paper"><header class="exam-paper-header"><div class="exam-paper-unit"><b>TRUNG TÂM DẠY HỌC<br>LỚP TOÁN THẦY ĐƯỢC</b><span class="exam-header-rule"></span><small>(Đề thi có <span class="word-num-pages">1</span> trang)</small></div><div class="exam-paper-title"><h1>${esc(ex.title||'ĐỀ KIỂM TRA')}</h1><p>NĂM HỌC: ${esc(p.schoolYear||'2026 – 2027')}</p><h2>MÔN: ${esc(ex.subject||'Toán')} – Lớp ${esc(ex.grade||'')}</h2><p class="exam-duration"><em>Thời gian làm bài: ${Number(ex.duration)||45} phút<br>(không kể thời gian phát đề)</em></p></div></header><div class="exam-candidate"><div><p>Họ và tên: <b>${interactive?esc(student?.name||''):''}</b><span class="exam-dots"></span> &nbsp; Số báo danh: <b>${interactive?esc(cur?.sbd||''):''}</b><span class="exam-dots short"></span></p></div><aside class="exam-code">Mã đề <strong>${esc(ex.code||p.code||'0102')}</strong></aside></div>${p.instructions?`<div class="exam-instructions">${MathBridge.format(p.instructions)}</div>`:''}${(ex.sourceQuestionContent?ex.sourceIntro:ex.content)?`<div class="exam-introduction">${cleanExamIntroHTML(ex.sourceQuestionContent?ex.sourceIntro:ex.content)}</div>`:''}${paperSections(ex,interactive,answers)}<footer class="exam-paper-footer"><b>-------------------- HẾT --------------------</b><p>Thí sinh kiểm tra lại bài làm trước khi nộp.</p></footer></article>`;
  }
  function preview(){capture();revealEditor('ts-preview');const ex={...draft,questions:questionDraft};$('ts-preview').innerHTML=`<section class="exam-preview-shell"><div class="exam-preview-toolbar"><b>Bản xem học sinh · Khổ A4</b><div>${btn('In / Lưu PDF','printExamPreview()')}${btn('Đóng xem trước','closeExamPreview()')}</div></div><p class="exam-preview-caption">Bản trình bày của trung tâm. Không phải đề thi chính thức của Bộ Giáo dục và Đào tạo.</p>${attachmentView(draft.attachment)}${paperHTML(ex)}</section>`;$('ts-preview').scrollIntoView?.({behavior:'smooth',block:'start'});}
  function closeExamPreview(){$('ts-preview').innerHTML='';}
