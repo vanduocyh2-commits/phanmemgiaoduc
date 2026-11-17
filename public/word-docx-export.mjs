@@ -269,7 +269,8 @@ export function createWordDocx(html, options={}) {
     if(head)rows.push(Array.from(head.children||[]));
     for(const row of rowNodes)rows.push(Array.from(row.children||[]));
     if(!rows.length)return '';
-    const widths=[7600,700,700];
+    const widths=[8188,899,899];
+    const tableWidth=widths.reduce((sum,width)=>sum+width,0);
     const border='<w:tblBorders><w:top w:val="single" w:sz="5" w:color="8A96A8"/><w:left w:val="single" w:sz="5" w:color="8A96A8"/><w:bottom w:val="single" w:sz="5" w:color="8A96A8"/><w:right w:val="single" w:sz="5" w:color="8A96A8"/><w:insideH w:val="single" w:sz="4" w:color="C8D0DA"/><w:insideV w:val="single" w:sz="4" w:color="C8D0DA"/></w:tblBorders>';
     const grid='<w:tblGrid>'+widths.map(w=>'<w:gridCol w:w="'+w+'"/>').join('')+'</w:tblGrid>';
     const body=rows.map((cells,ri)=>'<w:tr><w:trPr><w:cantSplit/></w:trPr>'+widths.map((width,ci)=>{
@@ -324,7 +325,7 @@ export function createWordDocx(html, options={}) {
       if(!cellBody)cellBody=wordParagraph(inline(cell));
       return '<w:tc><w:tcPr><w:tcW w:w="'+(widths[ci]||Math.floor(9000/cols))+'" w:type="dxa"/><w:vAlign w:val="center"/>'+(ri===0?'<w:shd w:fill="E9EEF7"/>':'')+'</w:tcPr>'+cellBody+'</w:tc>';
     }).join('')+'</w:tr>').join('');
-    return '<w:tbl><w:tblPr><w:tblW w:w="9000" w:type="dxa"/><w:tblLayout w:type="fixed"/>'+border+'</w:tblPr>'+grid+body+'</w:tbl>';
+    return '<w:tbl><w:tblPr><w:tblW w:w="'+tableWidth+'" w:type="dxa"/><w:tblLayout w:type="fixed"/><w:tblInd w:w="0" w:type="dxa"/>'+border+'</w:tblPr>'+grid+body+'</w:tbl>';
   }
   function blockChildren(node) {
     return children(node).map(child=>block(child)).join('');
