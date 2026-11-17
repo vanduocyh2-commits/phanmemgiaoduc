@@ -595,7 +595,7 @@ window.MathBridge=(()=>{
   const t=tokenize(source),formulas=[],errors=[];
   let markup=window.marked?(inline?window.marked.parseInline(t.text,{breaks:true}):window.marked.parse(t.text,{breaks:true,gfm:true})):escape(t.text).replace(/\n/g,'<br>');
   markup=window.DOMPurify?window.DOMPurify.sanitize(markup,allowed):escape(t.text).replace(/\n/g,'<br>');
-  for(const item of t.items){let math;try{math=equation(item.tex,item.display);formulas.push({...item,mathml:math});}catch(e){errors.push({...item,message:e.message});math=`<code class="ts-math-error" title="Không nhận dạng được công thức">${escape(item.source)}</code>`;}
+  for(const item of t.items){const display=inline?false:item.display;let math;try{math=equation(item.tex,display);formulas.push({...item,display,mathml:math});}catch(e){errors.push({...item,message:e.message});math=`<code class="ts-math-error" title="Không nhận dạng được công thức">${escape(item.source)}</code>`;}
    markup=markup.split(`ZZQFORMULA${item.index}TOKENQZZ`).join(math);
   }
   return {html:markup,formulas,errors,source:String(source??'')};
