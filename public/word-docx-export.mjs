@@ -327,7 +327,8 @@ export function createWordDocx(html, options={}) {
       }
       return layoutTable([[left?blockChildren(left):wordParagraph(''),right]],[8000,1926]);
     }
-    if(String(attr(node,'class','')).split(/\s+/).includes('tf-answer-table') || String(attr(node,'class','')).includes('tf-answer-table')) return answerGridXml(node);
+    // Legacy grid markup is handled only for non-table containers. Semantic <table class="tf-answer-table"> must flow through tableXml(), preserving inline MathML in one paragraph per cell and fixed-width, non-splitting rows.
+    if(tag!=='table' && (String(attr(node,'class','')).split(/\s+/).includes('tf-answer-table') || String(attr(node,'class','')).includes('tf-answer-table'))) return answerGridXml(node);
     if(node.classList?.contains('exam-options')) {
       const optionNodes=children(node).filter(n=>n.nodeType===1&&n.classList?.contains('exam-option'));
       const runs=optionNodes.map(option=>inline(option));
