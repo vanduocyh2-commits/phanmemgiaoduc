@@ -15,7 +15,11 @@ if (host && !document.getElementById('geometry-studio')) {
     '<div style="display:flex;gap:8px;flex-wrap:wrap"><label style="font-size:12px"><input id="geo-labels" type="checkbox" checked> Hiện tên điểm</label><label style="font-size:12px"><input id="geo-hidden" type="checkbox" checked> Nét khuất nét đứt</label></div>',
     '<div style="border:1px solid #c7d2fe;background:#f8faff;border-radius:12px;padding:10px;display:grid;gap:8px">',
     '<strong style="font-size:13px;color:#3730a3">📐 Hình học không gian nâng cao</strong>',
-    '<select id="geo-advanced-tool" style="width:100%;padding:8px;border:1px solid #cbd5e1;border-radius:8px"><option value="planes">Giao tuyến hai mặt phẳng</option><option value="section">Thiết diện hình chóp</option><option value="distance">Đường vuông góc & khoảng cách Oxyz</option></select>',
+    '<div class="geo-mode-switch" role="group" aria-label="Chọn chức năng hình học nâng cao" style="display:grid;grid-template-columns:1fr;gap:7px">',
+    '<button type="button" data-geo-mode="planes" class="geo-mode-btn is-active">① Giao tuyến hai mặt phẳng</button>',
+    '<button type="button" data-geo-mode="section" class="geo-mode-btn">② Thiết diện hình chóp</button>',
+    '<button type="button" data-geo-mode="distance" class="geo-mode-btn">③ Đường vuông góc & khoảng cách Oxyz</button>',
+    '</div><select id="geo-advanced-tool" aria-hidden="true" tabindex="-1" style="display:none"><option value="planes">Giao tuyến hai mặt phẳng</option><option value="section">Thiết diện hình chóp</option><option value="distance">Đường vuông góc & khoảng cách Oxyz</option></select>',
     '<div id="geo-plane-controls" style="display:grid;gap:6px"><small style="font-weight:700">Mặt phẳng (P): ax + by + cz + d = 0</small><div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px"><input id="geo-p1a" type="number" value="1" step="any" title="a" style="min-width:0;width:100%;padding:6px;box-sizing:border-box"><input id="geo-p1b" type="number" value="1" step="any" title="b" style="min-width:0;width:100%;padding:6px;box-sizing:border-box"><input id="geo-p1c" type="number" value="1" step="any" title="c" style="min-width:0;width:100%;padding:6px;box-sizing:border-box"><input id="geo-p1d" type="number" value="-1" step="any" title="d" style="min-width:0;width:100%;padding:6px;box-sizing:border-box"></div><div id="geo-plane2-wrap"><small style="font-weight:700">Mặt phẳng (Q): ax + by + cz + d = 0</small><div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px"><input id="geo-p2a" type="number" value="1" step="any" title="a" style="min-width:0;width:100%;padding:6px;box-sizing:border-box"><input id="geo-p2b" type="number" value="-1" step="any" title="b" style="min-width:0;width:100%;padding:6px;box-sizing:border-box"><input id="geo-p2c" type="number" value="1" step="any" title="c" style="min-width:0;width:100%;padding:6px;box-sizing:border-box"><input id="geo-p2d" type="number" value="0" step="any" title="d" style="min-width:0;width:100%;padding:6px;box-sizing:border-box"></div></div></div>',
     '<div id="geo-distance-controls" style="display:none;gap:6px"><select id="geo-distance-kind" style="width:100%;padding:7px;border:1px solid #cbd5e1;border-radius:7px"><option value="point-plane">Khoảng cách từ điểm đến mặt phẳng</option><option value="point-line">Khoảng cách từ điểm đến đường thẳng AB</option></select><small>Điểm P(x; y; z)</small><div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px"><input id="geo-px" type="number" value="2" step="any" style="min-width:0;width:100%;padding:6px;box-sizing:border-box"><input id="geo-py" type="number" value="2" step="any" style="min-width:0;width:100%;padding:6px;box-sizing:border-box"><input id="geo-pz" type="number" value="2" step="any" style="min-width:0;width:100%;padding:6px;box-sizing:border-box"></div><div id="geo-line-controls" style="display:none;gap:5px"><small>Đường thẳng qua A và B (mỗi hàng là x, y, z)</small><div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px"><input id="geo-ax" type="number" value="0" step="any" style="min-width:0;width:100%;padding:6px;box-sizing:border-box"><input id="geo-ay" type="number" value="0" step="any" style="min-width:0;width:100%;padding:6px;box-sizing:border-box"><input id="geo-az" type="number" value="0" step="any" style="min-width:0;width:100%;padding:6px;box-sizing:border-box"><input id="geo-bx" type="number" value="1" step="any" style="min-width:0;width:100%;padding:6px;box-sizing:border-box"><input id="geo-by" type="number" value="1" step="any" style="min-width:0;width:100%;padding:6px;box-sizing:border-box"><input id="geo-bz" type="number" value="1" step="any" style="min-width:0;width:100%;padding:6px;box-sizing:border-box"></div></div></div>',
     '<button id="geo-advanced-draw" type="button" style="padding:9px;border:0;border-radius:8px;background:#4338ca;color:white;font-weight:800;cursor:pointer">Dựng hình & tính kết quả</button>',
@@ -139,6 +143,11 @@ if (host && !document.getElementById('geometry-studio')) {
   }
   function updateAdvancedControls(){
     const mode=$('geo-advanced-tool').value;
+    root.querySelectorAll('[data-geo-mode]').forEach(button=>{
+      const active=button.dataset.geoMode===mode;
+      button.classList.toggle('is-active',active);
+      button.setAttribute('aria-pressed',active?'true':'false');
+    });
     $('geo-plane-controls').style.display=mode==='planes'||mode==='section'?'grid':'none';
     $('geo-plane2-wrap').style.display=mode==='planes'?'grid':'none';
     $('geo-distance-controls').style.display=mode==='distance'?'grid':'none';
@@ -166,6 +175,17 @@ if (host && !document.getElementById('geometry-studio')) {
   function svgMarkup(){return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 480" width="1440" height="960">'+svg.innerHTML+'</svg>';}
   $('geo-ai').addEventListener('click',parsePrompt);
   $('geo-advanced-tool').addEventListener('change',updateAdvancedControls);
+  root.querySelectorAll('[data-geo-mode]').forEach(button=>{
+    button.style.cssText='width:100%;box-sizing:border-box;text-align:left;padding:11px 12px;border:1px solid #a5b4fc;border-radius:9px;background:#fff;color:#312e81;font-weight:800;font-size:13px;cursor:pointer';
+    button.addEventListener('click',()=>{
+      $('geo-advanced-tool').value=button.dataset.geoMode;
+      updateAdvancedControls();
+      $('geo-advanced-draw').scrollIntoView({behavior:'smooth',block:'nearest'});
+    });
+  });
+  const modeStyle=document.createElement('style');
+  modeStyle.textContent='#geometry-studio .geo-mode-btn.is-active{background:#4338ca!important;color:#fff!important;border-color:#4338ca!important;box-shadow:0 2px 7px #4338ca33}#geometry-studio .geo-mode-switch{position:sticky;top:8px;z-index:3;padding:5px;background:#f8faff;border-radius:10px}';
+  root.appendChild(modeStyle);
   $('geo-distance-kind').addEventListener('change',()=>{$('geo-line-controls').style.display=$('geo-distance-kind').value==='point-line'?'grid':'none';render();});
   $('geo-advanced-draw').addEventListener('click',()=>{calculateAdvanced();render();});
   $('geo-kind').addEventListener('change',render);
