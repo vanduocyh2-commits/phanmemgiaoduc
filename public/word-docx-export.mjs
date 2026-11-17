@@ -8,6 +8,7 @@ const local = node => String(node?.localName || node?.nodeName || '').split(':')
 export const children = node => Array.from(node?.childNodes || []).filter(child => child && child.nodeType !== 8);
 const textOf = node => String(node?.textContent ?? '');
 const attr = (node, name, fallback='') => node?.getAttribute?.(name) ?? fallback;
+const hasClass = (node, name) => String(attr(node,'class','')).split(/\s+/).includes(name);
 
 function mathRun(value, style='p') {
   const text = String(value ?? '');
@@ -245,8 +246,9 @@ export function createWordDocx(html, options={}) {
     return children(node).map(child=>inline(child,next)).join('');
   }
   function answerGridXml(gridNode) {
-    const head=gridNode.querySelector('.tf-answer-head');
-    const rowNodes=Array.from(gridNode.querySelectorAll('.tf-answer-row'));
+    const descendants=Array.from(gridNode.querySelectorAll('*'));
+    const head=descendants.find(node=>hasClass(node,'tf-answer-head'))||null;
+    const rowNodes=descendants.filter(node=>hasClass(node,'tf-answer-row'));
     const rows=[];
     if(head)rows.push(Array.from(head.children||[]));
     for(const row of rowNodes)rows.push(Array.from(row.children||[]));
@@ -310,7 +312,7 @@ export function createWordDocx(html, options={}) {
       }
       return layoutTable([[left?blockChildren(left):wordParagraph(''),right]],[8000,1926]);
     }
-    if(node.classList?.contains('tf-answer-table')) return answerGridXml(node);
+    if(hasClass(node,'tf-answer-table')) return answerGridXml(node);
     if(node.classList?.contains('exam-options')) {
       const optionNodes=children(node).filter(n=>n.nodeType===1&&n.classList?.contains('exam-option'));
       const runs=optionNodes.map(option=>inline(option));
