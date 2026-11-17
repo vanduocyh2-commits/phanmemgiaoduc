@@ -230,7 +230,7 @@ export function createWordDocx(html, options={}) {
     if(tag==='annotation'||tag==='annotation-xml')return '';
     if(tag==='img')return imageDrawing(node);
     if(tag==='br')return '<w:r><w:br/></w:r>';
-    if(tag==='input')return '';
+    if(tag==='input')return String(attr(node,'type','')).toLowerCase()==='checkbox'||String(attr(node,'type','')).toLowerCase()==='radio'?wordRun('☐ '):'';
     const next={...fmt};
     if(tag==='b'||tag==='strong')next.bold=true;
     if(tag==='i'||tag==='em')next.italic=true;
@@ -240,6 +240,8 @@ export function createWordDocx(html, options={}) {
     if(tag==='sup')next.vert='superscript';
     if(tag==='code'||tag==='pre')next.code=true;
     if(tag==='a')next.underline=true;
+    if(tag==='span'&&node.classList?.contains('exam-dots'))return wordRun(node.classList.contains('short')?'..............':'........................................');
+    if(tag==='span'&&node.classList?.contains('word-num-pages'))return '<w:r><w:fldChar w:fldCharType="begin"/></w:r>'+wordRun('NUMPAGES')+'<w:r><w:fldChar w:fldCharType="separate"/></w:r>'+wordRun('1')+'<w:r><w:fldChar w:fldCharType="end"/></w:r>';
     return children(node).map(child=>inline(child,next)).join('');
   }
   function tableXml(table) {
@@ -278,7 +280,7 @@ export function createWordDocx(html, options={}) {
           else right+=wordParagraph(inline(child),{align:'center',after:35});
         }
       }
-      return layoutTable([[left,right]],[4100,5826]);
+      return layoutTable([[left,right]],[4963,4963]);
     }
     if(node.classList?.contains('exam-candidate')) {
       const left=node.querySelector(':scope > div'), code=node.querySelector('.exam-code');
@@ -286,8 +288,7 @@ export function createWordDocx(html, options={}) {
       if(code) {
         const label=Array.from(code.childNodes||[]).filter(n=>n.nodeType===3).map(n=>n.nodeValue||'').join('').trim();
         const value=code.querySelector('strong')?.textContent||'';
-        right=wordParagraph(wordRun(label,{bold:true}),{align:'center',after:35})+
-          wordParagraph(wordRun(value,{bold:true}),{align:'center'});
+        right=wordParagraph(wordRun(label+' '+value,{bold:true}),{align:'center',after:35});
       }
       return layoutTable([[left?blockChildren(left):wordParagraph(''),right]],[8000,1926]);
     }
@@ -335,7 +336,7 @@ export function createWordDocx(html, options={}) {
   const title=escXml(options.title||'Đề thi');
   const docXml='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
     +'<w:document xmlns:w="'+WORD_NS+'" xmlns:r="'+DOC_REL_NS+'" xmlns:m="'+MATH_NS+'" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><w:body>'+body+'<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1020" w:right="960" w:bottom="1020" w:left="960"/></w:sectPr></w:body></w:document>';
-  const styles='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:styles xmlns:w="'+WORD_NS+'"><w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman" w:eastAsia="Times New Roman"/></w:rPr></w:rPrDefault><w:pPrDefault><w:pPr><w:spacing w:after="100" w:line="300" w:lineRule="auto"/></w:pPr></w:pPrDefault></w:docDefaults><w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/></w:style><w:style w:type="paragraph" w:styleId="Heading1"><w:name w:val="heading 1"/><w:basedOn w:val="Normal"/><w:rPr><w:b/><w:sz w:val="30"/></w:rPr></w:style><w:style w:type="paragraph" w:styleId="Heading2"><w:name w:val="heading 2"/><w:basedOn w:val="Normal"/><w:rPr><w:b/><w:sz w:val="26"/></w:rPr></w:style></w:styles>';
+  const styles='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:styles xmlns:w="'+WORD_NS+'"><w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman" w:eastAsia="Times New Roman"/></w:rPr></w:rPrDefault><w:pPrDefault><w:pPr><w:spacing w:after="80" w:line="240" w:lineRule="auto"/></w:pPr></w:pPrDefault></w:docDefaults><w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/></w:style><w:style w:type="paragraph" w:styleId="Heading1"><w:name w:val="heading 1"/><w:basedOn w:val="Normal"/><w:rPr><w:b/><w:sz w:val="30"/></w:rPr></w:style><w:style w:type="paragraph" w:styleId="Heading2"><w:name w:val="heading 2"/><w:basedOn w:val="Normal"/><w:rPr><w:b/><w:sz w:val="26"/></w:rPr></w:style></w:styles>';
   const types=['<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/>'];
   if(contentTypes.has('png'))types.push('<Default Extension="png" ContentType="image/png"/>');
   if(contentTypes.has('jpg'))types.push('<Default Extension="jpg" ContentType="image/jpeg"/>');
