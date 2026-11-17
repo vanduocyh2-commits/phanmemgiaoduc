@@ -280,15 +280,17 @@ export function createWordDocx(html, options={}) {
   function tableXml(table) {
     const rows=Array.from(table.rows||[]);
     if(!rows.length)return '';
+    const isTf=String(attr(table,'class','')).includes('tf-answer-table');
     const cols=Math.max(1,...rows.map(row=>Array.from(row.cells||[]).length));
+    const widths=isTf?[7600,700,700]:Array(cols).fill(Math.floor(9000/cols));
     const border='<w:tblBorders><w:top w:val="single" w:sz="6" w:color="555555"/><w:left w:val="single" w:sz="6" w:color="555555"/><w:bottom w:val="single" w:sz="6" w:color="555555"/><w:right w:val="single" w:sz="6" w:color="555555"/><w:insideH w:val="single" w:sz="4" w:color="888888"/><w:insideV w:val="single" w:sz="4" w:color="888888"/></w:tblBorders>';
-    const grid='<w:tblGrid>'+Array(cols).fill('<w:gridCol w:w="1800"/>').join('')+'</w:tblGrid>';
-    const body=rows.map((row,ri)=>'<w:tr>'+Array.from(row.cells||[]).map(cell=>{
-      let cellBody=blockChildren(cell);
+    const grid='<w:tblGrid>'+widths.map(w=>'<w:gridCol w:w="'+w+'"/>').join('')+'</w:tblGrid>';
+    const body=rows.map((row,ri)=>'<w:tr><w:trPr><w:cantSplit/></w:trPr>'+Array.from(row.cells||[]).map((cell,ci)=>{
+      let cellBody=isTf?wordParagraph(inline(cell),{align:ci===0?'left':'center',after:45}):blockChildren(cell);
       if(!cellBody)cellBody=wordParagraph(inline(cell));
-      return '<w:tc><w:tcPr><w:tcW w:w="'+Math.floor(9000/cols)+'" w:type="dxa"/>'+(ri===0?'<w:shd w:fill="E9EEF7"/>':'')+'</w:tcPr>'+cellBody+'</w:tc>';
+      return '<w:tc><w:tcPr><w:tcW w:w="'+(widths[ci]||Math.floor(9000/cols))+'" w:type="dxa"/><w:vAlign w:val="center"/>'+(ri===0?'<w:shd w:fill="E9EEF7"/>':'')+'</w:tcPr>'+cellBody+'</w:tc>';
     }).join('')+'</w:tr>').join('');
-    return '<w:tbl><w:tblPr><w:tblW w:w="0" w:type="auto"/>'+border+'</w:tblPr>'+grid+body+'</w:tbl>';
+    return '<w:tbl><w:tblPr><w:tblW w:w="9000" w:type="dxa"/><w:tblLayout w:type="fixed"/>'+border+'</w:tblPr>'+grid+body+'</w:tbl>';
   }
   function blockChildren(node) {
     return children(node).map(child=>block(child)).join('');
