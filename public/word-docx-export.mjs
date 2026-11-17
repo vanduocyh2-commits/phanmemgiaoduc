@@ -278,8 +278,31 @@ export function createWordDocx(html, options={}) {
     return '<w:tbl><w:tblPr><w:tblW w:w="9000" w:type="dxa"/><w:tblLayout w:type="fixed"/>'+border+'</w:tblPr>'+grid+body+'</w:tbl>';
   }
   function tableXml(table) {
-    const rows=Array.from(table.rows||[]);
-    if(!rows.length)return '';
+    const sourceRows=Array.from(table.rows||[]);
+    if(!sourceRows.length)return '';
+    // Some saved True/False questions store a), b), c), d) as separate
+    // paragraphs inside one table row. Expand those paragraphs into physical
+    // Word table rows so every statement gets its own checkbox pair.
+    const rows=[];
+    for (const sourceRow of sourceRows) {
+      const cells=Array.from(sourceRow.cells||[]);
+      const first=cells[0];
+      const statementBlocks=first
+        ? Array.from(first.children||[]).filter(el => /^(P|DIV|LI)$/i.test(el.tagName||'') && String(el.textContent||'').trim())
+        : [];
+      const isGroupedTfRow=cells.length===3 && statementBlocks.length>1 &&
+        statementBlocks.some(el=>/^\s*[a-d]\s*[).]/i.test(String(el.textContent||'')));
+      if (!isGroupedTfRow) { rows.push(sourceRow); continue; }
+      const checkboxBlocks=cells.slice(1).map(cell=>Array.from(cell.children||[]).filter(el=>String(el.textContent||'').trim() || el.querySelector?.('input')));
+      statementBlocks.forEach((statement,index)=>{
+        const virtualRow={cells:[
+          statement,
+          checkboxBlocks[0]?.length===statementBlocks.length ? checkboxBlocks[0][index] : cells[1],
+          checkboxBlocks[1]?.length===statementBlocks.length ? checkboxBlocks[1][index] : cells[2]
+        ]};
+        rows.push(virtualRow);
+      });
+    }
     const cols=Math.max(1,...rows.map(row=>Array.from(row.cells||[]).length));
     const firstCellText=String(rows[0]?.cells?.[0]?.textContent||'').replace(/\s+/g,' ').trim().toLowerCase();
     // Detect the true/false answer table even when saved question HTML loses its class.
