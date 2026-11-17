@@ -2501,9 +2501,27 @@ function wordPlainMath(value){
  return s.replace(/[ \t]{2,}/g,' ').replace(/\n{3,}/g,'\n\n').trim();
 }
 function wordRich(value){const raw=String(value??'');return window.MathBridge?window.MathBridge.format(raw):esc(raw).replace(/\n/g,'<br>');}
+function stripRepeatedExamMetadataFromWord(html){
+ if(typeof DOMParser==="undefined")return html;
+ const parsed=new DOMParser().parseFromString(String(html||""),"text/html");
+ const intro=parsed.querySelector(".exam-introduction");
+ if(!intro)return parsed.body.innerHTML;
+ const repeated=/^(ĐƠN VỊ RA ĐỀ|ĐỀ KIỂM TRA|MÔN|THỜI GIAN)\\s*:/i;
+ // The Word export uses the exam-specific two-column heading above. Remove
+ // the duplicate metadata block that some saved exam descriptions append
+ // below the candidate-name row. Leave all actual question content intact.
+ const blocks=Array.from(intro.querySelectorAll("div,p,h1,h2,h3,h4,h5,h6,li,center,section,tr,td"));
+ for(const node of blocks){
+   if(!node.isConnected)continue;
+   const text=String(node.textContent||"").replace(/[\\s\\u00a0]+/g," ").trim();
+   if(repeated.test(text))node.remove();
+ }
+ if(!String(intro.textContent||"").replace(/[\\s\\u00a0]+/g,"").length)intro.remove();
+ return parsed.body.innerHTML;
+}
 function wordSection(title,body){
  // The exam already has its own designed header; do not prepend a second generic title/meta line.
- if(String(title||"").trim().toUpperCase()==="ĐỀ THI")return body;
+ if(String(title||"").trim().toUpperCase()==="ĐỀ THI")return stripRepeatedExamMetadataFromWord(body);
  return '<section class="word-export-section"><h1>'+esc(title)+'</h1><p class="word-export-meta"><b>'+esc(draft.title||'Đề kiểm tra')+'</b> · Môn '+esc(draft.subject||'')+' · Khối '+esc(draft.grade||'')+' · Mã đề '+esc(draft.presentation&&draft.presentation.code||'101')+'</p>'+body+'</section>';
 }
 function wordTable(headers,rows){return '<table class="word-export-table"><thead><tr>'+headers.map(x=>'<th>'+esc(x)+'</th>').join('')+'</tr></thead><tbody>'+rows.map(row=>'<tr>'+row.map(x=>'<td>'+(x===null||x===undefined?'':String(x))+'</td>').join('')+'</tr>').join('')+'</tbody></table>';}
