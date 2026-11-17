@@ -593,8 +593,21 @@ window.MathBridge=(()=>{
  }
  function render(source,inline=false){
   const t=tokenize(source),formulas=[],errors=[];
-  let markup=window.marked?(inline?window.marked.parseInline(t.text,{breaks:true}):window.marked.parse(t.text,{breaks:true,gfm:true})):escape(t.text).replace(/\n/g,'<br>');
-  markup=window.DOMPurify?window.DOMPurify.sanitize(markup,allowed):escape(t.text).replace(/\n/g,'<br>');
+  let markup;
+  try{
+   markup=window.marked?(inline?window.marked.parseInline(t.text,{breaks:true}):window.marked.parse(t.text,{breaks:true,gfm:true})):escape(t.text).replace(/\n/g,'<br>');
+  }catch(markdownError){
+   errors.push({source:'markdown',message:markdownError?.message||String(markdownError)});
+   markup=escape(t.text).replace(/\n/g,'<br>');
+  }
+  try{
+   markup=window.DOMPurify?window.DOMPurify.sanitize(markup,allowed):escape(t.text).replace(/\n/g,'<br>');
+  }catch(sanitizeError){
+   // Word export must remain available even if the page's HTML sanitizer
+   // fails internally (for example, when its detached DOM has no body node).
+   errors.push({source:'html-sanitizer',message:sanitizeError?.message||String(sanitizeError)});
+   markup=escape(t.text).replace(/\n/g,'<br>');
+  }
   for(const item of t.items){const display=inline?false:item.display;let math;try{math=equation(item.tex,display);formulas.push({...item,display,mathml:math});}catch(e){errors.push({...item,message:e.message});math=`<code class="ts-math-error" title="Không nhận dạng được công thức">${escape(item.source)}</code>`;}
    markup=markup.split(`ZZQFORMULA${item.index}TOKENQZZ`).join(math);
   }
@@ -2592,25 +2605,29 @@ function openWordExportDialog(){
  dialog.showModal();
 }
 async function confirmWordExport(){
+ let exportStage='đọc lựa chọn xuất Word';
  const dialog=document.getElementById('word-export-dialog');if(!dialog)return;
  const selected=Array.from(dialog.querySelectorAll('[data-word-part]:checked')).map(input=>input.getAttribute('data-word-part'));
  if(!selected.length)return toast('Bạn hãy chọn ít nhất một phần cần xuất.');
  dialog.close();
  try{
   if(!window.WordDocxExport||typeof window.WordDocxExport.createWordDocx!=='function')throw Error('Bộ xuất DOCX chưa tải xong. Hãy tải lại trang rồi thử lại.');
+  exportStage='chuẩn bị nội dung đề';
   const cleanQuestions=copy(questionDraft);
   const wordDraft={...copy(draft),questions:cleanQuestions};
   const builders={exam:()=>wordSection('ĐỀ THI',paperHTML(wordDraft,false)),matrix:()=>wordSection('MA TRẬN ĐỀ THI',wordMatrixSection(cleanQuestions)),spec:()=>wordSection('BẢN ĐẶC TẢ ĐỀ THI',wordSpecificationSection(cleanQuestions)),answers:()=>wordSection('ĐÁP ÁN',wordAnswersSection(cleanQuestions)),solutions:()=>wordSection('LỜI GIẢI CHI TIẾT',wordSolutionsSection(cleanQuestions)),rubric:()=>wordSection('HƯỚNG DẪN CHẤM VÀ THANG ĐIỂM',wordRubricSection(cleanQuestions)),stats:()=>wordSection('THỐNG KÊ CÂU HỎI',wordStatisticsSection(cleanQuestions))};
   const names={exam:'Đề thi',matrix:'Ma trận đề thi',spec:'Bản đặc tả đề thi',answers:'Đáp án',solutions:'Lời giải chi tiết',rubric:'Hướng dẫn chấm và thang điểm',stats:'Thống kê câu hỏi'};
+  exportStage='dựng các phần đề thi';
   const blocks=selected.map(key=>builders[key]());
   const safeName=String(draft.title||'de-kiem-tra').replace(/[\\/:*?"<>|]+/g,'-').trim().slice(0,100)||'de-kiem-tra';
+  exportStage='chuyển nội dung và công thức sang DOCX';
   const result=await window.WordDocxExport.createWordDocx(blocks.join(''),{title:draft.title||'Đề kiểm tra'});
   const url=URL.createObjectURL(result.blob),link=document.createElement('a');
   link.href=url;link.download=safeName+'.docx';document.body.appendChild(link);link.click();link.remove();
   setTimeout(()=>URL.revokeObjectURL(url),30000);
   const note=result.warnings.length?' · Lưu ý: '+result.warnings.join('; '):'';
   toast('Đã xuất DOCX có '+result.formulaCount+' công thức Word Equation'+(result.imageCount?' và '+result.imageCount+' hình':'')+'. Có thể mở MathType để chuyển công thức. Các phần: '+selected.map(x=>names[x]).join(', ')+'.'+note);
- }catch(error){console.error('DOCX export failed',error);toast('Không xuất được DOCX: '+(error&&error.message||error));}
+ }catch(error){console.error('DOCX export failed at '+exportStage,error);toast('Không xuất được DOCX ('+exportStage+'): '+(error&&error.message||error));}
 }
 function exportWord(){
  capture();
