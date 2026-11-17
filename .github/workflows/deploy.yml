@@ -27,12 +27,6 @@ jobs:
             set -euo pipefail
             echo "=== Deploying reviewed commit ${{ github.sha }} ==="
             sudo -n /usr/local/sbin/phanmemgiaoduc-ai-modules-deploy '${{ github.sha }}'
-            GEOMETRY_TMP="$(mktemp /tmp/geometry-studio.XXXXXX.mjs)"
-            trap 'rm -f "$GEOMETRY_TMP"' EXIT
-            curl -fsSL --retry 2 --connect-timeout 10 --max-time 120 "https://raw.githubusercontent.com/vanduocyh2-commits/phanmemgiaoduc/${{ github.sha }}/public/geometry-studio.mjs" -o "$GEOMETRY_TMP"
-            node --check "$GEOMETRY_TMP"
-            sudo -n install -o centerapp -g centerapp -m 0644 "$GEOMETRY_TMP" /opt/phanmemgiaoduc/public/geometry-studio.mjs
-            echo "GEOMETRY_STUDIO_ASSET_INSTALLED"
             echo "=== Verifying portal service health ==="
             for attempt in {1..12}; do
               if curl --fail --silent --show-error --max-time 3 http://127.0.0.1:3000/api/health; then
