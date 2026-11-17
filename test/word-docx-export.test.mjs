@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {mathMLToOMML, children, makeZip, mcqOptionsTable, layoutTable, examQuestionParagraph} from '../public/word-docx-export.mjs';
+import {mathMLToOMML, children, makeZip, mcqOptionsTable, layoutTable, examQuestionParagraph, stripExamCheckboxGlyphs} from '../public/word-docx-export.mjs';
 
 function node(localName, children=[], text='', attrs={}) {
   return {
@@ -122,4 +122,10 @@ test('exam header uses a fixed two-column layout with no visible table borders',
   assert.equal((xml.match(/<w:gridCol /g)||[]).length,2);
   assert.match(xml,/<w:tblBorders><w:top w:val="nil"/);
   assert.match(xml,/<w:tblW w:w="9926" w:type="dxa"\/>/);
+});
+
+
+test('literal checkbox glyphs are removed before writing any Word text',()=>{
+  assert.equal(stripExamCheckboxGlyphs('a) Statement □ ☐ ▢'),'a) Statement   ');
+  assert.equal(stripExamCheckboxGlyphs('Đúng Sai'),'Đúng Sai');
 });
