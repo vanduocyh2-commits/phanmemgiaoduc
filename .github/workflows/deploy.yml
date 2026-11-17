@@ -26,7 +26,7 @@ jobs:
           script: |
             set -euo pipefail
             echo "=== Deploying reviewed commit ${{ github.sha }} ==="
-            sudo -n /usr/local/sbin/phanmemgiaoduc-deploy '${{ github.sha }}'
+            sudo -n /usr/local/sbin/phanmemgiaoduc-deploy
             echo "FULL_APPLICATION_DEPLOY_SUCCESS"
             echo "=== Verifying portal service health ==="
             for attempt in {1..12}; do
