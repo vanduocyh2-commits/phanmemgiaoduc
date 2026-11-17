@@ -12,13 +12,16 @@ flock -n 9 || { echo "ERROR: another deployment is running" >&2; exit 1; }
 RAW="https://raw.githubusercontent.com/vanduocyh2-commits/phanmemgiaoduc/$SHA"
 ROOT_MODULE="$APP/ai-math-lessons.mjs"
 PUBLIC_MODULE="$APP/public/ai-math-lessons-ui.mjs"
+GEOMETRY_MODULE="$APP/public/geometry-studio.mjs"
 STAGE="$(mktemp -d /tmp/phanmemgiaoduc-ai.XXXXXX)"
 BACKUP="$STAGE/backup"
 mkdir -p "$BACKUP"
 had_root=0
 had_public=0
+had_geometry=0
 [[ ! -f "$ROOT_MODULE" ]] || { cp -a "$ROOT_MODULE" "$BACKUP/root"; had_root=1; }
 [[ ! -f "$PUBLIC_MODULE" ]] || { cp -a "$PUBLIC_MODULE" "$BACKUP/public"; had_public=1; }
+[[ ! -f "$GEOMETRY_MODULE" ]] || { cp -a "$GEOMETRY_MODULE" "$BACKUP/geometry"; had_geometry=1; }
 
 rollback() {
   status=$?
@@ -26,7 +29,8 @@ rollback() {
     echo "Deployment failed; restoring AI module files" >&2
     if [[ "$had_root" -eq 1 ]]; then cp -a "$BACKUP/root" "$ROOT_MODULE"; else rm -f "$ROOT_MODULE"; fi
     if [[ "$had_public" -eq 1 ]]; then cp -a "$BACKUP/public" "$PUBLIC_MODULE"; else rm -f "$PUBLIC_MODULE"; fi
-    chown centerapp:centerapp "$ROOT_MODULE" "$PUBLIC_MODULE" 2>/dev/null || true
+    if [[ "$had_geometry" -eq 1 ]]; then cp -a "$BACKUP/geometry" "$GEOMETRY_MODULE"; else rm -f "$GEOMETRY_MODULE"; fi
+    chown centerapp:centerapp "$ROOT_MODULE" "$PUBLIC_MODULE" "$GEOMETRY_MODULE" 2>/dev/null || true
     echo "AI_MODULE_ROLLBACK_COMPLETED" >&2
   fi
   rm -rf "$STAGE"
@@ -36,11 +40,14 @@ trap rollback EXIT
 
 curl -fsSL --retry 2 --connect-timeout 10 --max-time 120 "$RAW/ai-math-lessons.mjs" -o "$STAGE/ai-math-lessons.mjs"
 curl -fsSL --retry 2 --connect-timeout 10 --max-time 120 "$RAW/public/ai-math-lessons-ui.mjs" -o "$STAGE/ai-math-lessons-ui.mjs"
+curl -fsSL --retry 2 --connect-timeout 10 --max-time 120 "$RAW/public/geometry-studio.mjs" -o "$STAGE/geometry-studio.mjs"
 node --check "$STAGE/ai-math-lessons.mjs"
 node --check "$STAGE/ai-math-lessons-ui.mjs"
+node --check "$STAGE/geometry-studio.mjs"
 
 install -o centerapp -g centerapp -m 0644 "$STAGE/ai-math-lessons.mjs" "$ROOT_MODULE"
 install -o centerapp -g centerapp -m 0644 "$STAGE/ai-math-lessons-ui.mjs" "$PUBLIC_MODULE"
+install -o centerapp -g centerapp -m 0644 "$STAGE/geometry-studio.mjs" "$GEOMETRY_MODULE"
 
 echo "=== Deploying public/index.html and portal-server.mjs ==="
 /usr/local/sbin/phanmemgiaoduc-source-deploy "$SHA"
