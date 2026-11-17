@@ -254,37 +254,20 @@ export function createWordDocx(html, options={}) {
     const descendants=Array.from(gridNode.querySelectorAll('*'));
     let head=descendants.find(node=>hasClass(node,'tf-answer-head'))||null;
     const rowNodes=descendants.filter(node=>hasClass(node,'tf-answer-row'));
-    // Defensive fallback: recover the expected three-column structure from
-    // the rendered direct-child order even if a browser parser alters classes.
     if(!head && !rowNodes.length){
       const direct=Array.from(gridNode.children||[]);
-      const header=direct.find(node=>String(attr(node,'class','')).includes('tf-answer-head'));
-      if(header)head=header;
-      for(const node of direct){
-        if(String(attr(node,'class','')).includes('tf-answer-row'))rowNodes.push(node);
-      }
+      head=direct.find(node=>hasClass(node,'tf-answer-head'))||null;
+      for(const node of direct)if(hasClass(node,'tf-answer-row'))rowNodes.push(node);
     }
     const rows=[];
     if(head)rows.push(Array.from(head.children||[]));
     for(const row of rowNodes)rows.push(Array.from(row.children||[]));
     if(!rows.length)return '';
-    // Match the user's reference exam: true/false statements are plain
-    // separate paragraphs (a), b), c), d)); no answer grid or checkboxes.
-    return rows.slice(head?1:0).map(cells=>{
-      const statement=cells[0];
-      if(!statement)return '';
-      const blocks=Array.from(statement.children||[]).filter(el=>/^(P|DIV|LI)$/i.test(el.tagName||'') && String(el.textContent||'').trim());
-      return blocks.length
-        ? blocks.map(el=>wordParagraph(inline(el),{after:90})).join('')
-        : wordParagraph(inline(statement),{after:90});
-    }).join('');
     const widths=[7600,700,700];
-    const border='<w:tblBorders><w:top w:val="single" w:sz="4" w:color="AAB4C2"/><w:left w:val="single" w:sz="4" w:color="AAB4C2"/><w:bottom w:val="single" w:sz="4" w:color="AAB4C2"/><w:right w:val="single" w:sz="4" w:color="AAB4C2"/><w:insideH w:val="single" w:sz="4" w:color="D5DAE1"/><w:insideV w:val="single" w:sz="4" w:color="D5DAE1"/></w:tblBorders>';
+    const border='<w:tblBorders><w:top w:val="single" w:sz="5" w:color="8A96A8"/><w:left w:val="single" w:sz="5" w:color="8A96A8"/><w:bottom w:val="single" w:sz="5" w:color="8A96A8"/><w:right w:val="single" w:sz="5" w:color="8A96A8"/><w:insideH w:val="single" w:sz="4" w:color="C8D0DA"/><w:insideV w:val="single" w:sz="4" w:color="C8D0DA"/></w:tblBorders>';
     const grid='<w:tblGrid>'+widths.map(w=>'<w:gridCol w:w="'+w+'"/>').join('')+'</w:tblGrid>';
     const body=rows.map((cells,ri)=>'<w:tr><w:trPr><w:cantSplit/></w:trPr>'+widths.map((width,ci)=>{
-      const cell=cells[ci];
-      const runs=cell?inline(cell):'';
-      const para=wordParagraph(runs,{align:ci===0?'left':'center',after:45});
+      const cell=cells[ci], para=wordParagraph(cell?inline(cell):'',{align:ci===0?'left':'center',after:70});
       return '<w:tc><w:tcPr><w:tcW w:w="'+width+'" w:type="dxa"/><w:vAlign w:val="center"/>'+(ri===0?'<w:shd w:fill="E9EEF7"/>':'')+'</w:tcPr>'+para+'</w:tc>';
     }).join('')+'</w:tr>').join('');
     return '<w:tbl><w:tblPr><w:tblW w:w="9000" w:type="dxa"/><w:tblLayout w:type="fixed"/>'+border+'</w:tblPr>'+grid+body+'</w:tbl>';
@@ -319,23 +302,11 @@ export function createWordDocx(html, options={}) {
     const firstCellText=String(rows[0]?.cells?.[0]?.textContent||'').replace(/\s+/g,' ').trim().toLowerCase();
     // Detect the true/false answer table even when saved question HTML loses its class.
     const isTf=hasClass(table,'tf-answer-table') || (cols===3 && firstCellText.includes('nội dung mệnh đề') && String(rows[0]?.cells?.[1]?.textContent||'').replace(/\s+/g,' ').trim().toLowerCase()==='đúng' && String(rows[0]?.cells?.[2]?.textContent||'').replace(/\s+/g,' ').trim().toLowerCase()==='sai');
-    if(isTf) {
-      // Export the statement text only, one item per paragraph, matching the
-      // supplied Mã đề 0102 sample; omit the Đúng/Sai answer columns entirely.
-      return rows.slice(1).map(row=>{
-        const cell=row.cells?.[0];
-        if(!cell)return '';
-        const blocks=Array.from(cell.children||[]).filter(el=>/^(P|DIV|LI)$/i.test(el.tagName||'') && String(el.textContent||'').trim());
-        return blocks.length
-          ? blocks.map(el=>wordParagraph(inline(el),{after:90})).join('')
-          : wordParagraph(inline(cell),{after:90});
-      }).join('');
-    }
-    const widths=Array(cols).fill(Math.floor(9000/cols));
+    const widths=isTf?[7600,700,700]:Array(cols).fill(Math.floor(9000/cols));
     const border='<w:tblBorders><w:top w:val="single" w:sz="6" w:color="555555"/><w:left w:val="single" w:sz="6" w:color="555555"/><w:bottom w:val="single" w:sz="6" w:color="555555"/><w:right w:val="single" w:sz="6" w:color="555555"/><w:insideH w:val="single" w:sz="4" w:color="888888"/><w:insideV w:val="single" w:sz="4" w:color="888888"/></w:tblBorders>';
     const grid='<w:tblGrid>'+widths.map(w=>'<w:gridCol w:w="'+w+'"/>').join('')+'</w:tblGrid>';
     const body=rows.map((row,ri)=>'<w:tr><w:trPr><w:cantSplit/></w:trPr>'+Array.from(row.cells||[]).map((cell,ci)=>{
-      let cellBody=isTf?wordParagraph(inline(cell),{align:ci===0?'left':'center',after:45}):blockChildren(cell);
+      let cellBody=isTf?wordParagraph(inline(cell),{align:ci===0?'left':'center',after:70}):blockChildren(cell);
       if(!cellBody)cellBody=wordParagraph(inline(cell));
       return '<w:tc><w:tcPr><w:tcW w:w="'+(widths[ci]||Math.floor(9000/cols))+'" w:type="dxa"/><w:vAlign w:val="center"/>'+(ri===0?'<w:shd w:fill="E9EEF7"/>':'')+'</w:tcPr>'+cellBody+'</w:tc>';
     }).join('')+'</w:tr>').join('');
