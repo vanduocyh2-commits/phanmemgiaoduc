@@ -16,7 +16,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Deploy complete application release
+      - name: Deploy reviewed source and AI lesson modules
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.VPS_HOST }}
@@ -25,8 +25,8 @@ jobs:
           command_timeout: 10m
           script: |
             set -euo pipefail
-            echo "=== Deploying complete application release from main ==="
-            sudo -n /usr/local/sbin/phanmemgiaoduc-deploy
+            echo "=== Deploying reviewed commit ${{ github.sha }} ==="
+            sudo -n /usr/local/sbin/phanmemgiaoduc-ai-modules-deploy '${{ github.sha }}'
             echo "=== Verifying portal service health ==="
             for attempt in {1..12}; do
               if curl --fail --silent --show-error --max-time 3 http://127.0.0.1:3000/api/health; then
