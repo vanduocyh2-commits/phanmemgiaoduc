@@ -5082,6 +5082,9 @@ function wordRun(value,format={}) {
   if(format.code)props.push('<w:rFonts w:ascii="Consolas" w:hAnsi="Consolas"/>');
   return '<w:r>'+(props.length?'<w:rPr>'+props.join('')+'</w:rPr>':'')+'<w:t xml:space="preserve">'+escXml(text)+'</w:t></w:r>';
 }
+function wordField(instruction, fallback='1') {
+  return '<w:r><w:fldChar w:fldCharType="begin"/></w:r><w:r><w:instrText xml:space="preserve"> '+instruction+' </w:instrText></w:r><w:r><w:fldChar w:fldCharType="separate"/></w:r>'+wordRun(fallback)+'<w:r><w:fldChar w:fldCharType="end"/></w:r>';
+}
 function wordParagraph(runs, options={}) {
   const p=[];
   if(options.style)p.push('<w:pStyle w:val="'+options.style+'"/>');
@@ -5222,6 +5225,10 @@ function createWordDocx(html, options={}) {
         ? wordParagraph(ri===0||ci===0?inline(cell):'',{align:ci===0?'left':'center',after:70})
         : blockChildren(cell);
       if(!cellBody)cellBody=wordParagraph(inline(cell));
+      // Keep each statement row intact, and chain the rows of a True/False
+      // question so the complete four-statement table moves together when it fits.
+      if(ri<rows.length-1) cellBody=cellBody.replace(/<\\/w:pPr>/g,'<w:keepNext/></w:pPr>').replace(/<w:p>(?!<w:pPr>)/g,'<w:p><w:pPr><w:keepNext/></w:pPr>');
+
       return '<w:tc><w:tcPr><w:tcW w:w="'+(widths[ci]||Math.floor(9000/cols))+'" w:type="dxa"/><w:vAlign w:val="center"/>'+(ri===0?'<w:shd w:fill="E9EEF7"/>':'')+'</w:tcPr>'+cellBody+'</w:tc>';
     }).join('')+'</w:tr>').join('');
     return '<w:tbl><w:tblPr><w:tblW w:w="'+tableWidth+'" w:type="dxa"/><w:tblLayout w:type="fixed"/><w:tblInd w:w="0" w:type="dxa"/>'+border+'</w:tblPr>'+grid+body+'</w:tbl>';
@@ -5278,7 +5285,11 @@ function createWordDocx(html, options={}) {
       return wordParagraph(inline(node,{italic:true}),{after:90});
     }
     if(node.classList?.contains('exam-paper-footer')) {
-      return wordParagraph(inline(node),{align:'center',after:80});
+      // Keep the HẾT marker and candidate reminder as separate centered lines.
+      const endNode=node.querySelector('b,strong');
+      const reminderNode=node.querySelector('p');
+      return (endNode?wordParagraph(inline(endNode),{align:'center',after:35}):'')+
+        (reminderNode?wordParagraph(inline(reminderNode),{align:'center',after:80}):'');
     }
     if(tag==='table')return tableXml(node);
     if(tag==='img')return wordParagraph(imageDrawing(node),{align:'center',after:100});
@@ -5309,17 +5320,19 @@ function createWordDocx(html, options={}) {
   if(!body)body=wordParagraph(wordRun('Không có nội dung để xuất.'));
   const title=escXml(options.title||'Đề thi');
   const docXml='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
-    +'<w:document xmlns:w="'+WORD_NS+'" xmlns:r="'+DOC_REL_NS+'" xmlns:m="'+MATH_NS+'" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><w:body>'+body+'<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1020" w:right="960" w:bottom="1020" w:left="960"/></w:sectPr></w:body></w:document>';
+    +'<w:document xmlns:w="'+WORD_NS+'" xmlns:r="'+DOC_REL_NS+'" xmlns:m="'+MATH_NS+'" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><w:body>'+body+'<w:sectPr><w:footerReference w:type="default" r:id="rIdFooter"/><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1020" w:right="960" w:bottom="1020" w:left="960" w:footer="480"/></w:sectPr></w:body></w:document>';
   const styles='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:styles xmlns:w="'+WORD_NS+'"><w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman" w:eastAsia="Times New Roman"/></w:rPr></w:rPrDefault><w:pPrDefault><w:pPr><w:spacing w:after="80" w:line="240" w:lineRule="auto"/></w:pPr></w:pPrDefault></w:docDefaults><w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/></w:style><w:style w:type="paragraph" w:styleId="Heading1"><w:name w:val="heading 1"/><w:basedOn w:val="Normal"/><w:rPr><w:b/><w:sz w:val="30"/></w:rPr></w:style><w:style w:type="paragraph" w:styleId="Heading2"><w:name w:val="heading 2"/><w:basedOn w:val="Normal"/><w:rPr><w:b/><w:sz w:val="26"/></w:rPr></w:style></w:styles>';
   const types=['<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/>'];
   if(contentTypes.has('png'))types.push('<Default Extension="png" ContentType="image/png"/>');
   if(contentTypes.has('jpg'))types.push('<Default Extension="jpg" ContentType="image/jpeg"/>');
-  types.push('<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/><Override PartName="/word/settings.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.settings+xml"/></Types>');
+  types.push('<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/><Override PartName="/word/settings.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.settings+xml"/><Override PartName="/word/footer1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml"/></Types>');
   entries.push(['[Content_Types].xml',types.join('')]);
   entries.push(['_rels/.rels','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="'+REL_NS+'"><Relationship Id="rId1" Type="'+DOC_REL_NS+'/officeDocument" Target="word/document.xml"/></Relationships>']);
-  entries.push(['word/_rels/document.xml.rels','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="'+REL_NS+'"><Relationship Id="rIdStyles" Type="'+DOC_REL_NS+'/styles" Target="styles.xml"/><Relationship Id="rIdSettings" Type="'+DOC_REL_NS+'/settings" Target="settings.xml"/>'+imageRels.join('')+'</Relationships>']);
+  entries.push(['word/_rels/document.xml.rels','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="'+REL_NS+'"><Relationship Id="rIdStyles" Type="'+DOC_REL_NS+'/styles" Target="styles.xml"/><Relationship Id="rIdSettings" Type="'+DOC_REL_NS+'/settings" Target="settings.xml"/><Relationship Id="rIdFooter" Type="'+DOC_REL_NS+'/footer" Target="footer1.xml"/>'+imageRels.join('')+'</Relationships>']);
   entries.push(['word/styles.xml',styles]);
   entries.push(['word/settings.xml','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:settings xmlns:w="'+WORD_NS+'"><w:updateFields w:val="true"/></w:settings>']);
+  // Actual PAGE/NUMPAGES fields belong in the Word footer, not in document text.
+  entries.push(['word/footer1.xml','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:ftr xmlns:w="'+WORD_NS+'"><w:p><w:pPr><w:jc w:val="center"/></w:pPr>'+wordRun('Trang ')+wordField('PAGE')+wordRun('/')+wordField('NUMPAGES')+'</w:p></w:ftr>']);
   entries.push(['word/document.xml',docXml]);
   // Validate every XML part before packaging. A malformed XML part can produce
   // a ZIP that downloads successfully but Word refuses to open.
