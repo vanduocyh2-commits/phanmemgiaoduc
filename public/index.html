@@ -2515,23 +2515,28 @@ function wordPlainMath(value){
 }
 function wordRich(value){const raw=String(value??'');return window.MathBridge?window.MathBridge.format(raw):esc(raw).replace(/\n/g,'<br>');}
 function removeRepeatedExamMetadata(html){
- if(typeof DOMParser==="undefined")return String(html||"");
- const parsed=new DOMParser().parseFromString(String(html||""),"text/html");
- const intro=parsed.querySelector(".exam-introduction")||parsed.body;
- if(!intro)return parsed.body.innerHTML;
- const repeated=/^(ĐƠN VỊ RA ĐỀ|ĐỀ KIỂM TRA|MÔN|THỜI GIAN)\s*:/i;
- const isRepeated=node=>repeated.test(String(node.textContent||"").replace(/[\s\u00a0]+/g," ").trim());
- // Remove only the individual repeated header lines, never a wrapper that
- // also contains actual exam questions or other non-header content.
- const blocks=Array.from(intro.querySelectorAll("p,h1,h2,h3,h4,h5,h6,li,center,div,section,tr,td")).reverse();
- for(const node of blocks){
-   if(!node.parentNode||!isRepeated(node))continue;
-   const descendants=Array.from(node.querySelectorAll("p,h1,h2,h3,h4,h5,h6,li,center,div,section,tr,td"));
-   if(descendants.some(child=>child.parentNode&&!isRepeated(child)))continue;
-   node.remove();
- }
- if(!String(intro.textContent||"").replace(/[\s\u00a0]/g,"").length)intro.remove();
- return parsed.body.innerHTML;
+ // Do not use DOMParser here: in some Word-export contexts the detached
+ // document can lack a body element, which raises "reading innerHTML of null".
+ // The imported metadata is emitted as individual paragraph/heading elements,
+ // so remove just those exact lines while preserving surrounding question data.
+ const source=String(html||'');
+ const repeated=/^(?:ĐƠN VỊ RA ĐỀ|ĐỀ KIỂM TRA|MÔN|THỜI GIAN)\\s*:/i;
+ const plain=value=>String(value||'')
+   .replace(/<br\\s*\\/?\\s*>/gi,' ')
+   .replace(/<\\/p\\s*>/gi,' ')
+   .replace(/<[^>]*>/g,' ')
+   .replace(/&nbsp;|&#160;|&#xA0;/gi,' ')
+   .replace(/&amp;/gi,'&')
+   .replace(/&lt;/gi,'<')
+   .replace(/&gt;/gi,'>')
+   .replace(/[\\s\\u00a0]+/g,' ')
+   .trim();
+ let output=source.replace(/<(p|h1|h2|h3|h4|h5|h6|li|center)(\\b[^>]*)>[\\s\\S]*?<\\/\\1\\s*>/gi,block=>{
+   return repeated.test(plain(block))?'':block;
+ });
+ // Also discard a plain-text metadata line when it was not wrapped in a block.
+ output=output.replace(/(^|<br\\s*\\/?\\s*>|\\n)\\s*(?:ĐƠN VỊ RA ĐỀ|ĐỀ KIỂM TRA|MÔN|THỜI GIAN)\\s*:[^<\\n]*(?=<br|$|\\n)/gi,'$1');
+ return output;
 }
 function stripRepeatedExamMetadataFromWord(html){return removeRepeatedExamMetadata(html);}
 function wordSection(title,body){
