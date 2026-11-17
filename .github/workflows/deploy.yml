@@ -26,8 +26,7 @@ jobs:
           script: |
             set -euo pipefail
             echo "=== Deploying reviewed commit ${{ github.sha }} ==="
-            sudo -n /usr/local/sbin/phanmemgiaoduc-deploy
-            echo "FULL_APPLICATION_DEPLOY_SUCCESS"
+            sudo -n /usr/local/sbin/phanmemgiaoduc-ai-modules-deploy '${{ github.sha }}'
             echo "=== Verifying portal service health ==="
             for attempt in {1..12}; do
               if curl --fail --silent --show-error --max-time 3 http://127.0.0.1:3000/api/health; then
