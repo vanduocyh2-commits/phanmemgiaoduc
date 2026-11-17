@@ -244,6 +244,24 @@ export function createWordDocx(html, options={}) {
     if(tag==='span'&&node.classList?.contains('word-num-pages'))return '<w:r><w:fldChar w:fldCharType="begin"/></w:r><w:r><w:instrText xml:space="preserve"> NUMPAGES </w:instrText></w:r><w:r><w:fldChar w:fldCharType="separate"/></w:r>'+wordRun('1')+'<w:r><w:fldChar w:fldCharType="end"/></w:r>';
     return children(node).map(child=>inline(child,next)).join('');
   }
+  function answerGridXml(gridNode) {
+    const head=gridNode.querySelector('.tf-answer-head');
+    const rowNodes=Array.from(gridNode.querySelectorAll('.tf-answer-row'));
+    const rows=[];
+    if(head)rows.push(Array.from(head.children||[]));
+    for(const row of rowNodes)rows.push(Array.from(row.children||[]));
+    if(!rows.length)return '';
+    const widths=[7600,700,700];
+    const border='<w:tblBorders><w:top w:val="single" w:sz="4" w:color="AAB4C2"/><w:left w:val="single" w:sz="4" w:color="AAB4C2"/><w:bottom w:val="single" w:sz="4" w:color="AAB4C2"/><w:right w:val="single" w:sz="4" w:color="AAB4C2"/><w:insideH w:val="single" w:sz="4" w:color="D5DAE1"/><w:insideV w:val="single" w:sz="4" w:color="D5DAE1"/></w:tblBorders>';
+    const grid='<w:tblGrid>'+widths.map(w=>'<w:gridCol w:w="'+w+'"/>').join('')+'</w:tblGrid>';
+    const body=rows.map((cells,ri)=>'<w:tr><w:trPr><w:cantSplit/></w:trPr>'+widths.map((width,ci)=>{
+      const cell=cells[ci];
+      const runs=cell?inline(cell):'';
+      const para=wordParagraph(runs,{align:ci===0?'left':'center',after:45});
+      return '<w:tc><w:tcPr><w:tcW w:w="'+width+'" w:type="dxa"/><w:vAlign w:val="center"/>'+(ri===0?'<w:shd w:fill="E9EEF7"/>':'')+'</w:tcPr>'+para+'</w:tc>';
+    }).join('')+'</w:tr>').join('');
+    return '<w:tbl><w:tblPr><w:tblW w:w="9000" w:type="dxa"/><w:tblLayout w:type="fixed"/>'+border+'</w:tblPr>'+grid+body+'</w:tbl>';
+  }
   function tableXml(table) {
     const rows=Array.from(table.rows||[]);
     if(!rows.length)return '';
@@ -292,6 +310,7 @@ export function createWordDocx(html, options={}) {
       }
       return layoutTable([[left?blockChildren(left):wordParagraph(''),right]],[8000,1926]);
     }
+    if(node.classList?.contains('tf-answer-table')) return answerGridXml(node);
     if(node.classList?.contains('exam-options')) {
       const optionNodes=children(node).filter(n=>n.nodeType===1&&n.classList?.contains('exam-option'));
       const runs=optionNodes.map(option=>inline(option));
@@ -340,11 +359,12 @@ export function createWordDocx(html, options={}) {
   const types=['<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/>'];
   if(contentTypes.has('png'))types.push('<Default Extension="png" ContentType="image/png"/>');
   if(contentTypes.has('jpg'))types.push('<Default Extension="jpg" ContentType="image/jpeg"/>');
-  types.push('<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/></Types>');
+  types.push('<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/><Override PartName="/word/settings.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.settings+xml"/></Types>');
   entries.push(['[Content_Types].xml',types.join('')]);
   entries.push(['_rels/.rels','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="'+REL_NS+'"><Relationship Id="rId1" Type="'+DOC_REL_NS+'/officeDocument" Target="word/document.xml"/></Relationships>']);
-  entries.push(['word/_rels/document.xml.rels','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="'+REL_NS+'"><Relationship Id="rIdStyles" Type="'+DOC_REL_NS+'/styles" Target="styles.xml"/>'+imageRels.join('')+'</Relationships>']);
+  entries.push(['word/_rels/document.xml.rels','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="'+REL_NS+'"><Relationship Id="rIdStyles" Type="'+DOC_REL_NS+'/styles" Target="styles.xml"/><Relationship Id="rIdSettings" Type="'+DOC_REL_NS+'/settings" Target="settings.xml"/>'+imageRels.join('')+'</Relationships>']);
   entries.push(['word/styles.xml',styles]);
+  entries.push(['word/settings.xml','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:settings xmlns:w="'+WORD_NS+'"><w:updateFields w:val="true"/></w:settings>']);
   entries.push(['word/document.xml',docXml]);
   // Validate every XML part before packaging. A malformed XML part can produce
   // a ZIP that downloads successfully but Word refuses to open.
