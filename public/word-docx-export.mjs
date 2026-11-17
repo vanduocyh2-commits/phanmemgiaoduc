@@ -241,7 +241,7 @@ export function createWordDocx(html, options={}) {
     if(tag==='code'||tag==='pre')next.code=true;
     if(tag==='a')next.underline=true;
     if(tag==='span'&&node.classList?.contains('exam-dots'))return wordRun(node.classList.contains('short')?'..............':'........................................');
-    if(tag==='span'&&node.classList?.contains('word-num-pages'))return '<w:r><w:fldChar w:fldCharType="begin"/></w:r>'+wordRun('NUMPAGES')+'<w:r><w:fldChar w:fldCharType="separate"/></w:r>'+wordRun('1')+'<w:r><w:fldChar w:fldCharType="end"/></w:r>';
+    if(tag==='span'&&node.classList?.contains('word-num-pages'))return '<w:r><w:fldChar w:fldCharType="begin"/></w:r><w:r><w:instrText xml:space="preserve"> NUMPAGES </w:instrText></w:r><w:r><w:fldChar w:fldCharType="separate"/></w:r>'+wordRun('1')+'<w:r><w:fldChar w:fldCharType="end"/></w:r>';
     return children(node).map(child=>inline(child,next)).join('');
   }
   function tableXml(table) {
