@@ -268,6 +268,16 @@ export function createWordDocx(html, options={}) {
     if(head)rows.push(Array.from(head.children||[]));
     for(const row of rowNodes)rows.push(Array.from(row.children||[]));
     if(!rows.length)return '';
+    // Match the user's reference exam: true/false statements are plain
+    // separate paragraphs (a), b), c), d)); no answer grid or checkboxes.
+    return rows.slice(head?1:0).map(cells=>{
+      const statement=cells[0];
+      if(!statement)return '';
+      const blocks=Array.from(statement.children||[]).filter(el=>/^(P|DIV|LI)$/i.test(el.tagName||'') && String(el.textContent||'').trim());
+      return blocks.length
+        ? blocks.map(el=>wordParagraph(inline(el),{after:90})).join('')
+        : wordParagraph(inline(statement),{after:90});
+    }).join('');
     const widths=[7600,700,700];
     const border='<w:tblBorders><w:top w:val="single" w:sz="4" w:color="AAB4C2"/><w:left w:val="single" w:sz="4" w:color="AAB4C2"/><w:bottom w:val="single" w:sz="4" w:color="AAB4C2"/><w:right w:val="single" w:sz="4" w:color="AAB4C2"/><w:insideH w:val="single" w:sz="4" w:color="D5DAE1"/><w:insideV w:val="single" w:sz="4" w:color="D5DAE1"/></w:tblBorders>';
     const grid='<w:tblGrid>'+widths.map(w=>'<w:gridCol w:w="'+w+'"/>').join('')+'</w:tblGrid>';
@@ -309,7 +319,19 @@ export function createWordDocx(html, options={}) {
     const firstCellText=String(rows[0]?.cells?.[0]?.textContent||'').replace(/\s+/g,' ').trim().toLowerCase();
     // Detect the true/false answer table even when saved question HTML loses its class.
     const isTf=hasClass(table,'tf-answer-table') || (cols===3 && firstCellText.includes('nội dung mệnh đề') && String(rows[0]?.cells?.[1]?.textContent||'').replace(/\s+/g,' ').trim().toLowerCase()==='đúng' && String(rows[0]?.cells?.[2]?.textContent||'').replace(/\s+/g,' ').trim().toLowerCase()==='sai');
-    const widths=isTf?[7600,700,700]:Array(cols).fill(Math.floor(9000/cols));
+    if(isTf) {
+      // Export the statement text only, one item per paragraph, matching the
+      // supplied Mã đề 0102 sample; omit the Đúng/Sai answer columns entirely.
+      return rows.slice(1).map(row=>{
+        const cell=row.cells?.[0];
+        if(!cell)return '';
+        const blocks=Array.from(cell.children||[]).filter(el=>/^(P|DIV|LI)$/i.test(el.tagName||'') && String(el.textContent||'').trim());
+        return blocks.length
+          ? blocks.map(el=>wordParagraph(inline(el),{after:90})).join('')
+          : wordParagraph(inline(cell),{after:90});
+      }).join('');
+    }
+    const widths=Array(cols).fill(Math.floor(9000/cols));
     const border='<w:tblBorders><w:top w:val="single" w:sz="6" w:color="555555"/><w:left w:val="single" w:sz="6" w:color="555555"/><w:bottom w:val="single" w:sz="6" w:color="555555"/><w:right w:val="single" w:sz="6" w:color="555555"/><w:insideH w:val="single" w:sz="4" w:color="888888"/><w:insideV w:val="single" w:sz="4" w:color="888888"/></w:tblBorders>';
     const grid='<w:tblGrid>'+widths.map(w=>'<w:gridCol w:w="'+w+'"/>').join('')+'</w:tblGrid>';
     const body=rows.map((row,ri)=>'<w:tr><w:trPr><w:cantSplit/></w:trPr>'+Array.from(row.cells||[]).map((cell,ci)=>{
