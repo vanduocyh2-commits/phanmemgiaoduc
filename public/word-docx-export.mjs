@@ -164,8 +164,14 @@ function parseDataImage(src) {
   for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);
   return {type,bytes};
 }
+export function stripExamCheckboxGlyphs(value) {
+  // Some exam HTML stores empty answer boxes as literal Unicode characters,
+  // not as <input> elements. Strip these at the final Word-text boundary so
+  // they cannot leak into any DOCX table/export path.
+  return String(value??'').replace(/[□☐▢]/g,'');
+}
 function wordRun(value,format={}) {
-  const text=String(value??'');
+  const text=stripExamCheckboxGlyphs(value);
   if(!text)return '';
   const props=[];
   if(format.bold)props.push('<w:b/>');
