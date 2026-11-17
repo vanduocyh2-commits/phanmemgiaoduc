@@ -315,7 +315,7 @@ export function createWordDocx(html, options={}) {
     const tableWidth=widths.reduce((sum,width)=>sum+width,0);
     const border='<w:tblBorders><w:top w:val="single" w:sz="6" w:color="555555"/><w:left w:val="single" w:sz="6" w:color="555555"/><w:bottom w:val="single" w:sz="6" w:color="555555"/><w:right w:val="single" w:sz="6" w:color="555555"/><w:insideH w:val="single" w:sz="4" w:color="888888"/><w:insideV w:val="single" w:sz="4" w:color="888888"/></w:tblBorders>';
     const grid='<w:tblGrid>'+widths.map(w=>'<w:gridCol w:w="'+w+'"/>').join('')+'</w:tblGrid>';
-    const body=rows.map((row,ri)=>'<w:tr><w:trPr><w:cantSplit/></w:trPr>'+Array.from(row.cells||[]).map((cell,ci)=>{
+    const body=rows.map((row,ri)=>'<w:tr><w:trPr>'+(ri===0?'<w:tblHeader w:val="true"/>':'')+'<w:cantSplit/></w:trPr>'+Array.from(row.cells||[]).map((cell,ci)=>{
       // Keep the polished three-column answer table, but leave student
       // response cells blank. The source HTML contains literal "□" text,
       // not input elements, so filtering input tags alone cannot remove them.
