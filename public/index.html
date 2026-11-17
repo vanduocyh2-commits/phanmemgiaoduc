@@ -5227,7 +5227,7 @@ function createWordDocx(html, options={}) {
       if(!cellBody)cellBody=wordParagraph(inline(cell));
       // Keep each statement row intact, and chain the rows of a True/False
       // question so the complete four-statement table moves together when it fits.
-      if(ri<rows.length-1) cellBody=cellBody.replace(/<\\/w:pPr>/g,'<w:keepNext/></w:pPr>').replace(/<w:p>(?!<w:pPr>)/g,'<w:p><w:pPr><w:keepNext/></w:pPr>');
+      if(ri<rows.length-1) cellBody=cellBody.replace(/<\/w:pPr>/g,'<w:keepNext/></w:pPr>').replace(new RegExp('<w:p>(?!<w:pPr>)','g'),'<w:p><w:pPr><w:keepNext/></w:pPr>');
 
       return '<w:tc><w:tcPr><w:tcW w:w="'+(widths[ci]||Math.floor(9000/cols))+'" w:type="dxa"/><w:vAlign w:val="center"/>'+(ri===0?'<w:shd w:fill="E9EEF7"/>':'')+'</w:tcPr>'+cellBody+'</w:tc>';
     }).join('')+'</w:tr>').join('');
