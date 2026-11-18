@@ -99,15 +99,28 @@ test('OMML text runs keep Word run properties in the schema-approved position',(
 });
 
 
-test('multiple-choice answers export as one fixed two-column Word table with four options',()=>{
-  const xml=mcqOptionsTable(['<w:r><w:t>A.</w:t></w:r>','<w:r><w:t>B.</w:t></w:r>','<w:r><w:t>C.</w:t></w:r>','<w:r><w:t>D.</w:t></w:r>']);
-  // The exporter intentionally uses two columns for readable option widths;
-  // all four answers must still be present in four cells.
+test('short multiple-choice answers export on one horizontal row',()=>{
+  const xml=mcqOptionsTable(
+    ['<w:r><w:t>A. 1.</w:t></w:r>','<w:r><w:t>B. 2.</w:t></w:r>','<w:r><w:t>C. 3.</w:t></w:r>','<w:r><w:t>D. 0.</w:t></w:r>'],
+    ['A. 1.','B. 2.','C. 3.','D. 0.']
+  );
+  assert.equal((xml.match(/<w:gridCol /g)||[]).length,4);
+  assert.equal((xml.match(/<w:tc>/g)||[]).length,4);
+  assert.equal((xml.match(/<w:tr>/g)||[]).length,1);
+  assert.match(xml,/<w:tblLayout w:type="fixed"\/>/);
+  for(const label of ['A. 1.','B. 2.','C. 3.','D. 0.'])assert.ok(xml.includes(label));
+});
+
+test('long multiple-choice answers fall back to two columns',()=>{
+  const xml=mcqOptionsTable(['A','B','C','D'],[
+    'A. Nội dung đáp án thứ nhất khá dài để trình bày',
+    'B. Nội dung đáp án thứ hai cũng khá dài',
+    'C. Nội dung đáp án thứ ba',
+    'D. Nội dung đáp án thứ tư'
+  ]);
   assert.equal((xml.match(/<w:gridCol /g)||[]).length,2);
   assert.equal((xml.match(/<w:tc>/g)||[]).length,4);
   assert.equal((xml.match(/<w:tr>/g)||[]).length,2);
-  assert.match(xml,/<w:tblLayout w:type="fixed"\/>/);
-  for(const label of ['A.','B.','C.','D.'])assert.ok(xml.includes(label));
 });
 
 test('exam question text stays in one paragraph with inline formula runs',()=>{
