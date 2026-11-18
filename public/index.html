@@ -5122,9 +5122,10 @@ function layoutTable(rows,widths) {
   return '<w:tbl><w:tblPr><w:tblW w:w="'+total+'" w:type="dxa"/><w:tblLayout w:type="fixed"/>'+nilBorders+margins+'</w:tblPr>'+grid+body+'</w:tbl>';
 }
 function mcqOptionsTable(optionRuns) {
-  // Two-column layout is substantially more readable in Word than four narrow columns.
+  // Keep A/B/C/D on one horizontal line, as requested for printed exam papers.
+  // Each option gets an equal-width cell; long formulas may wrap within their cell.
   const cells=Array.from({length:4},(_,i)=>wordParagraph(optionRuns[i]||'',{after:70}));
-  return layoutTable([[cells[0],cells[1]],[cells[2],cells[3]]],[4963,4963]);
+  return layoutTable([[cells[0],cells[1],cells[2],cells[3]]],[2481,2481,2481,2483]);
 }
 function examQuestionParagraph(runs) {
   return wordParagraph(runs,{after:90,keep:true});
