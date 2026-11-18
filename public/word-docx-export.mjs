@@ -319,8 +319,24 @@ export function createWordDocx(html, options={}) {
         rows.push(virtualRow);
       });
     }
+    // Detect the MCQ answer grid currently emitted by the exam preview as a
+    // 2x2 HTML table (A/B on the first row, C/D on the second). Rebuild it as
+    // one four-cell row when the four choices fit comfortably on one line.
+    const mcqGrid = rows.length===2 &&
+      rows.every(row=>Array.from(row.cells||[]).length===2) &&
+      ['a','b','c','d'].every((label,index)=>{
+        const cell=rows[Math.floor(index/2)]?.cells?.[index%2];
+        return new RegExp('^\\\\s*'+label+'\\\\s*[.)]').test(String(cell?.textContent||'').trim().toLowerCase());
+      });
+    if(mcqGrid) {
+      const options=[rows[0].cells[0],rows[0].cells[1],rows[1].cells[0],rows[1].cells[1]];
+      const optionLengths=options.map(cell=>String(cell?.textContent||'').replace(/\\s+/g,' ').trim().length);
+      if(optionLengths.every(length=>length<=24) && optionLengths.reduce((sum,length)=>sum+length,0)<=80) {
+        rows.splice(0,rows.length,{cells:options});
+      }
+    }
     const cols=Math.max(1,...rows.map(row=>Array.from(row.cells||[]).length));
-    const firstCellText=String(rows[0]?.cells?.[0]?.textContent||'').replace(/\s+/g,' ').trim().toLowerCase();
+    const firstCellText=String(rows[0]?.cells?.[0]?.textContent||'').replace(/\\s+/g,' ').trim().toLowerCase();
     // Detect the true/false answer table even when saved question HTML loses its class.
     const isTf=hasClass(table,'tf-answer-table') || (cols===3 && firstCellText.includes('nội dung mệnh đề') && String(rows[0]?.cells?.[1]?.textContent||'').replace(/\s+/g,' ').trim().toLowerCase()==='đúng' && String(rows[0]?.cells?.[2]?.textContent||'').replace(/\s+/g,' ').trim().toLowerCase()==='sai');
     // A4 content width with 960-twip left/right margins: 11906 - 2*960 = 9986.
