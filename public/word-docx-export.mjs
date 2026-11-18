@@ -326,7 +326,7 @@ export function createWordDocx(html, options={}) {
       rows.every(row=>Array.from(row.cells||[]).length===2) &&
       ['a','b','c','d'].every((label,index)=>{
         const cell=rows[Math.floor(index/2)]?.cells?.[index%2];
-        return new RegExp('^\\\\s*'+label+'\\\\s*[.)]').test(String(cell?.textContent||'').trim().toLowerCase());
+        return new RegExp('^\\s*'+label+'\\s*[.)]').test(String(cell?.textContent||'').trim().toLowerCase());
       });
     if(mcqGrid) {
       const options=[rows[0].cells[0],rows[0].cells[1],rows[1].cells[0],rows[1].cells[1]];
