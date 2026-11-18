@@ -208,14 +208,10 @@ export function layoutTable(rows,widths) {
   return '<w:tbl><w:tblPr><w:tblW w:w="'+total+'" w:type="dxa"/><w:tblLayout w:type="fixed"/>'+nilBorders+margins+'</w:tblPr>'+grid+body+'</w:tbl>';
 }
 export function mcqOptionsTable(optionRuns, optionTexts=[]) {
-  // Use one horizontal row when all four choices are short enough to fit.
-  // Fall back to two columns for longer wording to avoid cramped cells and
-  // preserve readable wrapping in Word.
-  const texts=Array.from({length:4},(_,i)=>String(optionTexts[i]??'').replace(/\\s+/g,' ').trim());
-  const compact=texts.every(text=>text.length<=22) && texts.join('').length<=72;
+  // Always place A/B/C/D on one horizontal row. Longer expressions wrap
+  // inside their cells rather than changing the answer layout to 2x2.
   const cells=Array.from({length:4},(_,i)=>wordParagraph(optionRuns[i]||'',{after:70}));
-  if(compact) return layoutTable([[cells[0],cells[1],cells[2],cells[3]]],[2481,2481,2481,2483]);
-  return layoutTable([[cells[0],cells[1]],[cells[2],cells[3]]],[4963,4963]);
+  return layoutTable([[cells[0],cells[1],cells[2],cells[3]]],[2481,2481,2481,2483]);
 }
 export function examQuestionParagraph(runs) {
   return wordParagraph(runs,{after:90,keep:true});
