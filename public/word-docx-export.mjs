@@ -207,9 +207,14 @@ export function layoutTable(rows,widths) {
   }).join('')+'</w:tr>').join('');
   return '<w:tbl><w:tblPr><w:tblW w:w="'+total+'" w:type="dxa"/><w:tblLayout w:type="fixed"/>'+nilBorders+margins+'</w:tblPr>'+grid+body+'</w:tbl>';
 }
-export function mcqOptionsTable(optionRuns) {
-  // Two-column layout is substantially more readable in Word than four narrow columns.
+export function mcqOptionsTable(optionRuns, optionTexts=[]) {
+  // Use one horizontal row when all four choices are short enough to fit.
+  // Fall back to two columns for longer wording to avoid cramped cells and
+  // preserve readable wrapping in Word.
+  const texts=Array.from({length:4},(_,i)=>String(optionTexts[i]??'').replace(/\\s+/g,' ').trim());
+  const compact=texts.every(text=>text.length<=22) && texts.join('').length<=72;
   const cells=Array.from({length:4},(_,i)=>wordParagraph(optionRuns[i]||'',{after:70}));
+  if(compact) return layoutTable([[cells[0],cells[1],cells[2],cells[3]]],[2481,2481,2481,2483]);
   return layoutTable([[cells[0],cells[1]],[cells[2],cells[3]]],[4963,4963]);
 }
 export function examQuestionParagraph(runs) {
@@ -376,7 +381,8 @@ export function createWordDocx(html, options={}) {
     if(node.classList?.contains('exam-options')) {
       const optionNodes=children(node).filter(n=>n.nodeType===1&&n.classList?.contains('exam-option'));
       const runs=optionNodes.map(option=>inline(option));
-      return mcqOptionsTable(runs);
+      const texts=optionNodes.map(option=>String(option.textContent||'').replace(/\\s+/g,' ').trim());
+      return mcqOptionsTable(runs,texts);
     }
     if(node.classList?.contains('exam-question-text')) {
       return examQuestionParagraph(inline(node));
