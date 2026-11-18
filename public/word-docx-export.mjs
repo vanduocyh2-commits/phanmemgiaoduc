@@ -331,9 +331,10 @@ export function createWordDocx(html, options={}) {
     if(mcqGrid) {
       const options=[rows[0].cells[0],rows[0].cells[1],rows[1].cells[0],rows[1].cells[1]];
       const optionLengths=options.map(cell=>String(cell?.textContent||'').replace(/\\s+/g,' ').trim().length);
-      if(optionLengths.every(length=>length<=24) && optionLengths.reduce((sum,length)=>sum+length,0)<=80) {
-        rows.splice(0,rows.length,{cells:options});
-      }
+      // Always keep A/B/C/D in one horizontal row for MCQ exports.
+      // Long expressions may wrap inside their own cells, but must not force
+      // the answer choices back into a 2x2 layout.
+      rows.splice(0,rows.length,{cells:options});
     }
     const cols=Math.max(1,...rows.map(row=>Array.from(row.cells||[]).length));
     const firstCellText=String(rows[0]?.cells?.[0]?.textContent||'').replace(/\\s+/g,' ').trim().toLowerCase();
