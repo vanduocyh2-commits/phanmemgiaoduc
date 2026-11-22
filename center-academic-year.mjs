@@ -9,9 +9,9 @@ export function centerYearPreview(d,actor,{fromYear,toYear}={}){
 export function applyCenterAcademicYear(d,actor,input={},services={}){
  admin(actor);const {fromYear,toYear,actions,expectedRevision}=input;
  if(!/^\d{4}-\d{4}$/.test(String(fromYear||''))||!/^\d{4}-\d{4}$/.test(String(toYear||''))||fromYear===toYear)throw Error('Năm học không hợp lệ.');
+ d.centerAcademicYears??=[];if(d.centerAcademicYears.some(x=>x.fromYear===fromYear&&x.toYear===toYear))throw Error('Năm học này đã được tổng kết trước đó.');
  if(expectedRevision!==(d._revision||0))throw Error('Dữ liệu đã thay đổi. Hãy tải lại danh sách trước khi tổng kết.');
  if(!Array.isArray(actions)||!actions.length||actions.length>3000)throw Error('Danh sách tổng kết không hợp lệ.');
- d.centerAcademicYears??=[];if(d.centerAcademicYears.some(x=>x.fromYear===fromYear&&x.toYear===toYear))throw Error('Năm học này đã được tổng kết trước đó.');
  const seen=new Set(),records=[],at=new Date().toISOString();
  for(const item of actions){
   const key=item.classId+'|'+item.sbd;if(seen.has(key))throw Error('Danh sách có học sinh bị lặp.');seen.add(key);
