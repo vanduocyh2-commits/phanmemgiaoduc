@@ -49,3 +49,9 @@ test('concurrent teacher/admin HTTP additions allocate within separate class seq
   const issued=[d.classes[0].students.at(-1).sbd,d.enrollmentApplications.at(-1).proposedSbd];assert.equal(new Set(issued).size,2);assert.deepEqual(new Set(issued),new Set(['K8A11','K8B06']));
  }finally{server.closeAllConnections();await new Promise(r=>server.close(r));}
 });
+
+test('previous academic-year snapshots reserve old SBDs even after a class roster is empty',()=>{
+ const d=fixture();d.classes[0].students=[];d.centerAcademicYears=[{fromYear:'2025-2026',toYear:'2026-2027',students:[{classId:'a',sbd:'K8A55',student:{sbd:'K8A55'}}]}];
+ assert.equal(studentSbdHighWater(d,'a'),55);
+ const sequence=createStudentSbdSequence(d,'a');assert.equal(sequence.next(),'K8A56');
+});

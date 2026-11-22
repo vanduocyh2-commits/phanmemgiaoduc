@@ -9,7 +9,7 @@ function legacyHighWater(d){
  let max=Number.isSafeInteger(d._studentSbdSequence)&&d._studentSbdSequence>=0?d._studentSbdSequence:0;
  const see=value=>{const m=/^HS(\d+)$/i.exec(String(value||''));if(m){const n=Number(m[1]);if(Number.isSafeInteger(n))max=Math.max(max,n);}};
  const walk=(v,seen=new WeakSet())=>{if(!v||typeof v!=='object'||seen.has(v))return;seen.add(v);if(Array.isArray(v)){for(const x of v)walk(x,seen);return;}if(typeof v.sbd==='string')see(v.sbd);if(typeof v.proposedSbd==='string')see(v.proposedSbd);for(const child of Object.values(v))walk(child,seen)};
- for(const key of ['classes','archivedStudents','enrollmentApplications','_rosterImportHistory','gradeBook','learningSubmissions','learningAttempts','learningReports','lessonProgress','teacherSubmissions','teacherExams','notifications','assignments','timetable','centerLessons','_tuitionResets','_attendanceSessions','admissionAccounts'])walk(d[key]);
+ for(const key of ['classes','archivedStudents','centerAcademicYears','enrollmentApplications','_rosterImportHistory','gradeBook','learningSubmissions','learningAttempts','learningReports','lessonProgress','teacherSubmissions','teacherExams','notifications','assignments','timetable','centerLessons','_tuitionResets','_attendanceSessions','admissionAccounts'])walk(d[key]);
  for(const key of Object.keys(d._auth||{}))if(/^(student|parent):/.test(key))see(key.split(':').at(-1));
  for(const collection of ['_familyAccounts','_familyPasswordVault'])for(const key of Object.keys(d[collection]||{})){const m=/^(student|parent):[^:]+:(.+)$/.exec(key);if(m)see(m[2]);}
  return max;
@@ -41,6 +41,7 @@ export function studentSbdHighWater(d,classId){
  };
  for(const c of classes)visitSbdValues(c.students||[],c.id,see);
  for(const a of d.archivedStudents||[])if(!classId||a.classId===classId)visitSbdValues(a,a.classId,see);
+ for(const year of d.centerAcademicYears||[])visitSbdValues(year,year.classId,see);
  for(const a of d.enrollmentApplications||[])if(!classId||a.classId===classId||a.ownerClassId===classId||a.proposedClassId===classId)visitSbdValues(a,a.classId||a.ownerClassId||a.proposedClassId,see);
  for(const b of d._rosterImportHistory||[])if(!classId||b.classId===classId)visitSbdValues(b,b.classId,see);
  for(const key of ['gradeBook','learningSubmissions','learningAttempts','learningReports','lessonProgress','teacherSubmissions','teacherExams','notifications','assignments','timetable','centerLessons','_tuitionResets','_attendanceSessions','admissionAccounts']){
