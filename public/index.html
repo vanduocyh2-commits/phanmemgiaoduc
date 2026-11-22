@@ -1176,6 +1176,7 @@ const attSel = (c,s) => attendanceSelector(c,s);
                 updateAttendanceSummary(c);
             }
             if($('tch-g-sbd'))setSel('tch-g-sbd', (c?.students || []).map(s => `<option value="${esc(s.sbd)}">${esc(s.sbd)} - ${esc(s.name)}</option>`).join(''));
+            prepareGradeExcelDownload(c);
             if($('tch-grades')){
                 $('teacher-class-ranking')?.remove();
                 $('tch-grades').insertAdjacentHTML('afterend','<div id="teacher-class-ranking">'+rankingHTML(c)+'</div>');
@@ -1259,6 +1260,21 @@ const attSel = (c,s) => attendanceSelector(c,s);
                 toast('Không tạo được file Excel: '+(error?.message||error));
                 return false;
             }
+        }
+        let gradeExcelDownloadUrl='';
+        function prepareGradeExcelDownload(c){
+            const link=$('tch-grade-excel-download');if(!link)return;
+            if(!c||!canManageClass(c.id)){link.removeAttribute('href');link.setAttribute('aria-disabled','true');return;}
+            const rows=[['SBD','Họ tên','Tên bài','Điểm','Ngày (dd/mm/yyyy)']];
+            (state.gradeBook||[]).filter(g=>g.classId===c.id&&!String(g.id||'').startsWith('learning_')).forEach(g=>rows.push([g.sbd,c.students.find(st=>st.sbd===g.sbd)?.name||'',g.title,Number(g.score),gradeExcelDate(g.date)]));
+            (c.students||[]).forEach(st=>rows.push([st.sbd,st.name,'','','']));
+            const xml='<?xml version="1.0" encoding="UTF-8"?><?mso-application progid="Excel.Sheet"?><Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet" xmlns:html="http://www.w3.org/TR/REC-html40">'+gradeXmlSheet('NhapDiem',rows)+gradeXmlSheet('ThongTin',[['Ma lop',c.id],['Ten lop',c.name],['Ghi chu','Giữ nguyên các dòng điểm cũ; thêm dòng mới để nhập điểm. Không sửa điểm đã có.']])+'</Workbook>';
+            const blob=new Blob(['\\uFEFF',xml],{type:'application/vnd.ms-excel;charset=utf-8'});
+            if(gradeExcelDownloadUrl)URL.revokeObjectURL(gradeExcelDownloadUrl);
+            gradeExcelDownloadUrl=URL.createObjectURL(blob);
+            link.href=gradeExcelDownloadUrl;
+            link.download='Mau_nhap_diem_'+String(c.name||'lop').replace(/[^a-z0-9_-]+/gi,'_')+'.xls';
+            link.removeAttribute('aria-disabled');
         }
 function selectedGradeClass(){const classes=teacherClasses();return classes.find(x=>x.id===$('ts-class')?.value)||classes.find(x=>x.name===qsel('tch-class'))||classes[0]||null;}
                 function exportGradeImportTemplate(){
@@ -3159,7 +3175,7 @@ function localSubmittedSolutions(d,m,submissionId){
                     <button onclick="window.app.addGrade()" class="bg-indigo-600 text-white rounded-xl text-xs font-bold py-2">Thêm điểm</button>
                 </div>
                 <div class="flex flex-wrap gap-2 my-2">
-                    <button type="button" class="ts-btn" onclick="window.app.exportGradeImportTemplate()">Tải Excel mẫu nhập điểm</button>
+                    <a id="tch-grade-excel-download" class="ts-btn" href="#" download="Mau_nhap_diem.xls" style="text-decoration:none">Tải Excel mẫu nhập điểm</a>
                     <label class="ts-btn ts-secondary">Nhập Excel đã điền<input type="file" accept=".xlsx,.xls" hidden onchange="window.app.importGradeExcel(this)"></label>
                 </div>
                 <p class="ts-help">File Excel chỉ thêm điểm mới sau khi thầy/cô xem trước và xác nhận. Điểm đã có không bị ghi đè.</p>
