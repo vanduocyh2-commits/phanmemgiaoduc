@@ -1189,6 +1189,87 @@ const attSel = (c,s) => attendanceSelector(c,s);
             state.gradeBook.push({ id: uid('gr'), classId: c.id, sbd, title, score, date: new Date(attendanceDate+'T12:00:00').toLocaleDateString('vi-VN') });
             $('tch-g-title').value = ''; $('tch-g-score').value = ''; persist(); refreshUI(); toast('Đã lưu điểm.');
         }
+
+        let pendingGradeExcelImport=null;
+        function gradeExcelDate(value){
+            if(value===null||value===undefined||value==='')return '';
+            if(typeof value==='number'&&XLSX.SSF?.parse_date_code){
+                const d=XLSX.SSF.parse_date_code(value);if(!d)return '';
+                return String(d.d).padStart(2,'0')+'/'+String(d.m).padStart(2,'0')+'/'+d.y;
+            }
+            const t=String(value).trim();let m=t.match(/^(\\d{1,2})[\\/-](\\d{1,2})[\\/-](\\d{4})$/);
+            if(m){const d=Number(m[1]),mo=Number(m[2]),y=Number(m[3]);if(d>=1&&d<=31&&mo>=1&&mo<=12)return String(d).padStart(2,'0')+'/'+String(mo).padStart(2,'0')+'/'+y;return '';}
+            m=t.match(/^(\\d{4})-(\\d{1,2})-(\\d{1,2})$/);
+            if(m)return String(Number(m[3])).padStart(2,'0')+'/'+String(Number(m[2])).padStart(2,'0')+'/'+m[1];
+            return '';
+        }
+        function gradeImportKey(g){return [g.classId,g.sbd,String(g.title||'').trim().toLocaleLowerCase('vi'),gradeExcelDate(g.date)].join('|');}
+        function exportGradeImportTemplate(){
+            const c=teacherClasses().find(x=>x.name===qsel('tch-class'))||teacherClasses()[0];
+            if(!c||!canManageClass(c.id))return toast('Chọn lớp được phân quyền trước.');
+            const rows=[['SBD','Họ tên','Tên bài','Điểm','Ngày (dd/mm/yyyy)']];
+            (state.gradeBook||[]).filter(g=>g.classId===c.id).forEach(g=>rows.push([g.sbd,c.students.find(st=>st.sbd===g.sbd)?.name||'',g.title,Number(g.score),gradeExcelDate(g.date)]));
+            (c.students||[]).forEach(st=>rows.push([st.sbd,st.name,'','','']));
+            excelFile('Mau_nhap_diem_'+String(c.name||'lop').replace(/[^a-z0-9_-]+/gi,'_'),[
+                ['NhapDiem',rows],
+                ['ThongTin',[['Ma lop',c.id],['Ten lop',c.name],['Ghi chu','Giữ nguyên các dòng điểm cũ; thêm dòng mới để nhập điểm. Không sửa điểm đã có.']]]
+            ]);
+        }
+        function importGradeExcel(input){
+            const file=input?.files?.[0];if(!file)return;
+            try{
+                if(!['admin','teacher'].includes(state.sessionRole))throw Error('Tài khoản không có quyền nhập điểm.');
+                if(file.size>5*1024*1024)throw Error('File Excel tối đa 5 MB.');
+                const c=teacherClasses().find(x=>x.name===qsel('tch-class'))||teacherClasses()[0];
+                if(!c||!canManageClass(c.id))throw Error('Chọn lớp được phân quyền trước.');
+                const wb=XLSX.read(file,{type:'array',cellDates:false});
+                const meta=wb.Sheets.ThongTin?XLSX.utils.sheet_to_json(wb.Sheets.ThongTin,{header:1,defval:''}):[];
+                const metaMap=Object.fromEntries(meta.slice(1).map(r=>[String(r[0]||'').trim().toLowerCase(),String(r[1]||'').trim()]));
+                if(metaMap['ma lop']&&metaMap['ma lop']!==c.id)throw Error('File Excel thuộc lớp khác. Hãy chọn đúng lớp rồi tải mẫu mới.');
+                const sheet=wb.Sheets.NhapDiem||wb.Sheets[wb.SheetNames[0]];
+                if(!sheet)throw Error('File không có trang tính dữ liệu.');
+                const matrix=XLSX.utils.sheet_to_json(sheet,{header:1,defval:'',raw:true});
+                if(matrix.length<2)throw Error('File chưa có dòng dữ liệu.');
+                const norm=v=>String(v||'').normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').replace(/đ/gi,'d').toLowerCase().replace(/[^a-z0-9]/g,'');
+                const headers=matrix[0].map(norm),col=(...names)=>headers.findIndex(h=>names.includes(h));
+                const iSbd=col('sbd','masohoc sinh','masohs'),iName=col('hoten','tenhocsinh'),iTitle=col('tenbai','baitest','noidungkiemtra'),iScore=col('diem','diemso'),iDate=col('ngay','ngaynhap','ngaykiemtra');
+                if([iSbd,iTitle,iScore].some(i=>i<0))throw Error('Thiếu cột bắt buộc: SBD, Tên bài, Điểm.');
+                const students=new Map((c.students||[]).map(st=>[String(st.sbd),st]));
+                const existing=new Map((state.gradeBook||[]).filter(g=>g.classId===c.id).map(g=>[gradeImportKey(g),Number(g.score)]));
+                const seen=new Map(),valid=[],skipped=[],errors=[];
+                matrix.slice(1).forEach((r,index)=>{
+                    const sbd=String(r[iSbd]??'').trim(),name=iName>=0?String(r[iName]??'').trim():'',title=String(r[iTitle]??'').trim(),rawScore=r[iScore],date=gradeExcelDate(iDate>=0?r[iDate]:'');
+                    if(!sbd&&!title&&(rawScore===''||rawScore===null||rawScore===undefined))return;
+                    const line=index+2,st=students.get(sbd),score=typeof rawScore==='string'?Number(rawScore.trim().replace(',','.')):Number(rawScore);
+                    if(!st){errors.push('Dòng '+line+': không tìm thấy SBD '+(sbd||'(trống)')+' trong lớp.');return;}
+                    if(name&&name.toLocaleLowerCase('vi')!==String(st.name||'').trim().toLocaleLowerCase('vi')){errors.push('Dòng '+line+': họ tên không khớp với SBD '+sbd+'.');return;}
+                    if(!title||rawScore===''||rawScore===null||rawScore===undefined||!Number.isFinite(score)||score<0||score>10||!date){errors.push('Dòng '+line+': cần có tên bài, điểm 0–10 và ngày hợp lệ.');return;}
+                    const item={classId:c.id,sbd,title,score,date},key=gradeImportKey(item);
+                    if(existing.has(key)){if(existing.get(key)===score)skipped.push('Dòng '+line+': điểm này đã tồn tại.');else errors.push('Dòng '+line+': trùng học sinh, tên bài và ngày với điểm cũ; không ghi đè.');return;}
+                    if(seen.has(key)){if(seen.get(key)===score)skipped.push('Dòng '+line+': trùng dòng đã nhập.');else errors.push('Dòng '+line+': trùng dữ liệu trong file nhưng khác điểm.');return;}
+                    seen.set(key,score);valid.push(item);
+                });
+                if(!valid.length&&!errors.length)throw Error('Không có điểm mới để nhập. Các dòng trùng đã được bỏ qua.');
+                pendingGradeExcelImport={classId:c.id,className:c.name,rows:valid,skipped,errors};
+                const modal=document.createElement('div');modal.id='grade-excel-preview';modal.className='qcard-modal';
+                modal.innerHTML='<section class="qcard-dialog"><h3>Xem trước nhập điểm Excel</h3><p><b>Lớp:</b> '+esc(c.name)+'</p><p><b>Điểm mới hợp lệ:</b> '+valid.length+' · <b>Bỏ qua trùng:</b> '+skipped.length+' · <b>Lỗi không nhập:</b> '+errors.length+'</p><div style="max-height:38vh;overflow:auto"><table class="w-full text-xs"><thead><tr><th class="p-2">SBD</th><th class="p-2">Tên bài</th><th class="p-2">Điểm</th><th class="p-2">Ngày</th></tr></thead><tbody>'+valid.slice(0,50).map(x=>'<tr><td class="p-2">'+esc(x.sbd)+'</td><td class="p-2">'+esc(x.title)+'</td><td class="p-2">'+x.score+'</td><td class="p-2">'+esc(x.date)+'</td></tr>').join('')+'</tbody></table></div>'+(valid.length>50?'<p class="ts-help">Chỉ hiển thị 50 dòng đầu trong bản xem trước.</p>':'')+(errors.length?'<details open><summary>'+errors.length+' dòng lỗi (không được nhập)</summary><ul>'+errors.slice(0,30).map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul></details>':'')+(skipped.length?'<p class="ts-help">Các dòng trùng điểm đã có sẽ được bỏ qua.</p>':'')+'<div class="ts-row"><button type="button" class="ts-btn" onclick="window.app.confirmGradeExcelImport()">Xác nhận thêm '+valid.length+' điểm mới</button><button type="button" class="ts-btn ts-secondary" onclick="window.app.cancelGradeExcelImport()">Hủy</button></div><p class="ts-help">Không có điểm cũ nào bị sửa hoặc xóa. Chỉ các dòng hợp lệ mới được thêm sau khi xác nhận.</p></section>';
+                document.body.append(modal);
+            }catch(e){toast(e.message||'Không đọc được file Excel.');}
+            finally{input.value='';}
+        }
+        function cancelGradeExcelImport(){pendingGradeExcelImport=null;$('grade-excel-preview')?.remove();}
+        function confirmGradeExcelImport(){
+            const p=pendingGradeExcelImport;if(!p)return;
+            if(!canManageClass(p.classId)||!state.classes.some(c=>c.id===p.classId)){cancelGradeExcelImport();return toast('Không còn quyền nhập điểm cho lớp này.');}
+            if(!p.rows.length){cancelGradeExcelImport();return toast('Không có điểm mới để thêm.');}
+            const current=new Set((state.gradeBook||[]).map(gradeImportKey));
+            const fresh=p.rows.filter(r=>!current.has(gradeImportKey(r)));
+            if(fresh.length!==p.rows.length){cancelGradeExcelImport();return toast('Bảng điểm vừa thay đổi. Hãy tải mẫu mới và nhập lại để tránh trùng.');}
+            state.gradeBook=state.gradeBook||[];
+            fresh.forEach(r=>state.gradeBook.push({id:uid('gr'),...r}));
+            persist();refreshUI();cancelGradeExcelImport();toast('Đã thêm '+fresh.length+' điểm mới. Điểm cũ được giữ nguyên.');
+        }
+
         function deleteGrade(id) {const target=state.gradeBook.find(g=>g.id===id);if(!target||!canManageClass(target.classId))return toast('Không có quyền xóa điểm của lớp này.');if(String(id).startsWith('learning_')){const submissionId=String(id).slice('learning_'.length);if(typeof window.TS?.deleteSubmission==='function')return window.TS.deleteSubmission(submissionId);return toast('Chức năng xóa bài nộp chưa sẵn sàng, hãy tải lại trang.');}if(!confirm('Xóa điểm '+target.title+' của học sinh này?'))return;state.gradeBook=state.gradeBook.filter(g=>g.id!==id);persist();refreshUI();toast('Đã xóa điểm.');}
 
         // ---------- Học sinh / Phụ huynh ----------
@@ -1324,7 +1405,7 @@ const attSel = (c,s) => attendanceSelector(c,s);
             switchAdminTab, openModal, closeModal, showNotification, addNewClass, deleteClass, addStudent, deleteStudent, archiveStudent, openStudentArchive, importStudents,
             setAttendance, toggleAttendanceLock, scheduleSubject, updateScheduleSubjects, addSchedule, editSchedule, deleteSchedule, sendSystemNotification, deleteNotification, deleteAllNotifications,
             changeManagedClass, changeFinanceFilter, toggleFeeStudent, toggleFeeClass, selectFeeVisible,selectFeeAll,applyFeeBulkChanges,previewBulkFees,changeTuitionExtra,editFeeRate, saveFeeRate, printFinance, studentFeeDetails, renderAdminStudentsTable, renderAdminFinance, updateStudentFeeStatus, saveTuitionPayment, rememberTuitionNote, saveTuitionNote, updateFeeAmount, openTaxExport, exportFinance,
-            renderTeacher, addGrade, deleteGrade, changePassword, editClass, editStudent, addAccount, editAccount, deleteAccount, exportBackup, importBackup
+            renderTeacher, addGrade, exportGradeImportTemplate, importGradeExcel, confirmGradeExcelImport, cancelGradeExcelImport, deleteGrade, changePassword, editClass, editStudent, addAccount, editAccount, deleteAccount, exportBackup, importBackup
         });
 
 
@@ -3017,6 +3098,11 @@ function localSubmittedSolutions(d,m,submissionId){
                     <input id="tch-g-score" type="number" min="0" max="10" step="0.25" placeholder="Điểm /10" class="p-2 border rounded-xl text-xs">
                     <button onclick="window.app.addGrade()" class="bg-indigo-600 text-white rounded-xl text-xs font-bold py-2">Thêm điểm</button>
                 </div>
+                <div class="flex flex-wrap gap-2 my-2">
+                    <button type="button" class="ts-btn" onclick="window.app.exportGradeImportTemplate()">Tải Excel mẫu nhập điểm</button>
+                    <label class="ts-btn ts-secondary">Nhập Excel đã điền<input type="file" accept=".xlsx,.xls" hidden onchange="window.app.importGradeExcel(this)"></label>
+                </div>
+                <p class="ts-help">File Excel chỉ thêm điểm mới sau khi thầy/cô xem trước và xác nhận. Điểm đã có không bị ghi đè.</p>
                 <div id="tch-grades" class="space-y-1.5 text-xs"></div>
             </details><section class="${box}"><div class="ts-row"><h3>Bài nộp & chấm tự luận</h3>${btn('Xuất bảng điểm Excel','exportGrades()')}${btn('Chấm trắc nghiệm từ file','batchGradePanel()')}<button class="ts-btn" onclick="ScanUI.openScanner()">Quét phiếu TN Maker</button><select id="ts-grade-filter" class="${input}" onchange="TS.setFilter(this.value)"><option value="">Tất cả bài giao của lớp</option>${classAssignments.map(a=>`<option value="${a.id}" ${a.id===gradingFilter?'selected':''}>${esc(a.snapshot.title)}</option>`).join('')}</select><label class="ts-btn">Nhập bài nộp JSON<input type="file" accept=".json" hidden onchange="TS.importSubmission(this)"></label></div><div class="flex flex-wrap items-center gap-2">
 <button type="button" class="ts-btn" data-status="pending" aria-pressed="${gradingStatusFilter==="pending"}" style="${gradingStatusFilter==="pending"?"background:#fff7ed;border-color:#fdba74;color:#9a3412;":""}" onclick="TS.setStatusFilter(this.dataset.status)">Chưa chấm <strong>${counts.pending}</strong></button>
