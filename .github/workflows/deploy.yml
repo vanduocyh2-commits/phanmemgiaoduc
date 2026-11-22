@@ -26,12 +26,11 @@ jobs:
           script: |
             set -euo pipefail
             SHA="${{ github.sha }}"
-            echo "=== Preflight existing center academic-year modules ==="
-            for file in /opt/phanmemgiaoduc/center-academic-year.mjs /opt/phanmemgiaoduc/student-sbd.mjs /opt/phanmemgiaoduc/public/center-academic-year-ui.mjs; do
-              if [[ -s "$file" ]]; then echo "MODULE_PRESENT $file"; ls -l "$file"; else echo "MODULE_MISSING $file"; fi
-            done
-            exit 42
-            echo "=== Deploying reviewed commit $SHA through the authorized source deploy helper ==="
+            echo "=== Preflight SBD support module ==="
+            test -s /opt/phanmemgiaoduc/student-sbd.mjs
+            node --check /opt/phanmemgiaoduc/student-sbd.mjs
+            echo "STUDENT_SBD_MODULE_READY"
+            echo "=== Deploying reviewed commit $SHA through authorized source deploy ==="
             sudo -n /usr/local/sbin/phanmemgiaoduc-source-deploy "$SHA"
             echo "=== Verifying portal service health ==="
             for attempt in {1..20}; do
