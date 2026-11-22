@@ -342,21 +342,29 @@ export function reviewStudentTransfer(d,m,{requestId,action,password=''}={},secr
  transferCenterStudent(d,m,{classId:request.classId,sbd:request.sbd,targetClassId:request.targetClassId,name:request.name,password,expectedRevision:d._revision},secret);
  request.status='approved';request.reviewedAt=new Date().toISOString();request.reviewedBy=m.username;request.completedSbd=d.classes.find(c=>c.id===request.targetClassId)?.students.find(s=>s.name===request.name)?.sbd||null;d._revision++;return request;
 }
-export function transferCenterStudent(d,m,{classId,sbd,targetClassId,name,password='',expectedRevision}={},secret){
+export function transferCenterStudent(d,m,{classId,sbd,targetClassId,name,password='',expectedRevision,newSbd}={},secret){
  if(m?.role!=='admin')throw Error('Chỉ quản trị được chuyển lớp học sinh.');
  if(expectedRevision!==d._revision)throw Error('Dữ liệu vừa thay đổi. Tải lại trước khi chuyển lớp.');
  const source=d.classes.find(c=>c.id===classId),target=d.classes.find(c=>c.id===targetClassId),pupil=source?.students.find(s=>s.sbd===sbd);
  if(!pupil||!target)throw Error('Chọn đúng học sinh và lớp chuyển đến.');
  if(typeof name!=='string'||!name.trim()||name.length>500||typeof password!=='string'||password&& (password.length<6||password.length>200))throw Error('Họ tên hoặc mật khẩu chưa hợp lệ.');
- let targetSbd=target!==source?studentSbdForTransfer(d,classId,target.id,sbd):sbd;
- if(target!==source&&target.students.some(s=>s.sbd.toUpperCase()===targetSbd.toUpperCase())){const sequence=createStudentSbdSequence(d,target.id);targetSbd=sequence.next();sequence.commit();}
- if(target!==source){
+ let targetSbd=typeof newSbd==='string'&&newSbd.trim()?newSbd.trim():(target!==source?studentSbdForTransfer(d,classId,target.id,sbd):sbd);
+ if(targetSbd.length>80||/[\\s:]/.test(targetSbd))throw Error('Số báo danh mới không hợp lệ.');
+ if(target.students.some(student=>student!==pupil&&String(student.sbd).toUpperCase()===targetSbd.toUpperCase())){
+  if(newSbd)throw Error('Số báo danh mới bị trùng trong lớp '+target.name+'. Hãy tải lại danh sách và thử lại.');
+  if(target!==source){const sequence=createStudentSbdSequence(d,target.id);targetSbd=sequence.next();sequence.commit();}
+  else throw Error('Số báo danh mới bị trùng trong lớp '+target.name+'.');
+ }
+ if(target!==source||targetSbd!==sbd){
   moveFamilyCredentials(d,secret,classId,target.id,sbd,targetSbd);
   source.students=source.students.filter(s=>s!==pupil);pupil.sbd=targetSbd;target.students.push(pupil);
   for(const key of ['gradeBook','learningSubmissions','learningAttempts','learningReports','lessonProgress','notifications','teacherSubmissions','teacherExams'])for(const row of d[key]||[])if(row.classId===classId&&row.sbd===sbd){row.classId=target.id;row.sbd=targetSbd;}
   for(const a of d.admissionAccounts||[])if(a.classId===classId&&a.sbd===sbd){a.classId=target.id;a.sbd=targetSbd;}
   for(const a of d.enrollmentApplications||[])if(a.classId===classId&&a.sbd===sbd){a.classId=target.id;a.sbd=targetSbd;a.requestedClass=target.name;}
-  for(const a of d.assignments||[])if(a.classId===classId)a.students=(a.students||[]).filter(id=>id!==sbd);
+  for(const a of d.assignments||[])if(a.classId===classId){
+   if(target.id===classId)a.students=(a.students||[]).map(id=>id===sbd?targetSbd:id);
+   else a.students=(a.students||[]).filter(id=>id!==sbd);
+  }
   const moveNested=(value,inheritedClassId)=>{if(!value||typeof value!=='object')return;if(Array.isArray(value)){for(const item of value)moveNested(item,inheritedClassId);return;}const cid=typeof value.classId==='string'?value.classId:inheritedClassId;if(cid===classId&&value.sbd===sbd){value.sbd=targetSbd;if(value.classId===classId)value.classId=target.id;}for(const [key,child] of Object.entries(value))if(key!=='classes'&&key!=='archivedStudents'&&key!=='_rosterImportHistory'&&key!=='_tuitionResets')moveNested(child,cid);};
   moveNested(d._attendanceSessions,classId);
  }
