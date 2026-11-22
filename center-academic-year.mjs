@@ -10,7 +10,7 @@ export function centerYearPreview(d,actor,{fromYear,toYear}={}){
 export function applyCenterAcademicYear(d,actor,input={},services={}){
  admin(actor);const {fromYear,toYear,actions,expectedRevision}=input;
  if(!/^\d{4}-\d{4}$/.test(String(fromYear||''))||!/^\d{4}-\d{4}$/.test(String(toYear||''))||fromYear===toYear)throw Error('Năm học không hợp lệ.');
- d.centerAcademicYears??=[];if(d.centerAcademicYears.some(x=>x.fromYear===fromYear&&x.toYear===toYear))throw Error('Năm học này đã được tổng kết trước đó.');
+ const existingYears=Array.isArray(d.centerAcademicYears)?d.centerAcademicYears:[];if(existingYears.some(x=>x.fromYear===fromYear&&x.toYear===toYear))throw Error('Năm học này đã được tổng kết trước đó.');
  if(expectedRevision!==(d._revision||0))throw Error('Dữ liệu đã thay đổi. Hãy tải lại danh sách trước khi tổng kết.');
  if(!Array.isArray(actions)||!actions.length||actions.length>3000)throw Error('Danh sách tổng kết không hợp lệ.');
  const seen=new Set(),prepared=[],sequences=new Map(),at=new Date().toISOString();
@@ -47,6 +47,6 @@ export function applyCenterAcademicYear(d,actor,input={},services={}){
   records.push(snapshot);
  }
  const record={id:'center_year_'+Date.now().toString(36),fromYear,toYear,createdAt:at,createdBy:actor.username||actor.name||'admin',count:records.length,students:records};
- d.centerAcademicYears.push(record);d._revision=(d._revision||0)+1;
+ d.centerAcademicYears??=[];d.centerAcademicYears.push(record);d._revision=(d._revision||0)+1;
  return d;
 }
