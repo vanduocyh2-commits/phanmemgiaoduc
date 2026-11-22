@@ -1323,7 +1323,7 @@ const attSel = (c,s) => attendanceSelector(c,s);
             link.download='Mau_nhap_diem_'+String(c.name||'lop').replace(/[^a-z0-9_-]+/gi,'_')+'.xlsx';
             link.removeAttribute('aria-disabled');
         }
-function selectedGradeClass(){const classes=teacherClasses();return classes.find(x=>x.id===$('ts-class')?.value)||classes.find(x=>x.name===qsel('tch-class'))||classes[0]||null;}
+function selectedGradeClass(){const classes=teacherClasses();const selected=$('ts-class')||$('tch-class');const value=String(selected?.value||'').trim();return classes.find(x=>x.id===value)||classes.find(x=>x.name===value)||classes[0]||null;}
                 function exportGradeImportTemplate(){
             const c=selectedGradeClass();
             if(!c||!canManageClass(c.id))return toast('Chọn lớp được phân quyền trước.');
@@ -1343,7 +1343,7 @@ function selectedGradeClass(){const classes=teacherClasses();return classes.find
                 await ensureGradeXLSX();
                 if(!['admin','teacher'].includes(state.sessionRole))throw Error('Tài khoản không có quyền nhập điểm.');
                 if(file.size>5*1024*1024)throw Error('File Excel tối đa 5 MB.');
-                const c=teacherClasses().find(x=>x.name===qsel('tch-class'))||teacherClasses()[0];
+                const c=selectedGradeClass();
                 if(!c||!canManageClass(c.id))throw Error('Chọn lớp được phân quyền trước.');
                 const wb=XLSX.read(await file.arrayBuffer(),{type:'array',cellDates:false});
                 const meta=wb.Sheets.ThongTin?XLSX.utils.sheet_to_json(wb.Sheets.ThongTin,{header:1,defval:''}):[];
