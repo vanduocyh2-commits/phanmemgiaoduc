@@ -27,11 +27,11 @@ jobs:
             set -euo pipefail
             echo "=== Read-only VPS deploy-wrapper diagnosis ==="
             sudo -n -l || true
-            if [[ -r /usr/local/sbin/phanmemgiaoduc-deploy ]]; then
-              sed -n "1,240p" /usr/local/sbin/phanmemgiaoduc-deploy
-            else
-              echo "DEPLOY_WRAPPER_NOT_READABLE"
-            fi
+            for helper in /usr/local/sbin/phanmemgiaoduc-deploy /usr/local/sbin/phanmemgiaoduc-source-deploy /usr/local/sbin/phanmemgiaoduc-ai-modules-deploy; do
+              echo "=== HELPER $helper ==="
+              ls -l "$helper" 2>/dev/null || true
+              if [[ -r "$helper" ]]; then sed -n "1,260p" "$helper"; else echo "HELPER_NOT_READABLE"; fi
+            done
             echo "=== End read-only diagnosis; no deployment attempted ==="
             exit 42
             echo "=== Deploying reviewed commit ${{ github.sha }} ==="
