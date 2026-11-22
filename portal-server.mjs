@@ -349,7 +349,7 @@ export function transferCenterStudent(d,m,{classId,sbd,targetClassId,name,passwo
  if(!pupil||!target)throw Error('Chọn đúng học sinh và lớp chuyển đến.');
  if(typeof name!=='string'||!name.trim()||name.length>500||typeof password!=='string'||password&& (password.length<6||password.length>200))throw Error('Họ tên hoặc mật khẩu chưa hợp lệ.');
  let targetSbd=typeof newSbd==='string'&&newSbd.trim()?newSbd.trim():(target!==source?studentSbdForTransfer(d,classId,target.id,sbd):sbd);
- if(targetSbd.length>80||/[\\s:]/.test(targetSbd))throw Error('Số báo danh mới không hợp lệ.');
+ if(targetSbd.length>80||/[\s:]/.test(targetSbd))throw Error('Số báo danh mới không hợp lệ.');
  if(target.students.some(student=>student!==pupil&&String(student.sbd).toUpperCase()===targetSbd.toUpperCase())){
   if(newSbd)throw Error('Số báo danh mới bị trùng trong lớp '+target.name+'. Hãy tải lại danh sách và thử lại.');
   if(target!==source){const sequence=createStudentSbdSequence(d,target.id);targetSbd=sequence.next();sequence.commit();}
