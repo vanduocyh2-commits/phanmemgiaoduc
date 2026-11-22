@@ -4049,7 +4049,8 @@ function saveMixed(){if(!mixedVariants.length)return;const existing=new Set(scop
    const sections=[];(ex.questions||[]).forEach((q,i)=>{let last=sections.at(-1);if(!last||last.type!==q.type){last={type:q.type,questions:[]};sections.push(last);}last.questions.push({q,index:i});});
    const headings={mcq:'TRẮC NGHIỆM 4 LỰA CHỌN',tf:'TRẮC NGHIỆM ĐÚNG / SAI',short:'TRẢ LỜI NGẮN',essay:'TỰ LUẬN'};
    const instructions={mcq:'Chọn một đáp án đúng cho mỗi câu hỏi.',tf:'Xác định phát biểu đúng hoặc sai ở mỗi câu.',short:'Ghi đáp án ngắn gọn vào ô trả lời.',essay:'Trình bày đầy đủ lập luận và các bước giải.'};
-   return sections.map((part,n)=>`<section class="exam-section"><h3 class="exam-section-heading">PHẦN ${romanPart(n+1)}. ${headings[part.type]||esc(types[part.type]||part.type).toUpperCase()}</h3><p class="exam-section-note">${instructions[part.type]||''} (${part.questions.reduce((sum,{q})=>sum+(Number(q.points)||0),0).toLocaleString('vi-VN')} điểm)</p>${part.questions.map(({q,index})=>paperQuestion(q,index,interactive,answers,ex)).join('')}</section>`).join('');
+   const partNumbers={mcq:1,tf:2,short:3,essay:4};
+   return sections.map((part,n)=>`<section class="exam-section"><h3 class="exam-section-heading">PHẦN ${romanPart(partNumbers[part.type]||n+1)}. ${headings[part.type]||esc(types[part.type]||part.type).toUpperCase()}</h3><p class="exam-section-note">${instructions[part.type]||''} (${part.questions.reduce((sum,{q})=>sum+(Number(q.points)||0),0).toLocaleString('vi-VN')} điểm)</p>${part.questions.map(({q,index})=>paperQuestion(q,index,interactive,answers,ex)).join('')}</section>`).join('');
  }
  function paperQuestion(q,index,interactive,answers,ex){
    const number=index+1,points=q.points.toLocaleString('vi-VN'),answer=answers[q.id]||'';
