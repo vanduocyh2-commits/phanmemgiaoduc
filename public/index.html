@@ -1227,11 +1227,38 @@ const attSel = (c,s) => attendanceSelector(c,s);
             return '<Worksheet ss:Name="'+gradeXmlEscape(name)+'"><Table>'+body+'</Table></Worksheet>';
         }
         function downloadGradeXmlWorkbook(filename,sheets){
-            const xml='<?xml version="1.0" encoding="UTF-8"?><?mso-application progid="Excel.Sheet"?><Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet" xmlns:html="http://www.w3.org/TR/REC-html40">'+sheets.map(x=>gradeXmlSheet(x[0],x[1])).join('')+'</Workbook>';
-            const blob=new Blob(['\\ufeff',xml],{type:'application/vnd.ms-excel;charset=utf-8'});
-            const url=URL.createObjectURL(blob),a=document.createElement('a');
-            a.href=url;a.download=filename+'.xls';a.style.display='none';document.body.append(a);
-            a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);
+            let url='';
+            try{
+                const xml='<?xml version="1.0" encoding="UTF-8"?><?mso-application progid="Excel.Sheet"?><Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet" xmlns:html="http://www.w3.org/TR/REC-html40">'+sheets.map(x=>gradeXmlSheet(x[0],x[1])).join('')+'</Workbook>';
+                const blob=new Blob(['\uFEFF',xml],{type:'application/vnd.ms-excel;charset=utf-8'});
+                url=URL.createObjectURL(blob);
+                const safeName=String(filename||'Mau_nhap_diem').replace(/[\\/:*?"<>|]+/g,'_')+'.xls';
+                const panel=document.createElement('div');
+                panel.id='grade-excel-download-panel';
+                panel.style.cssText='position:fixed;z-index:2147483647;left:16px;right:16px;bottom:18px;max-width:620px;margin:auto;padding:16px;background:#fff;border:2px solid #4f46e5;border-radius:14px;box-shadow:0 10px 35px rgba(15,23,42,.28);color:#1e293b';
+                const title=document.createElement('div');
+                title.textContent='File Excel mẫu đã được tạo.';
+                title.style.cssText='font-weight:700;margin-bottom:10px';
+                const link=document.createElement('a');
+                link.href=url;link.download=safeName;link.textContent='⬇ BẤM VÀO ĐÂY ĐỂ TẢI FILE EXCEL';
+                link.style.cssText='display:block;padding:13px 16px;background:#4f46e5;color:#fff;text-align:center;font-weight:800;border-radius:9px;text-decoration:none';
+                const note=document.createElement('p');
+                note.textContent='Nếu trình duyệt không tự tải file, hãy bấm trực tiếp vào nút màu tím bên trên.';
+                note.style.cssText='font-size:12px;color:#64748b;margin:10px 0';
+                const close=document.createElement('button');
+                close.type='button';close.textContent='Đóng';
+                close.style.cssText='padding:7px 12px;border:1px solid #cbd5e1;border-radius:8px;background:#f8fafc';
+                close.onclick=()=>{panel.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);};
+                panel.append(title,link,note,close);
+                document.getElementById('grade-excel-download-panel')?.remove();
+                document.body.append(panel);
+                try{link.click();}catch(_){}
+                return true;
+            }catch(error){
+                console.error('Grade Excel download failed:',error);
+                toast('Không tạo được file Excel: '+(error?.message||error));
+                return false;
+            }
         }
         function exportGradeImportTemplate(){
             const c=teacherClasses().find(x=>x.name===qsel('tch-class'))||teacherClasses()[0];
