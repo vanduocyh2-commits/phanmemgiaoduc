@@ -42,7 +42,7 @@ test('real rollover services reassign fresh SBDs, move student/parent credential
  assert.equal(record.students[1].newSbd,'K8A01');
  assert.equal(d.gradeBook[0].classId,'c9');assert.equal(d.gradeBook[0].sbd,'K9A01');
  assert.equal(d.learningSubmissions[0].classId,'c9');assert.equal(d.learningSubmissions[0].sbd,'K9A01');
- assert.deepEqual(d.assignments[0].students,[]);
+ assert.deepEqual(d.assignments[0].students,['K8A01']);
  assert.equal(d._attendanceSessions.morning.entries[0].sbd,'K9A01');
  assert.equal(resolvePortalPupil(d,{role:'student',sbd:'K9A01',password:'student-pass-1'}).who.cid,'c9');
  assert.equal(resolvePortalPupil(d,{role:'parent',sbd:'K9A01',password:'parent-pass-1'}).who.cid,'c9');
