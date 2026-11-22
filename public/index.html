@@ -1216,17 +1216,35 @@ const attSel = (c,s) => attendanceSelector(c,s);
             return '';
         }
         function gradeImportKey(g){return [g.classId,g.sbd,String(g.title||'').trim().toLocaleLowerCase('vi'),gradeExcelDate(g.date)].join('|');}
-        async function exportGradeImportTemplate(){
-            try{await ensureGradeXLSX();}catch(e){return toast(e.message);}
+        function gradeXmlEscape(value){
+            return String(value??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&apos;');
+        }
+        function gradeXmlSheet(name,rows){
+            const body=rows.map(row=>'<Row>'+row.map(value=>{
+                const numeric=typeof value==='number'&&Number.isFinite(value);
+                return '<Cell><Data ss:Type="'+(numeric?'Number':'String')+'">'+gradeXmlEscape(value)+'</Data></Cell>';
+            }).join('')+'</Row>').join('');
+            return '<Worksheet ss:Name="'+gradeXmlEscape(name)+'"><Table>'+body+'</Table></Worksheet>';
+        }
+        function downloadGradeXmlWorkbook(filename,sheets){
+            const xml='<?xml version="1.0" encoding="UTF-8"?><?mso-application progid="Excel.Sheet"?><Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet" xmlns:html="http://www.w3.org/TR/REC-html40">'+sheets.map(x=>gradeXmlSheet(x[0],x[1])).join('')+'</Workbook>';
+            const blob=new Blob(['\\ufeff',xml],{type:'application/vnd.ms-excel;charset=utf-8'});
+            const url=URL.createObjectURL(blob),a=document.createElement('a');
+            a.href=url;a.download=filename+'.xls';a.style.display='none';document.body.append(a);
+            a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);
+        }
+        function exportGradeImportTemplate(){
             const c=teacherClasses().find(x=>x.name===qsel('tch-class'))||teacherClasses()[0];
             if(!c||!canManageClass(c.id))return toast('Chọn lớp được phân quyền trước.');
             const rows=[['SBD','Họ tên','Tên bài','Điểm','Ngày (dd/mm/yyyy)']];
-            (state.gradeBook||[]).filter(g=>g.classId===c.id).forEach(g=>rows.push([g.sbd,c.students.find(st=>st.sbd===g.sbd)?.name||'',g.title,Number(g.score),gradeExcelDate(g.date)]));
+            (state.gradeBook||[]).filter(g=>g.classId===c.id&&!String(g.id||'').startsWith('learning_')).forEach(g=>rows.push([g.sbd,c.students.find(st=>st.sbd===g.sbd)?.name||'',g.title,Number(g.score),gradeExcelDate(g.date)]));
             (c.students||[]).forEach(st=>rows.push([st.sbd,st.name,'','','']));
-            excelFile('Mau_nhap_diem_'+String(c.name||'lop').replace(/[^a-z0-9_-]+/gi,'_'),[
+            const filename='Mau_nhap_diem_'+String(c.name||'lop').replace(/[^a-z0-9_-]+/gi,'_');
+            downloadGradeXmlWorkbook(filename,[
                 ['NhapDiem',rows],
                 ['ThongTin',[['Ma lop',c.id],['Ten lop',c.name],['Ghi chu','Giữ nguyên các dòng điểm cũ; thêm dòng mới để nhập điểm. Không sửa điểm đã có.']]]
             ]);
+            toast('Đã tạo file Excel mẫu. Kiểm tra thư mục Tải xuống.');
         }
         async function importGradeExcel(input){
             const file=input?.files?.[0];if(!file)return;
