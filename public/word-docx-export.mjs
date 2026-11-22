@@ -208,10 +208,17 @@ export function layoutTable(rows,widths) {
   return '<w:tbl><w:tblPr><w:tblW w:w="'+total+'" w:type="dxa"/><w:tblLayout w:type="fixed"/>'+nilBorders+margins+'</w:tblPr>'+grid+body+'</w:tbl>';
 }
 export function mcqOptionsTable(optionRuns, optionTexts=[]) {
-  // Always place A/B/C/D on one horizontal row. Longer expressions wrap
-  // inside their cells rather than changing the answer layout to 2x2.
+  // Match a printable exam layout: compact choices stay on one horizontal
+  // line; lengthy mathematical/text choices use two columns to avoid
+  // squeezing the formula or creating excessively tall narrow cells.
   const cells=Array.from({length:4},(_,i)=>wordParagraph(optionRuns[i]||'',{after:70}));
-  return layoutTable([[cells[0],cells[1],cells[2],cells[3]]],[2481,2481,2481,2483]);
+  const texts=Array.from({length:4},(_,i)=>String(optionTexts[i]??'').replace(/\\s+/g,' ').trim());
+  const longest=Math.max(0,...texts.map(text=>text.length));
+  const total=texts.reduce((sum,text)=>sum+text.length,0);
+  if(longest<=30 && total<=96) {
+    return layoutTable([[cells[0],cells[1],cells[2],cells[3]]],[2481,2481,2481,2483]);
+  }
+  return layoutTable([[cells[0],cells[1]],[cells[2],cells[3]]],[4963,4963]);
 }
 export function examQuestionParagraph(runs) {
   return wordParagraph(runs,{after:90,keep:true});
