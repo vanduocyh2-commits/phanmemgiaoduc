@@ -27,13 +27,10 @@ jobs:
             set -euo pipefail
             SHA="${{ github.sha }}"
             echo "=== Preflight existing center academic-year modules ==="
-            test -s /opt/phanmemgiaoduc/center-academic-year.mjs
-            test -s /opt/phanmemgiaoduc/student-sbd.mjs
-            test -s /opt/phanmemgiaoduc/public/center-academic-year-ui.mjs
-            node --check /opt/phanmemgiaoduc/center-academic-year.mjs
-            node --check /opt/phanmemgiaoduc/student-sbd.mjs
-            node --check /opt/phanmemgiaoduc/public/center-academic-year-ui.mjs
-            echo "CENTER_YEAR_MODULES_READY"
+            for file in /opt/phanmemgiaoduc/center-academic-year.mjs /opt/phanmemgiaoduc/student-sbd.mjs /opt/phanmemgiaoduc/public/center-academic-year-ui.mjs; do
+              if [[ -s "$file" ]]; then echo "MODULE_PRESENT $file"; ls -l "$file"; else echo "MODULE_MISSING $file"; fi
+            done
+            exit 42
             echo "=== Deploying reviewed commit $SHA through the authorized source deploy helper ==="
             sudo -n /usr/local/sbin/phanmemgiaoduc-source-deploy "$SHA"
             echo "=== Verifying portal service health ==="
