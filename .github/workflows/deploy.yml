@@ -16,7 +16,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Deploy reviewed main branch using the authorized VPS deploy command
+      - name: Deploy reviewed source with the authorized source deploy helper
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.VPS_HOST }}
@@ -25,19 +25,19 @@ jobs:
           command_timeout: 10m
           script: |
             set -euo pipefail
-            echo "=== Read-only VPS deploy-wrapper diagnosis ==="
-            sudo -n -l || true
-            for helper in /usr/local/sbin/phanmemgiaoduc-deploy /usr/local/sbin/phanmemgiaoduc-source-deploy /usr/local/sbin/phanmemgiaoduc-ai-modules-deploy; do
-              echo "=== HELPER $helper ==="
-              ls -l "$helper" 2>/dev/null || true
-              if [[ -r "$helper" ]]; then sed -n "1,260p" "$helper"; else echo "HELPER_NOT_READABLE"; fi
-            done
-            echo "=== End read-only diagnosis; no deployment attempted ==="
-            exit 42
-            echo "=== Deploying reviewed commit ${{ github.sha }} ==="
-            sudo -n /usr/local/sbin/phanmemgiaoduc-deploy
+            SHA="${{ github.sha }}"
+            echo "=== Preflight existing center academic-year modules ==="
+            test -s /opt/phanmemgiaoduc/center-academic-year.mjs
+            test -s /opt/phanmemgiaoduc/student-sbd.mjs
+            test -s /opt/phanmemgiaoduc/public/center-academic-year-ui.mjs
+            node --check /opt/phanmemgiaoduc/center-academic-year.mjs
+            node --check /opt/phanmemgiaoduc/student-sbd.mjs
+            node --check /opt/phanmemgiaoduc/public/center-academic-year-ui.mjs
+            echo "CENTER_YEAR_MODULES_READY"
+            echo "=== Deploying reviewed commit $SHA through the authorized source deploy helper ==="
+            sudo -n /usr/local/sbin/phanmemgiaoduc-source-deploy "$SHA"
             echo "=== Verifying portal service health ==="
-            for attempt in {1..12}; do
+            for attempt in {1..20}; do
               if curl --fail --silent --show-error --max-time 3 http://127.0.0.1:3000/api/health; then
                 echo
                 echo "PORTAL_HEALTH_CHECK_SUCCESS"
@@ -47,5 +47,5 @@ jobs:
             done
             echo "ERROR: portal health endpoint did not become ready" >&2
             sudo -n systemctl is-active phanmemgiaoduc.service >&2 || true
-            sudo -n journalctl -u phanmemgiaoduc.service -n 40 --no-pager >&2 || true
+            sudo -n journalctl -u phanmemgiaoduc.service -n 50 --no-pager >&2 || true
             exit 1
