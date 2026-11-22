@@ -1197,9 +1197,9 @@ const attSel = (c,s) => attendanceSelector(c,s);
                 const d=XLSX.SSF.parse_date_code(value);if(!d)return '';
                 return String(d.d).padStart(2,'0')+'/'+String(d.m).padStart(2,'0')+'/'+d.y;
             }
-            const t=String(value).trim();let m=t.match(/^(\\d{1,2})[\\/-](\\d{1,2})[\\/-](\\d{4})$/);
+            const t=String(value).trim();let m=t.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);
             if(m){const d=Number(m[1]),mo=Number(m[2]),y=Number(m[3]);if(d>=1&&d<=31&&mo>=1&&mo<=12)return String(d).padStart(2,'0')+'/'+String(mo).padStart(2,'0')+'/'+y;return '';}
-            m=t.match(/^(\\d{4})-(\\d{1,2})-(\\d{1,2})$/);
+            m=t.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
             if(m)return String(Number(m[3])).padStart(2,'0')+'/'+String(Number(m[2])).padStart(2,'0')+'/'+m[1];
             return '';
         }
@@ -1230,7 +1230,7 @@ const attSel = (c,s) => attendanceSelector(c,s);
                 if(!sheet)throw Error('File không có trang tính dữ liệu.');
                 const matrix=XLSX.utils.sheet_to_json(sheet,{header:1,defval:'',raw:true});
                 if(matrix.length<2)throw Error('File chưa có dòng dữ liệu.');
-                const norm=v=>String(v||'').normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').replace(/đ/gi,'d').toLowerCase().replace(/[^a-z0-9]/g,'');
+                const norm=v=>String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/gi,'d').toLowerCase().replace(/[^a-z0-9]/g,'');
                 const headers=matrix[0].map(norm),col=(...names)=>headers.findIndex(h=>names.includes(h));
                 const iSbd=col('sbd','masohoc sinh','masohs'),iName=col('hoten','tenhocsinh'),iTitle=col('tenbai','baitest','noidungkiemtra'),iScore=col('diem','diemso'),iDate=col('ngay','ngaynhap','ngaykiemtra');
                 if([iSbd,iTitle,iScore].some(i=>i<0))throw Error('Thiếu cột bắt buộc: SBD, Tên bài, Điểm.');
