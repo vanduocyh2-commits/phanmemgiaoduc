@@ -1215,14 +1215,14 @@ const attSel = (c,s) => attendanceSelector(c,s);
                 ['ThongTin',[['Ma lop',c.id],['Ten lop',c.name],['Ghi chu','Giữ nguyên các dòng điểm cũ; thêm dòng mới để nhập điểm. Không sửa điểm đã có.']]]
             ]);
         }
-        function importGradeExcel(input){
+        async function importGradeExcel(input){
             const file=input?.files?.[0];if(!file)return;
             try{
                 if(!['admin','teacher'].includes(state.sessionRole))throw Error('Tài khoản không có quyền nhập điểm.');
                 if(file.size>5*1024*1024)throw Error('File Excel tối đa 5 MB.');
                 const c=teacherClasses().find(x=>x.name===qsel('tch-class'))||teacherClasses()[0];
                 if(!c||!canManageClass(c.id))throw Error('Chọn lớp được phân quyền trước.');
-                const wb=XLSX.read(file,{type:'array',cellDates:false});
+                const wb=XLSX.read(await file.arrayBuffer(),{type:'array',cellDates:false});
                 const meta=wb.Sheets.ThongTin?XLSX.utils.sheet_to_json(wb.Sheets.ThongTin,{header:1,defval:''}):[];
                 const metaMap=Object.fromEntries(meta.slice(1).map(r=>[String(r[0]||'').trim().toLowerCase(),String(r[1]||'').trim()]));
                 if(metaMap['ma lop']&&metaMap['ma lop']!==c.id)throw Error('File Excel thuộc lớp khác. Hãy chọn đúng lớp rồi tải mẫu mới.');
