@@ -36,5 +36,5 @@ export function applyCenterAcademicYear(d,actor,input={},services={}){
  }
  const record={id:'center_year_'+Date.now().toString(36),fromYear,toYear,createdAt:at,createdBy:actor.username||actor.name||'admin',count:records.length,students:records};
  d.centerAcademicYears.push(record);d._revision=(d._revision||0)+1;
- return {record,view:d};
+ return d;
 }
