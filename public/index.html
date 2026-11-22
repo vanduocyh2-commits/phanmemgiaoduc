@@ -1206,8 +1206,9 @@ const attSel = (c,s) => attendanceSelector(c,s);
         let pendingGradeExcelImport=null;
         function gradeExcelDate(value){
             if(value===null||value===undefined||value==='')return '';
-            if(typeof value==='number'&&XLSX.SSF?.parse_date_code){
-                const d=XLSX.SSF.parse_date_code(value);if(!d)return '';
+            if(typeof value==='number'&&Number.isFinite(value)){
+                let d=XLSX.SSF?.parse_date_code?.(value);
+                if(!d){const date=new Date(Date.UTC(1899,11,30)+Math.floor(value)*86400000);if(!Number.isFinite(date.getTime()))return '';d={d:date.getUTCDate(),m:date.getUTCMonth()+1,y:date.getUTCFullYear()};}
                 return String(d.d).padStart(2,'0')+'/'+String(d.m).padStart(2,'0')+'/'+d.y;
             }
             const t=String(value).trim();let m=t.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);
@@ -1363,10 +1364,13 @@ function selectedGradeClass(){const classes=teacherClasses();const selected=$('t
                 matrix.slice(1).forEach((r,index)=>{
                     const sbd=String(r[iSbd]??'').trim(),name=iName>=0?String(r[iName]??'').trim():'',title=String(r[iTitle]??'').trim(),rawScore=r[iScore],date=gradeExcelDate(iDate>=0?r[iDate]:'');
                     if(!sbd&&!title&&(rawScore===''||rawScore===null||rawScore===undefined))return;
-                    const line=index+2,st=students.get(sbd),score=typeof rawScore==='string'?Number(rawScore.trim().replace(',','.')):Number(rawScore);
+                    const line=index+2;
+                    // Dòng đã có học sinh nhưng chưa nhập điểm được xem là dòng chờ, không phải lỗi.
+                    if(rawScore===''||rawScore===null||rawScore===undefined)return;
+                    const st=students.get(sbd),score=typeof rawScore==='string'?Number(rawScore.trim().replace(',','.')):Number(rawScore);
                     if(!st){errors.push('Dòng '+line+': không tìm thấy SBD '+(sbd||'(trống)')+' trong lớp.');return;}
                     if(name&&name.toLocaleLowerCase('vi')!==String(st.name||'').trim().toLocaleLowerCase('vi')){errors.push('Dòng '+line+': họ tên không khớp với SBD '+sbd+'.');return;}
-                    if(!title||rawScore===''||rawScore===null||rawScore===undefined||!Number.isFinite(score)||score<0||score>10||!date){errors.push('Dòng '+line+': cần có tên bài, điểm 0–10 và ngày hợp lệ.');return;}
+                    if(!title||!Number.isFinite(score)||score<0||score>10||!date){errors.push('Dòng '+line+': cần có tên bài, điểm 0–10 và ngày hợp lệ.');return;}
                     const item={classId:c.id,sbd,title,score,date},key=gradeImportKey(item);
                     if(existing.has(key)){if(existing.get(key)===score)skipped.push('Dòng '+line+': điểm này đã tồn tại.');else errors.push('Dòng '+line+': trùng học sinh, tên bài và ngày với điểm cũ; không ghi đè.');return;}
                     if(seen.has(key)){if(seen.get(key)===score)skipped.push('Dòng '+line+': trùng dòng đã nhập.');else errors.push('Dòng '+line+': trùng dữ liệu trong file nhưng khác điểm.');return;}
