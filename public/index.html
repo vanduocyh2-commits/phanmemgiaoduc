@@ -1260,8 +1260,9 @@ const attSel = (c,s) => attendanceSelector(c,s);
                 return false;
             }
         }
-        function exportGradeImportTemplate(){
-            const c=teacherClasses().find(x=>x.name===qsel('tch-class'))||teacherClasses()[0];
+function selectedGradeClass(){const classes=teacherClasses();return classes.find(x=>x.id===$('ts-class')?.value)||classes.find(x=>x.name===qsel('tch-class'))||classes[0]||null;}
+                function exportGradeImportTemplate(){
+            const c=selectedGradeClass();
             if(!c||!canManageClass(c.id))return toast('Chọn lớp được phân quyền trước.');
             const rows=[['SBD','Họ tên','Tên bài','Điểm','Ngày (dd/mm/yyyy)']];
             (state.gradeBook||[]).filter(g=>g.classId===c.id&&!String(g.id||'').startsWith('learning_')).forEach(g=>rows.push([g.sbd,c.students.find(st=>st.sbd===g.sbd)?.name||'',g.title,Number(g.score),gradeExcelDate(g.date)]));
