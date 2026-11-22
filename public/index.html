@@ -1317,7 +1317,7 @@ const attSel = (c,s) => attendanceSelector(c,s);
             (c.students||[]).forEach(st=>rows.push([st.sbd,st.name,'','','']));
             const blob=gradeXlsxBlob([
                 ['NhapDiem',rows],
-                ['ThongTin',[['Ma lop',c.id],['Ten lop',c.name],['Ghi chu','Giữ nguyên các dòng điểm cũ; thêm dòng mới để nhập điểm. Không sửa điểm đã có.']]]
+                ['ThongTin',[['Ma lop',c.id],['Ten lop',c.name],['Ten bai',''],['Ngay',''],['Ghi chu','Nhập Tên bài và Ngày một lần tại trang này. Sau đó chỉ cần nhập Điểm ở trang NhapDiem; có thể điền riêng Tên bài/Ngày từng dòng nếu khác. Không sửa điểm cũ.']]]
             ]);
             if(gradeExcelDownloadUrl)URL.revokeObjectURL(gradeExcelDownloadUrl);
             gradeExcelDownloadUrl=URL.createObjectURL(blob);
@@ -1335,7 +1335,7 @@ function selectedGradeClass(){const classes=teacherClasses();const selected=$('t
             const filename='Mau_nhap_diem_'+String(c.name||'lop').replace(/[^a-z0-9_-]+/gi,'_');
             downloadGradeXmlWorkbook(filename,[
                 ['NhapDiem',rows],
-                ['ThongTin',[['Ma lop',c.id],['Ten lop',c.name],['Ghi chu','Giữ nguyên các dòng điểm cũ; thêm dòng mới để nhập điểm. Không sửa điểm đã có.']]]
+                ['ThongTin',[['Ma lop',c.id],['Ten lop',c.name],['Ten bai',''],['Ngay',''],['Ghi chu','Nhập Tên bài và Ngày một lần tại trang này. Sau đó chỉ cần nhập Điểm ở trang NhapDiem; có thể điền riêng Tên bài/Ngày từng dòng nếu khác. Không sửa điểm cũ.']]]
             ]);
             toast('Đã tạo file Excel mẫu. Kiểm tra thư mục Tải xuống.');
         }
@@ -1363,7 +1363,7 @@ function selectedGradeClass(){const classes=teacherClasses();const selected=$('t
                 const existing=new Map((state.gradeBook||[]).filter(g=>g.classId===c.id).map(g=>[gradeImportKey(g),Number(g.score)]));
                 const seen=new Map(),valid=[],skipped=[],errors=[];
                 matrix.slice(1).forEach((r,index)=>{
-                    const sbd=String(r[iSbd]??'').trim(),name=iName>=0?String(r[iName]??'').trim():'',title=String(r[iTitle]??'').trim(),rawScore=r[iScore],date=gradeExcelDate(iDate>=0?r[iDate]:'');
+                    const sbd=String(r[iSbd]??'').trim(),name=iName>=0?String(r[iName]??'').trim():'',title=String(r[iTitle]??'').trim()||metaMap['ten bai']||metaMap['ten bai kiem tra']||'',rawScore=r[iScore],date=gradeExcelDate(iDate>=0&&r[iDate]!==''?r[iDate]:(metaMap['ngay']||''));
                     if(!sbd&&!title&&(rawScore===''||rawScore===null||rawScore===undefined))return;
                     const line=index+2;
                     // Dòng đã có học sinh nhưng chưa nhập điểm được xem là dòng chờ, không phải lỗi.
