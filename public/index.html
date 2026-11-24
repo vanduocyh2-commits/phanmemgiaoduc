@@ -4408,16 +4408,15 @@ function saveMixed(){if(!mixedVariants.length)return;const existing=new Set(scop
  function tfAnswersFrom(value){
    if(Array.isArray(value))return Array.from({length:4},(_,i)=>['Đúng','Sai'].includes(value[i])?value[i]:'');
    const text=String(value||'').trim();
-   // Prefer explicitly labeled a/b/c/d answers. This remains reliable even
-   // when Gemini also repeats true/false words in the explanation.
-   const labeled=[...text.matchAll(/(?:^|[;\\n,|]\\s*|\\s)([a-d])\\s*[).:]\\s*(đúng|sai|true|false)\\b/gi)];
+   // Accept labeled answers (a) Đúng, b. Sai...) and compact codes ĐSĐS.
+   const labeled=[...text.matchAll(/(?:^|[;,\n|]\s*|\s)([a-d])\s*[).:]\s*(đúng|sai|true|false)\b/gi)];
    if(labeled.length>=4){
      const map=new Map(labeled.map(m=>[m[1].toLowerCase(),/đúng|true/i.test(m[2])?'Đúng':'Sai']));
      if(['a','b','c','d'].every(k=>map.has(k)))return ['a','b','c','d'].map(k=>map.get(k));
    }
    const words=text.match(/đúng|sai|true|false/gi);
    if(words?.length===4)return words.map(v=>/đúng|true/i.test(v)?'Đúng':'Sai');
-   const code=text.replace(/[\\s,;|.\\-–—]/g,'').toUpperCase();
+   const code=text.replace(/[\s,;|.()\-–—]/g,'').toUpperCase();
    if(/^[ĐDS_]{4}$/.test(code))return [...code].map(v=>v==='_'?'':v==='S'?'Sai':'Đúng');
    return ['','','',''];
  }
