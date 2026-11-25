@@ -1405,7 +1405,7 @@ function selectedGradeClass(){const classes=teacherClasses();const selected=$('t
             const raw=prompt('Nhập điểm mới cho '+target.title+' (từ 0 đến 10):',String(target.score));
             if(raw===null)return;
             const normalized=String(raw).trim().replace(',','.');
-            if(!normalized||!/^\\d+(?:\\.\\d+)?$/.test(normalized))return toast('Điểm không hợp lệ. Hãy nhập số từ 0 đến 10.');
+            if(!normalized||!/^\d+(?:\.\d+)?$/.test(normalized))return toast('Điểm không hợp lệ. Hãy nhập số từ 0 đến 10.');
             const score=Number(normalized);
             if(!Number.isFinite(score)||score<0||score>10)return toast('Điểm phải nằm trong khoảng 0 đến 10.');
             const previous=Number(target.score);
