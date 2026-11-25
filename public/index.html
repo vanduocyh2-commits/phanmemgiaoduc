@@ -1180,7 +1180,7 @@ const attSel = (c,s) => attendanceSelector(c,s);
             if($('tch-grades')){
                 $('teacher-class-ranking')?.remove();
                 $('tch-grades').insertAdjacentHTML('afterend','<div id="teacher-class-ranking">'+rankingHTML(c)+'</div>');
-                $('tch-grades').innerHTML = gs.length ? `<details class="mt-2"><summary class="cursor-pointer select-none rounded-lg border bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-600">Xem danh sách điểm đã nhập (${gs.length})</summary><div class="mt-2 max-h-48 space-y-1 overflow-y-auto">${[...gs].reverse().map(g => `<div class="flex items-center justify-between gap-2 rounded-md border bg-slate-50 px-2 py-1 text-[11px]"><span class="min-w-0 truncate">${esc(name(g.sbd))} — ${esc(g.title)}: <b>${g.score}</b> <span class="text-slate-400">(${esc(g.date)})</span></span><button type="button" class="ts-btn danger" style="flex:0 0 auto;padding:2px 7px;font-size:10px" onclick="window.app.deleteGrade('${esc(g.id)}')" aria-label="Xóa điểm bài ${esc(g.title)} của ${esc(name(g.sbd))}">Xóa</button></div>`).join('')}</div></details>` : '<p class="text-slate-400">Chưa có điểm nào.</p>';
+                $('tch-grades').innerHTML = gs.length ? `<details class="mt-2"><summary class="cursor-pointer select-none rounded-lg border bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-600">Xem danh sách điểm đã nhập (${gs.length})</summary><div class="mt-2 max-h-48 space-y-1 overflow-y-auto">${[...gs].reverse().map(g => `<div class="flex items-center justify-between gap-2 rounded-md border bg-slate-50 px-2 py-1 text-[11px]"><span class="min-w-0 truncate">${esc(name(g.sbd))} — ${esc(g.title)}: <b>${g.score}</b> <span class="text-slate-400">(${esc(g.date)})</span></span><button type="button" class="ts-btn danger" style="flex:0 0 auto;padding:2px 7px;font-size:10px" onclick="window.app.editGrade('${esc(g.id)}')" aria-label="Sửa điểm bài ${esc(g.title)} của ${esc(name(g.sbd))}">Sửa</button><button type="button" class="ts-btn danger" style="flex:0 0 auto;padding:2px 7px;font-size:10px" onclick="window.app.deleteGrade('${esc(g.id)}')" aria-label="Xóa điểm bài ${esc(g.title)} của ${esc(name(g.sbd))}">Xóa</button></div>`).join('')}</div></details>` : '<p class="text-slate-400">Chưa có điểm nào.</p>';
             }
         }
 
@@ -1398,6 +1398,25 @@ function selectedGradeClass(){const classes=teacherClasses();const selected=$('t
             persist();refreshUI();cancelGradeExcelImport();toast('Đã thêm '+fresh.length+' điểm mới. Điểm cũ được giữ nguyên.');
         }
 
+        function editGrade(id) {
+            const target=state.gradeBook.find(g=>g.id===id);
+            if(!target||!canManageClass(target.classId))return toast('Không có quyền sửa điểm của lớp này.');
+            if(String(id).startsWith('learning_'))return toast('Điểm bài nộp được sửa trong phần Bài nộp & chấm tự luận.');
+            const raw=prompt('Nhập điểm mới cho '+target.title+' (từ 0 đến 10):',String(target.score));
+            if(raw===null)return;
+            const normalized=String(raw).trim().replace(',','.');
+            if(!normalized||!/^\\d+(?:\\.\\d+)?$/.test(normalized))return toast('Điểm không hợp lệ. Hãy nhập số từ 0 đến 10.');
+            const score=Number(normalized);
+            if(!Number.isFinite(score)||score<0||score>10)return toast('Điểm phải nằm trong khoảng 0 đến 10.');
+            const previous=Number(target.score);
+            if(previous===score)return toast('Điểm không thay đổi.');
+            target.score=score;
+            persist();
+            refreshUI();
+            const student=(state.classes.find(c=>c.id===target.classId)?.students||[]).find(s=>String(s.sbd)===String(target.sbd));
+            toast('Đã cập nhật điểm '+score+(student?' cho '+student.name:' cho học sinh')+'.');
+        }
+
         function deleteGrade(id) {const target=state.gradeBook.find(g=>g.id===id);if(!target||!canManageClass(target.classId))return toast('Không có quyền xóa điểm của lớp này.');if(String(id).startsWith('learning_')){const submissionId=String(id).slice('learning_'.length);if(typeof window.TS?.deleteSubmission==='function')return window.TS.deleteSubmission(submissionId);return toast('Chức năng xóa bài nộp chưa sẵn sàng, hãy tải lại trang.');}if(!confirm('Xóa điểm '+target.title+' của học sinh này?'))return;state.gradeBook=state.gradeBook.filter(g=>g.id!==id);persist();refreshUI();toast('Đã xóa điểm.');}
 
         // ---------- Học sinh / Phụ huynh ----------
@@ -1533,7 +1552,7 @@ function selectedGradeClass(){const classes=teacherClasses();const selected=$('t
             switchAdminTab, openModal, closeModal, showNotification, addNewClass, deleteClass, addStudent, deleteStudent, archiveStudent, openStudentArchive, importStudents,
             setAttendance, toggleAttendanceLock, scheduleSubject, updateScheduleSubjects, addSchedule, editSchedule, deleteSchedule, sendSystemNotification, deleteNotification, deleteAllNotifications,
             changeManagedClass, changeFinanceFilter, toggleFeeStudent, toggleFeeClass, selectFeeVisible,selectFeeAll,applyFeeBulkChanges,previewBulkFees,changeTuitionExtra,editFeeRate, saveFeeRate, printFinance, studentFeeDetails, renderAdminStudentsTable, renderAdminFinance, updateStudentFeeStatus, saveTuitionPayment, rememberTuitionNote, saveTuitionNote, updateFeeAmount, openTaxExport, exportFinance,
-            renderTeacher, addGrade, exportGradeImportTemplate, importGradeExcel, confirmGradeExcelImport, cancelGradeExcelImport, deleteGrade, changePassword, editClass, editStudent, addAccount, editAccount, deleteAccount, exportBackup, importBackup
+            renderTeacher, addGrade, exportGradeImportTemplate, importGradeExcel, confirmGradeExcelImport, cancelGradeExcelImport, editGrade, deleteGrade, changePassword, editClass, editStudent, addAccount, editAccount, deleteAccount, exportBackup, importBackup
         });
 
 
