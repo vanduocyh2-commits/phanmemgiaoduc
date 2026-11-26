@@ -49,18 +49,46 @@ jobs:
               sudo -n journalctl -u phanmemgiaoduc.service -n 50 --no-pager >&2 || true
               exit 1
             fi
-            echo "=== Verifying actual tuition page served by the portal ==="
+            echo "=== Diagnosing the exact page file used by the running Node process ==="
+            APP_PID="$(systemctl show -p MainPID --value phanmemgiaoduc.service)"
+            echo "SERVICE_MAINPID=$APP_PID"
+            if [ -n "$APP_PID" ] && [ "$APP_PID" != "0" ]; then
+              echo "PROCESS_CMDLINE=$(tr '\0' ' ' < "/proc/$APP_PID/cmdline")"
+              echo "PROCESS_CWD=$(readlink -f "/proc/$APP_PID/cwd")"
+            fi
+            REAL_SERVER="$(readlink -f /opt/phanmemgiaoduc/portal-server.mjs)"
+            REAL_INDEX="$(dirname "$REAL_SERVER")/public/index.html"
+            echo "REAL_SERVER=$REAL_SERVER"
+            echo "REAL_INDEX=$REAL_INDEX"
+            ls -l /opt/phanmemgiaoduc/public/index.html "$REAL_INDEX" || true
+            sha256sum /opt/phanmemgiaoduc/public/index.html "$REAL_INDEX" 2>/dev/null || true
+            echo "=== Comparing HTML actually served at / and /index.html ==="
             PAGE="$(curl --fail --silent --show-error --max-time 10 http://127.0.0.1:3000/)"
+            INDEX_PAGE="$(curl --fail --silent --show-error --max-time 10 http://127.0.0.1:3000/index.html)"
+            echo "ROOT_RESPONSE_BYTES=${#PAGE}"
+            echo "INDEX_RESPONSE_BYTES=${#INDEX_PAGE}"
+            for marker in fee-open-full-button fee-payment-amount 'Chi tiết' 'Xem toàn bộ học phí'; do
+              if printf '%s' "$PAGE" | grep -Fq "$marker"; then
+                echo "ROOT_HAS_MARKER=$marker"
+              else
+                echo "ROOT_MISSING_MARKER=$marker"
+              fi
+              if printf '%s' "$INDEX_PAGE" | grep -Fq "$marker"; then
+                echo "INDEX_HAS_MARKER=$marker"
+              else
+                echo "INDEX_MISSING_MARKER=$marker"
+              fi
+            done
             printf '%s' "$PAGE" | grep -Fq 'fee-open-full-button' || {
-              echo "ERROR: served page is missing the student Xem button" >&2
+              echo "ERROR: / does not serve the updated tuition page from the deployed source" >&2
               exit 1
             }
             printf '%s' "$PAGE" | grep -Fq 'fee-payment-amount' || {
-              echo "ERROR: served page is missing the standalone payment amount cell" >&2
+              echo "ERROR: / is missing the standalone payment amount cell" >&2
               exit 1
             }
             if printf '%s' "$PAGE" | grep -Fq '>Xem toàn bộ học phí<'; then
-              echo "ERROR: legacy Xem toàn bộ học phí button is still present in served HTML" >&2
+              echo "ERROR: legacy visible button remains in page response" >&2
               exit 1
             fi
             echo "TUITION_PAGE_RESPONSE_VERIFIED"
