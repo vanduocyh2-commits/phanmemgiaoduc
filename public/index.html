@@ -592,8 +592,8 @@ body.role-header-compact header #header-account-controls{margin-left:auto}
                     <div class="bg-white p-5 rounded-2xl border shadow-xs space-y-4">
                         <div class="flex justify-between items-center flex-wrap gap-3">
                             <div>
-                                <h3 class="text-base font-extrabold text-slate-800"><i class="fa-solid fa-file-invoice-dollar text-emerald-600 mr-2"></i>Quản Trị Học Phí Theo Tháng & Theo Học Sinh</h3>
-                                <p class="text-xs text-slate-500">Kiểm soát số tiền phải nộp, trạng thái đã đóng, chưa đóng hoặc quá hạn của từng em.</p>
+                                <h3 class="text-base font-extrabold text-slate-800"><i class="fa-solid fa-file-invoice-dollar text-emerald-600 mr-2"></i>Sổ Tiền Học Theo Tháng</h3>
+                                <p class="text-xs text-slate-500">Chọn tháng ở trên để xem tổng phải thu, đã thu và còn thiếu; danh sách chi tiết từng học sinh nằm bên dưới.</p>
                             </div>
                             <div class="flex items-center flex-wrap gap-2">
                                 <select id="admin-fee-month" onchange="window.app.changeFinanceFilter()" class="p-2 border rounded-xl text-xs font-bold bg-slate-50 outline-none"></select>
@@ -601,6 +601,11 @@ body.role-header-compact header #header-account-controls{margin-left:auto}
                             </div>
                         </div>
 
+                        <!-- Sổ tiền theo tháng: luôn nằm phía trên bảng từng học sinh -->
+                        <div class="flex items-center gap-2 pt-1">
+                            <h4 class="text-sm font-extrabold text-slate-700">Tổng hợp sổ tiền tháng đang chọn</h4>
+                            <span class="text-xs text-slate-500">Các số liệu được tính theo tháng và bộ lọc lớp/trạng thái bên trên.</span>
+                        </div>
                         <!-- Thẻ tổng hợp dòng tiền tháng -->
                         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                             <div class="p-3.5 bg-slate-50 border rounded-2xl"><span class="text-[11px] text-slate-500 block font-bold uppercase">Tổng Phải Thu Tháng</span><strong id="fin-total-due" class="text-xl font-extrabold text-slate-800">0 đ</strong></div>
