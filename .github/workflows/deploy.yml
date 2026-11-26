@@ -52,6 +52,8 @@ jobs:
             echo "=== Diagnosing the exact page file used by the running Node process ==="
             APP_PID="$(systemctl show -p MainPID --value phanmemgiaoduc.service)"
             echo "SERVICE_MAINPID=$APP_PID"
+            sudo -n ss -ltnp 2>/dev/null | grep ':3000' || true
+            sudo -n ps -eo pid,ppid,user,args | grep -E '[n]ode|[p]ortal-server' || true
             if [ -n "$APP_PID" ] && [ "$APP_PID" != "0" ]; then
               echo "PROCESS_CMDLINE=$(tr '\0' ' ' < "/proc/$APP_PID/cmdline")"
               echo "PROCESS_CWD=$(readlink -f "/proc/$APP_PID/cwd")"
@@ -75,7 +77,8 @@ jobs:
             INDEX_PAGE="$(curl --fail --silent --show-error --max-time 10 http://127.0.0.1:3000/index.html)"
             echo "ROOT_RESPONSE_BYTES=${#PAGE}"
             echo "INDEX_RESPONSE_BYTES=${#INDEX_PAGE}"
-            for marker in fee-open-full-button fee-payment-amount 'Chi tiết' 'Xem toàn bộ học phí'; do
+            echo "ROOT_HTML_START=$(printf '%s' "$PAGE" | head -c 260 | tr '\n' ' ')"
+            for marker in fee-open-full-button fee-payment-amount fee-unified-table admin-finance-tbody renderAdminFinance 'Chi tiết' 'Xem toàn bộ học phí'; do
               if printf '%s' "$PAGE" | grep -Fq "$marker"; then
                 echo "ROOT_HAS_MARKER=$marker"
               else
