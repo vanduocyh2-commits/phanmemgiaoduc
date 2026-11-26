@@ -57,6 +57,20 @@ jobs:
             if [ -n "$APP_PID" ] && [ "$APP_PID" != "0" ]; then
               echo "PROCESS_CMDLINE=$(tr '\0' ' ' < "/proc/$APP_PID/cmdline")"
               echo "PROCESS_CWD=$(readlink -f "/proc/$APP_PID/cwd")"
+              echo "PROCESS_ROOT=$(readlink -f "/proc/$APP_PID/root")"
+              echo "PROCESS_MOUNT_NS=$(readlink "/proc/$APP_PID/ns/mnt" || true)"
+              echo "HOST_MOUNT_NS=$(readlink "/proc/1/ns/mnt" || true)"
+              PROC_INDEX="/proc/$APP_PID/root/opt/phanmemgiaoduc/public/index.html"
+              PROC_SERVER="/proc/$APP_PID/root/opt/phanmemgiaoduc/portal-server.mjs"
+              ls -l "$PROC_INDEX" "$PROC_SERVER" || true
+              sha256sum "$PROC_INDEX" "$PROC_SERVER" 2>/dev/null || true
+              for marker in fee-open-full-button fee-payment-amount; do
+                if grep -Fq "$marker" "$PROC_INDEX"; then
+                  echo "PROCESS_VIEW_HAS_MARKER=$marker"
+                else
+                  echo "PROCESS_VIEW_MISSING_MARKER=$marker"
+                fi
+              done
             fi
             REAL_SERVER="$(readlink -f /opt/phanmemgiaoduc/portal-server.mjs)"
             REAL_INDEX="$(dirname "$REAL_SERVER")/public/index.html"
