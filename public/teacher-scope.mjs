@@ -1,5 +1,11 @@
 import {classGrade,examCodes} from '../teacher-tools.mjs';
 export function examInTeacherClass(exam,course){if(!course)return true;const source=exam.classId||exam.sourceClassId;if(source)return source===course.id;const grade=classGrade(course);return !exam.grade||!grade||String(exam.grade)===grade;}
+export function assignmentExamScopeClassIds(classes=[],selectedClassId=''){
+ const available=Array.isArray(classes)?classes:[];
+ const selected=String(selectedClassId||'');
+ if(selected)return available.some(course=>String(course?.id||'')===selected)?[selected]:[];
+ return available.map(course=>String(course?.id||'')).filter(Boolean);
+}
 export function examsForAssignmentClasses(exams=[],classes=[],selectedClassIds=[]){
  const selectedIds=new Set((Array.isArray(selectedClassIds)?selectedClassIds:[]).map(id=>String(id||'')).filter(Boolean));
  if(!selectedIds.size)return [];
