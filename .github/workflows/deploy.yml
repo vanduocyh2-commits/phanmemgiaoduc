@@ -62,6 +62,14 @@ jobs:
             echo "REAL_INDEX=$REAL_INDEX"
             ls -l /opt/phanmemgiaoduc/public/index.html "$REAL_INDEX" || true
             sha256sum /opt/phanmemgiaoduc/public/index.html "$REAL_INDEX" 2>/dev/null || true
+            for marker in fee-open-full-button fee-payment-amount 'Xem toàn bộ học phí'; do
+              if grep -Fq "$marker" "$REAL_INDEX"; then
+                echo "DISK_HAS_MARKER=$marker"
+              else
+                echo "DISK_MISSING_MARKER=$marker"
+              fi
+            done
+            echo "DISK_INDEX_BYTES=$(wc -c < "$REAL_INDEX")"
             echo "=== Comparing HTML actually served at / and /index.html ==="
             PAGE="$(curl --fail --silent --show-error --max-time 10 http://127.0.0.1:3000/)"
             INDEX_PAGE="$(curl --fail --silent --show-error --max-time 10 http://127.0.0.1:3000/index.html)"
