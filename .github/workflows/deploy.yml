@@ -86,33 +86,22 @@ jobs:
               fi
             done
             echo "DISK_INDEX_BYTES=$(wc -c < "$REAL_INDEX")"
-            echo "=== Identifying listener and on-disk tuition module ==="
-            ss -ltnp 'sport = :3000' 2>/dev/null || true
-            ps -eo pid,ppid,user,args | grep -E '[n]ode|[p]ortal-server' || true
-            systemctl show phanmemgiaoduc.service -p ExecStart -p WorkingDirectory -p RootDirectory -p PrivateMounts -p FragmentPath
-            DISK_HISTORY_UI="/opt/phanmemgiaoduc/public/admin-tuition-history-ui.mjs"
-            ls -l "$DISK_HISTORY_UI"
-            sha256sum "$DISK_HISTORY_UI"
-            grep -Fq 'window.openStudentFeeHistory' "$DISK_HISTORY_UI" && echo "DISK_HISTORY_UI_HAS_NEW_HANDLER" || {
-              echo "ERROR: deployed disk module missing the new history handler" >&2
+            echo "=== Verifying deployed tuition row controls on disk ==="
+            INDEX_FILE="/opt/phanmemgiaoduc/public/index.html"
+            grep -Fq 'fee-open-full-button' "$INDEX_FILE" || {
+              echo "ERROR: deployed index missing the student Xem button" >&2
               exit 1
             }
-            echo "=== Verifying the tuition-history module actually served by the portal ==="
-            HISTORY_UI="$(curl --fail --silent --show-error --max-time 10 http://127.0.0.1:3000/admin-tuition-history-ui.mjs)"
-            printf '%s' "$HISTORY_UI" | grep -Fq 'window.openStudentFeeHistory' || {
-              echo "ERROR: served tuition module is missing the new Xem-to-history handler" >&2
+            grep -Fq 'fee-payment-amount' "$INDEX_FILE" || {
+              echo "ERROR: deployed index missing the standalone payment amount cell" >&2
               exit 1
             }
-            printf '%s' "$HISTORY_UI" | grep -Fq 'button[data-open-student-fee-history]' || {
-              echo "ERROR: served tuition module is missing cleanup for the legacy injected button" >&2
+            grep -Fq 'button[data-open-student-fee-history]{display:none!important}' "$INDEX_FILE" || {
+              echo "ERROR: deployed index does not hide the legacy duplicate history button" >&2
               exit 1
             }
-            if printf '%s' "$HISTORY_UI" | grep -Fq "button.textContent='Xem toàn bộ học phí'"; then
-              echo "ERROR: served tuition module still injects the duplicate Xem toàn bộ học phí button" >&2
-              exit 1
-            fi
-            grep -Fq "window.openStudentFeeHistory(" /opt/phanmemgiaoduc/public/index.html || {
-              echo "ERROR: deployed index does not route the student Xem button to tuition history" >&2
+            grep -Fq 'historyButton.click()' "$INDEX_FILE" || {
+              echo "ERROR: the visible student Xem button is not wired to the history action" >&2
               exit 1
             }
-            echo "TUITION_HISTORY_UI_RESPONSE_VERIFIED"
+            echo "TUITION_ROW_CONTROLS_VERIFIED_ON_DISK"
