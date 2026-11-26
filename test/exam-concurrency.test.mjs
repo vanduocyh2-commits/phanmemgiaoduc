@@ -1,5 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
+import {Pool} from 'pg';
 import {createPortalServer,emptyState} from '../portal-server.mjs';
 
 function memoryStore(){
@@ -15,8 +16,31 @@ function memoryStore(){
  };
 }
 
-test('30 students can log in, save separate exam drafts and submit concurrently',async()=>{
- const store=memoryStore();
+async function postgresStore(){
+ const pool=new Pool({connectionString:process.env.DATABASE_URL,max:10});
+ const table='portal_exam_load_test_state';
+ await pool.query('DROP TABLE IF EXISTS '+table);
+ await pool.query('CREATE TABLE '+table+' (id integer PRIMARY KEY, data jsonb NOT NULL)');
+ await pool.query('INSERT INTO '+table+' (id,data) VALUES (1,$1)',[JSON.stringify(emptyState('admin-test-123456'))]);
+ return {
+  read:async()=>structuredClone((await pool.query('SELECT data FROM '+table+' WHERE id=1')).rows[0].data),
+  mutate:async fn=>{
+   const client=await pool.connect();
+   try{
+    await client.query('BEGIN');
+    const current=(await client.query('SELECT data FROM '+table+' WHERE id=1 FOR UPDATE')).rows[0].data;
+    const next=fn(current);
+    await client.query('UPDATE '+table+' SET data=$1 WHERE id=1',[JSON.stringify(next)]);
+    await client.query('COMMIT');
+    return structuredClone(next);
+   }catch(error){await client.query('ROLLBACK');throw error}
+   finally{client.release()}
+  },
+  close:async()=>{await pool.query('DROP TABLE IF EXISTS '+table);await pool.end()}
+ };
+}
+
+async function runThirtyStudentExamFlow(store){
  const server=createPortalServer({store,env:{SESSION_SECRET:'load-test-session-secret-'.repeat(3)}});
  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
  const base='http://127.0.0.1:'+server.address().port;
@@ -60,7 +84,7 @@ test('30 students can log in, save separate exam drafts and submit concurrently'
    return {student,cookie};
   }));
 
-  const events=await Promise.all(drafts.map(async({student,cookie})=>{
+  await Promise.all(drafts.map(async({student,cookie})=>{
    const response=await call('/api/exam-events',{method:'POST',cookie,data:{
     assignmentId:'assignment-load-30',
     attemptId:'load_'+student.sbd,
@@ -86,4 +110,13 @@ test('30 students can log in, save separate exam drafts and submit concurrently'
  }finally{
   await new Promise(resolve=>server.close(resolve));
  }
+}
+
+test('30 students can log in, save separate exam drafts and submit concurrently (isolated memory store)',async()=>{
+ await runThirtyStudentExamFlow(memoryStore());
+});
+
+test('30 students can log in, save separate exam drafts and submit concurrently (PostgreSQL row-lock store)',{skip:!process.env.DATABASE_URL},async()=>{
+ const store=await postgresStore();
+ try{await runThirtyStudentExamFlow(store)}finally{await store.close()}
 });
