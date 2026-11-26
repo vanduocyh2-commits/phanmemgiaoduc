@@ -267,6 +267,28 @@ body.role-header-compact header #header-account-controls{margin-left:auto}
 .fee-unified-table td:nth-child(4) .fee-row-fields{min-width:150px;max-width:210px}
 .fee-unified-table td:nth-child(4) .fee-row-fields .ts-input{width:100%;min-width:0}
 @media(max-width:850px){#finance-table-scroll table.fee-unified-table{min-width:820px!important}.fee-unified-table th:nth-child(2),.fee-unified-table td:nth-child(2){min-width:190px}.fee-unified-table th:nth-child(7),.fee-unified-table td:nth-child(7){min-width:165px}}
+</style><style>
+/* Fix one-line tuition list: explicit columns and no vertical wrapping */
+#finance-table-scroll{width:100%;max-width:100%;min-width:0;overflow-x:auto!important;overflow-y:auto}
+#finance-table-scroll table.fee-unified-table{width:100%!important;min-width:930px!important;table-layout:fixed!important}
+.fee-unified-table th,.fee-unified-table td{box-sizing:border-box;vertical-align:middle!important;padding:8px 7px!important;white-space:nowrap!important;overflow:visible!important;word-break:normal!important;overflow-wrap:normal!important}
+.fee-unified-table th{white-space:nowrap!important;line-height:1.25}
+.fee-unified-table th:nth-child(1),.fee-unified-table td:nth-child(1){width:48px!important;min-width:48px!important;text-align:center}
+.fee-unified-table th:nth-child(2),.fee-unified-table td:nth-child(2){width:205px!important;min-width:205px!important}
+.fee-unified-table th:nth-child(3),.fee-unified-table td:nth-child(3){width:72px!important;min-width:72px!important;text-align:center}
+.fee-unified-table th:nth-child(4),.fee-unified-table td:nth-child(4){width:145px!important;min-width:145px!important}
+.fee-unified-table th:nth-child(5),.fee-unified-table td:nth-child(5){width:135px!important;min-width:135px!important}
+.fee-unified-table th:nth-child(6),.fee-unified-table td:nth-child(6){width:155px!important;min-width:155px!important}
+.fee-unified-table th:nth-child(7),.fee-unified-table td:nth-child(7){width:190px!important;min-width:190px!important}
+.fee-unified-table th:nth-child(1){white-space:nowrap!important;word-break:keep-all!important}
+.fee-unified-table .fee-student-inline{align-items:flex-start;white-space:nowrap!important}
+.fee-unified-table .fee-student-name{white-space:nowrap!important;max-width:100%!important;overflow:visible!important}
+.fee-unified-table td:nth-child(4) details,.fee-unified-table td:nth-child(7) details{display:inline-block;width:max-content;max-width:none}
+.fee-unified-table .fee-payment-summary,.fee-unified-table .fee-view-all-summary{display:inline-flex!important;align-items:center;justify-content:center;width:max-content!important;max-width:none!important;min-width:max-content!important;white-space:nowrap!important;word-break:keep-all!important;overflow-wrap:normal!important;line-height:1.2;padding:7px 9px!important}
+.fee-unified-table td:nth-child(4) .fee-row-fields,.fee-unified-table td:nth-child(7) .fee-row-fields{white-space:normal;min-width:180px}
+.fee-unified-table td:nth-child(4) .fee-row-fields .ts-input{width:100%;min-width:160px}
+.fee-unified-table td:nth-child(5) select{width:100%;min-width:120px;white-space:nowrap}
+.fee-unified-table td:nth-child(6) b,.fee-unified-table td:nth-child(6) small{white-space:nowrap!important}
 </style></head>
 <body class="bg-slate-100 text-slate-800 antialiased flex flex-col min-h-screen selection:bg-indigo-600 selection:text-white">
 
