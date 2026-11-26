@@ -19,6 +19,7 @@ async function openHistory(classId,sbd){
  try{const query=new URLSearchParams({classId,sbd}),response=await fetch('/api/tuition/student-history?'+query,{credentials:'same-origin',cache:'no-store'}),data=await response.json();if(!response.ok)throw Error(data.error||'Không tải được lịch sử học phí.');renderHistory(panel,data);}
  catch(error){panel.innerHTML='<h3 style="font-weight:800">Không mở được lịch sử học phí</h3><p class="ts-help">'+esc(error.message)+'</p><button class="ts-btn ts-secondary" id="close-tuition-history">Đóng</button>';$('close-tuition-history').onclick=()=>$('tuition-history-modal')?.remove();}
 }
+window.openStudentFeeHistory=(classId,sbd)=>openHistory(classId,sbd);
 function renderHistory(panel,data){
  const student=data.student||{},fees=data.fees||[],attendance=data.attendance||[],options=monthOptions(data);
  let feeRows='';
@@ -57,12 +58,9 @@ function renderHistory(panel,data){
 }
 function addHistoryButtons(){
  const tbody=$('admin-finance-tbody');if(!tbody)return;
- for(const row of tbody.querySelectorAll('tr')){
-  const checkbox=row.querySelector('input[data-fee-student]');if(!checkbox)continue;let identity;try{identity=JSON.parse(checkbox.dataset.feeStudent);}catch{continue;}
-  if(!Array.isArray(identity)||identity.length!==2)continue;
-  const cells=[...row.cells],cell=cells.length>=10?cells[1]:cells[2];if(!cell||cell.querySelector('[data-open-student-fee-history]'))continue;
-  const button=document.createElement('button');button.type='button';button.dataset.openStudentFeeHistory='1';button.className='ts-btn ts-secondary';button.style.cssText='display:block;margin-top:6px;font-size:11px;padding:5px 8px';button.textContent='Xem toàn bộ học phí';button.addEventListener('click',event=>{event.stopPropagation();void openHistory(identity[0],identity[1]);});cell.style.cursor='pointer';cell.title='Bấm để xem toàn bộ học phí của học sinh';cell.addEventListener('click',event=>{if(event.target.closest('button,input,select,a,textarea'))return;void openHistory(identity[0],identity[1]);});cell.append(button);
- }
+ // Remove the legacy extra button that used to be appended to the third cell.
+ // The single "Xem" button beside the student's name now opens this history view.
+ tbody.querySelectorAll('button[data-open-student-fee-history]').forEach(button=>button.remove());
 }
 function init(){addHistoryButtons();const Observer=window.MutationObserver;if(Observer)new Observer(addHistoryButtons).observe(document.body,{childList:true,subtree:true});}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
