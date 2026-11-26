@@ -18,11 +18,11 @@ test('saved assignment exams follow top class and include source exams assigned 
  const exams=[...data.exams,sourceExam,otherExam];
  const crossClassAssignments=[
   {id:'reassigned-to-9A2',classId:'b',examId:'source-9A1',examIds:['source-9A1'],snapshot:{id:'source-9A1'}},
-  {id:'recalled',classId:'b',examId:'other',archivedAt:'2026-11-01T00:00:00Z'},
-  {id:'closed',classId:'b',examId:'other',closed:true}
+  {id:'closed-but-not-withdrawn',classId:'b',examId:'other',closed:true},
+  {id:'withdrawn',classId:'b',examId:'other',archivedAt:'2026-11-01T00:00:00Z'}
  ];
  const for9A2=examsForAssignmentClasses(exams,data.classes,['b'],crossClassAssignments);
- assert.deepEqual(for9A2.map(e=>e.id),['e2','source-9A1']);
+ assert.deepEqual(for9A2.map(e=>e.id),['e2','source-9A1','other']);
  const recipientSelection=['b'];
  const for9A1=examsForAssignmentClasses(exams,data.classes,['a'],crossClassAssignments);
  assert.deepEqual(for9A1.map(e=>e.id),['e1','e3','source-9A1','other']);
