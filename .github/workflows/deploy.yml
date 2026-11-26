@@ -86,34 +86,22 @@ jobs:
               fi
             done
             echo "DISK_INDEX_BYTES=$(wc -c < "$REAL_INDEX")"
-            echo "=== Comparing HTML actually served at / and /index.html ==="
-            PAGE="$(curl --fail --silent --show-error --max-time 10 http://127.0.0.1:3000/)"
-            INDEX_PAGE="$(curl --fail --silent --show-error --max-time 10 http://127.0.0.1:3000/index.html)"
-            echo "ROOT_RESPONSE_BYTES=${#PAGE}"
-            echo "INDEX_RESPONSE_BYTES=${#INDEX_PAGE}"
-            echo "ROOT_HTML_START=$(printf '%s' "$PAGE" | head -c 260 | tr '\n' ' ')"
-            for marker in fee-open-full-button fee-payment-amount fee-unified-table admin-finance-tbody renderAdminFinance 'Chi tiết' 'Xem toàn bộ học phí'; do
-              if printf '%s' "$PAGE" | grep -Fq "$marker"; then
-                echo "ROOT_HAS_MARKER=$marker"
-              else
-                echo "ROOT_MISSING_MARKER=$marker"
-              fi
-              if printf '%s' "$INDEX_PAGE" | grep -Fq "$marker"; then
-                echo "INDEX_HAS_MARKER=$marker"
-              else
-                echo "INDEX_MISSING_MARKER=$marker"
-              fi
-            done
-            printf '%s' "$PAGE" | grep -Fq 'fee-open-full-button' || {
-              echo "ERROR: / does not serve the updated tuition page from the deployed source" >&2
+            echo "=== Verifying the tuition-history module actually served by the portal ==="
+            HISTORY_UI="$(curl --fail --silent --show-error --max-time 10 http://127.0.0.1:3000/admin-tuition-history-ui.mjs)"
+            printf '%s' "$HISTORY_UI" | grep -Fq 'window.openStudentFeeHistory' || {
+              echo "ERROR: served tuition module is missing the new Xem-to-history handler" >&2
               exit 1
             }
-            printf '%s' "$PAGE" | grep -Fq 'fee-payment-amount' || {
-              echo "ERROR: / is missing the standalone payment amount cell" >&2
+            printf '%s' "$HISTORY_UI" | grep -Fq 'button[data-open-student-fee-history]' || {
+              echo "ERROR: served tuition module is missing cleanup for the legacy injected button" >&2
               exit 1
             }
-            if printf '%s' "$PAGE" | grep -Fq '>Xem toàn bộ học phí<'; then
-              echo "ERROR: legacy visible button remains in page response" >&2
+            if printf '%s' "$HISTORY_UI" | grep -Fq "button.textContent='Xem toàn bộ học phí'"; then
+              echo "ERROR: served tuition module still injects the duplicate Xem toàn bộ học phí button" >&2
               exit 1
             fi
-            echo "TUITION_PAGE_RESPONSE_VERIFIED"
+            grep -Fq "window.openStudentFeeHistory(" /opt/phanmemgiaoduc/public/index.html || {
+              echo "ERROR: deployed index does not route the student Xem button to tuition history" >&2
+              exit 1
+            }
+            echo "TUITION_HISTORY_UI_RESPONSE_VERIFIED"
