@@ -296,6 +296,13 @@ body.role-header-compact header #header-account-controls{margin-left:auto}
 .fee-student-inline small{display:block!important;white-space:nowrap!important;max-width:none!important;overflow:visible!important}
 .fee-unified-table td:nth-child(7) .fee-view-all-summary{display:inline-flex!important;align-items:center!important;justify-content:center!important;width:auto!important;min-width:150px!important;max-width:none!important;white-space:nowrap!important;word-break:keep-all!important;overflow-wrap:normal!important;padding:8px 10px!important}
 .fee-unified-table td:nth-child(7) details{display:inline-block!important;width:auto!important;max-width:none!important}
+/* Fix tuition action/payment cell overlap 2026-11-27 */
+#finance-table-scroll table.fee-unified-table{table-layout:fixed!important}
+.fee-unified-table td:nth-child(4) details,
+.fee-unified-table td:nth-child(7) details{display:block!important;width:100%!important;max-width:100%!important;min-width:0!important}
+.fee-unified-table td:nth-child(4) .fee-payment-summary{display:block!important;box-sizing:border-box!important;width:100%!important;min-width:0!important;max-width:100%!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important}
+.fee-unified-table td:nth-child(7) .fee-view-all-summary{display:flex!important;box-sizing:border-box!important;align-items:center!important;justify-content:center!important;width:100%!important;min-width:0!important;max-width:100%!important;white-space:normal!important;overflow-wrap:anywhere!important;word-break:normal!important}
+.fee-unified-table td:nth-child(7) .fee-row-fields{box-sizing:border-box!important;width:100%!important;min-width:0!important;max-width:100%!important}
 </style></head>
 <body class="bg-slate-100 text-slate-800 antialiased flex flex-col min-h-screen selection:bg-indigo-600 selection:text-white">
 
