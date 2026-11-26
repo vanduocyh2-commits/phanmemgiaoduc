@@ -6,12 +6,20 @@ export function assignmentExamScopeClassIds(classes=[],selectedClassId=''){
  if(selected)return available.some(course=>String(course?.id||'')===selected)?[selected]:[];
  return available.map(course=>String(course?.id||'')).filter(Boolean);
 }
-export function examsForAssignmentClasses(exams=[],classes=[],selectedClassIds=[]){
+export function examsForAssignmentClasses(exams=[],classes=[],selectedClassIds=[],assignments=[]){
  const selectedIds=new Set((Array.isArray(selectedClassIds)?selectedClassIds:[]).map(id=>String(id||'')).filter(Boolean));
  if(!selectedIds.size)return [];
  const selectedClasses=(Array.isArray(classes)?classes:[]).filter(course=>selectedIds.has(String(course?.id||'')));
  if(!selectedClasses.length)return [];
- return (Array.isArray(exams)?exams:[]).filter(exam=>!exam?.archivedAt&&selectedClasses.some(course=>examInTeacherClass(exam,course)));
+ const activeAssignments=(Array.isArray(assignments)?assignments:[]).filter(a=>!a?.archivedAt&&!a?.closed&&selectedIds.has(String(a?.classId||'')));
+ const assignedExamIds=new Set();
+ for(const assignment of activeAssignments){
+  for(const id of Array.isArray(assignment.examIds)?assignment.examIds:[])if(id!=null)assignedExamIds.add(String(id));
+  for(const id of [assignment.examId,assignment.snapshot?.id])if(id!=null)assignedExamIds.add(String(id));
+ }
+ return (Array.isArray(exams)?exams:[]).filter(exam=>!exam?.archivedAt&&(
+  selectedClasses.some(course=>examInTeacherClass(exam,course))||assignedExamIds.has(String(exam?.id||''))
+ ));
 }
 export function teacherTabStatistics({classes=[],exams=[],assignments=[],submissions=[],plans=[],reports=[]},classId='',username=''){
  const selected=classes.filter(c=>!classId||c.id===classId),ids=new Set(selected.map(c=>c.id)),course=classId?selected[0]:null,bank=exams.filter(e=>!e.archivedAt&&(!username||e.owner===username)&&examInTeacherClass(e,course)),given=assignments.filter(a=>!a.archivedAt&&ids.has(a.classId));
