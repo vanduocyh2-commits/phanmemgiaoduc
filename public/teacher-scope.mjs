@@ -11,7 +11,7 @@ export function examsForAssignmentClasses(exams=[],classes=[],selectedClassIds=[
  if(!selectedIds.size)return [];
  const selectedClasses=(Array.isArray(classes)?classes:[]).filter(course=>selectedIds.has(String(course?.id||'')));
  if(!selectedClasses.length)return [];
- const activeAssignments=(Array.isArray(assignments)?assignments:[]).filter(a=>!a?.archivedAt&&!a?.closed&&selectedIds.has(String(a?.classId||'')));
+ const activeAssignments=(Array.isArray(assignments)?assignments:[]).filter(a=>!a?.archivedAt&&selectedIds.has(String(a?.classId||'')));
  const assignedExamIds=new Set();
  for(const assignment of activeAssignments){
   for(const id of Array.isArray(assignment.examIds)?assignment.examIds:[])if(id!=null)assignedExamIds.add(String(id));
