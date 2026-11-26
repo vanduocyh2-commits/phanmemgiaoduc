@@ -33,15 +33,34 @@ jobs:
             echo "=== Deploying reviewed commit $SHA through authorized source deploy ==="
             sudo -n /usr/local/sbin/phanmemgiaoduc-source-deploy "$SHA"
             echo "=== Verifying portal service health ==="
+            READY=0
             for attempt in {1..20}; do
               if curl --fail --silent --show-error --max-time 3 http://127.0.0.1:3000/api/health; then
                 echo
                 echo "PORTAL_HEALTH_CHECK_SUCCESS"
-                exit 0
+                READY=1
+                break
               fi
               sleep 2
             done
-            echo "ERROR: portal health endpoint did not become ready" >&2
-            sudo -n systemctl is-active phanmemgiaoduc.service >&2 || true
-            sudo -n journalctl -u phanmemgiaoduc.service -n 50 --no-pager >&2 || true
-            exit 1
+            if [ "$READY" -ne 1 ]; then
+              echo "ERROR: portal health endpoint did not become ready" >&2
+              sudo -n systemctl is-active phanmemgiaoduc.service >&2 || true
+              sudo -n journalctl -u phanmemgiaoduc.service -n 50 --no-pager >&2 || true
+              exit 1
+            fi
+            echo "=== Verifying actual tuition page served by the portal ==="
+            PAGE="$(curl --fail --silent --show-error --max-time 10 http://127.0.0.1:3000/)"
+            printf '%s' "$PAGE" | grep -Fq 'fee-open-full-button' || {
+              echo "ERROR: served page is missing the student Xem button" >&2
+              exit 1
+            }
+            printf '%s' "$PAGE" | grep -Fq 'fee-payment-amount' || {
+              echo "ERROR: served page is missing the standalone payment amount cell" >&2
+              exit 1
+            }
+            if printf '%s' "$PAGE" | grep -Fq '>Xem toàn bộ học phí<'; then
+              echo "ERROR: legacy Xem toàn bộ học phí button is still present in served HTML" >&2
+              exit 1
+            fi
+            echo "TUITION_PAGE_RESPONSE_VERIFIED"
