@@ -665,7 +665,7 @@ if(p.startsWith('/api/assignments/')&&p.endsWith('/check-minimum-score')&&req.me
    if(a.snapshot.questions?.some(q=>q.type==='essay')){resultData={enabled:false,reason:'essay'};return current;}
    let tracking=activeAttempt(current,a,actor.cid,actor.sbd);
    if(!tracking)throw Error('Không tìm thấy lượt làm bài đang hoạt động. Hãy liên hệ giáo viên để bảo toàn bài làm.');
-   if(typeof input.attemptId!=='string'||!/^[-\\w]{1,100}$/.test(input.attemptId))throw Error('Mã lượt làm bài không hợp lệ.');
+   if(typeof input.attemptId!=='string'||!/^[A-Za-z0-9_-]{1,100}$/.test(input.attemptId))throw Error('Mã lượt làm bài không hợp lệ.');
    const answers=input.answers&&typeof input.answers==='object'?input.answers:{};
    if(tracking.id!==input.attemptId){
     const aligned={...tracking,id:input.attemptId,answers:{...(tracking.answers||{}),...Object.fromEntries(Object.entries(answers).filter(([key,value])=>typeof value==='string').map(([key,value])=>[key,value.slice(0,100000)]))}};
