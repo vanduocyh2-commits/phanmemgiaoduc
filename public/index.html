@@ -3183,7 +3183,12 @@ function deleteExamData(d,actor,examId){
   const roster=new Set((classRow?.students||[]).map(student=>String(student.sbd)));
   const students=(source.students||[]).filter(sbd=>roster.has(String(sbd)));
   if(!students.length)return toast('Không tìm thấy học sinh thuộc lớp nhận bài cũ. Hãy kiểm tra lại danh sách lớp.');
-  if(!confirm('Giao lại “'+(source.snapshot?.title||'bài kiểm tra')+'” cho '+students.length+' học sinh của lớp '+(classRow?.name||'đã chọn')+'?\\n\\nHệ thống tạo bài giao mới, mở ngay và không đặt hạn nộp. Bài nộp và điểm của lần giao cũ được giữ nguyên.'))return;
+  const deadlineInput=window.prompt('Hạn nộp mới (YYYY-MM-DDTHH:mm). Để trống nếu không giới hạn thời gian:',source.end?String(source.end).slice(0,16):'');
+  if(deadlineInput===null)return;
+  const deadline=String(deadlineInput).trim();
+  if(deadline&&(!/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}$/.test(deadline)||!Number.isFinite(new Date(deadline).getTime())))return toast('Hạn nộp chưa đúng. Hãy nhập theo dạng YYYY-MM-DDTHH:mm.');
+  const deadlineLabel=deadline?deadline.replace('T',' '):'Không giới hạn';
+  if(!confirm('Giao lại “'+(source.snapshot?.title||'bài kiểm tra')+'” cho '+students.length+' học sinh của lớp '+(classRow?.name||'đã chọn')+'?\\n\\nHạn nộp mới: '+deadlineLabel+'.\\nCác cấu hình khác giữ nguyên; bài nộp và điểm của lần giao cũ vẫn được giữ nguyên.'))return;
   const now=new Date().toISOString();
   const next=copy(source);
   next.id=uid('as');
@@ -3194,7 +3199,7 @@ function deleteExamData(d,actor,examId){
   next.studentCodes=Object.fromEntries(students.map(sbd=>[String(sbd),source.studentCodes?.[sbd]||source.studentCodes?.[String(sbd)]||String(source.snapshot?.code||source.snapshot?.presentation?.code||'101')]));
   next.shuffleSeedByStudent=Object.fromEntries(students.map(sbd=>[String(sbd),uid('mix')]));
   next.start=now;
-  next.end=null;
+  next.end=deadline||null;
   next.closed=false;
   next.closedAt=null;
   next.archivedAt=null;
