@@ -663,9 +663,18 @@ if(p.startsWith('/api/assignments/')&&p.endsWith('/check-minimum-score')&&req.me
    const minimum=Number(a.minSubmitScore);
    if(!Number.isFinite(minimum)||minimum<0||minimum>10){resultData={enabled:false};return current;}
    if(a.snapshot.questions?.some(q=>q.type==='essay')){resultData={enabled:false,reason:'essay'};return current;}
-   const tracking=activeAttempt(current,a,actor.cid,actor.sbd);
-   if(!tracking||tracking.id!==input.attemptId)throw Error('Phiên làm bài đã thay đổi. Hãy tải lại đề.');
+   let tracking=activeAttempt(current,a,actor.cid,actor.sbd);
+   if(!tracking)throw Error('Không tìm thấy lượt làm bài đang hoạt động. Hãy liên hệ giáo viên để bảo toàn bài làm.');
+   if(typeof input.attemptId!=='string'||!/^[-\\w]{1,100}$/.test(input.attemptId))throw Error('Mã lượt làm bài không hợp lệ.');
    const answers=input.answers&&typeof input.answers==='object'?input.answers:{};
+   if(tracking.id!==input.attemptId){
+    const aligned={...tracking,id:input.attemptId,answers:{...(tracking.answers||{}),...Object.fromEntries(Object.entries(answers).filter(([key,value])=>typeof value==='string').map(([key,value])=>[key,value.slice(0,100000)]))}};
+    current.learningAttempts=(current.learningAttempts||[]).filter(row=>row.id!==tracking.id);
+    current.learningAttempts.push(aligned);
+    tracking=aligned;
+    current._revision=(current._revision||0)+1;
+    resultData.recoveredSession=true;
+   }
    const details=(a.snapshot.questions||[]).map(q=>({qid:q.id,answer:typeof answers[q.id]==='string'?answers[q.id]:'',attachments:[]}));
    const scored=scoreSubmission(current,a,{id:'minimum_check_'+tracking.id,assignmentId:a.id,classId:actor.cid,sbd:actor.sbd,examCode:tracking.examCode||studentExamCode(current,a,actor.sbd),details},true);
    if(scored.details.some(row=>row.points===null||!Number.isFinite(Number(row.points)))){resultData={enabled:false,reason:'manual'};return current;}
