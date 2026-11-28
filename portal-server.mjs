@@ -651,7 +651,7 @@ if(p==='/api/practice/check'&&req.method==='POST'){
 }
 if(p.startsWith('/api/assignments/')&&p.endsWith('/check-minimum-score')&&req.method==='POST'){
   if(m?.role!=='student'||m.pendingAdmission)return send(res,403,{error:'Chỉ học sinh đang làm bài mới được kiểm tra điểm.'});
-  const match=p.match(/^\\/api\\/assignments\\/([^/]+)\\/check-minimum-score$/);
+  const match=p.match(/^\/api\/assignments\/([^/]+)\/check-minimum-score$/);
   if(!match)return send(res,404,{error:'Đường dẫn không hợp lệ.'});
   const assignmentId=decodeURIComponent(match[1]),input=await jsonBody(req);
   let resultData={enabled:false};
