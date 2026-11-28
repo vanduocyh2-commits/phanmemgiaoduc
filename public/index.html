@@ -3186,7 +3186,7 @@ function deleteExamData(d,actor,examId){
   const deadlineInput=window.prompt('Hạn nộp mới (YYYY-MM-DDTHH:mm). Để trống nếu không giới hạn thời gian:',source.end?String(source.end).slice(0,16):'');
   if(deadlineInput===null)return;
   const deadline=String(deadlineInput).trim();
-  if(deadline&&(!/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}$/.test(deadline)||!Number.isFinite(new Date(deadline).getTime())))return toast('Hạn nộp chưa đúng. Hãy nhập theo dạng YYYY-MM-DDTHH:mm.');
+  if(deadline&&(!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(deadline)||!Number.isFinite(new Date(deadline).getTime())))return toast('Hạn nộp chưa đúng. Hãy nhập theo dạng YYYY-MM-DDTHH:mm.');
   const deadlineLabel=deadline?deadline.replace('T',' '):'Không giới hạn';
   if(!confirm('Giao lại “'+(source.snapshot?.title||'bài kiểm tra')+'” cho '+students.length+' học sinh của lớp '+(classRow?.name||'đã chọn')+'?\\n\\nHạn nộp mới: '+deadlineLabel+'.\\nCác cấu hình khác giữ nguyên; bài nộp và điểm của lần giao cũ vẫn được giữ nguyên.'))return;
   const now=new Date().toISOString();
